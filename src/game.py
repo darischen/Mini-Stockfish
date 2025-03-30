@@ -43,5 +43,36 @@ class Game:
                 rect = (move.final.col * SQSIZE, move.final.row * SQSIZE, SQSIZE, SQSIZE)
                 pygame.draw.rect(surface, color, rect)
                 
+    def show_last_move(self, surface):
+        if self.board.last_move:
+            initial = self.board.last_move.initial
+            final = self.board.last_move.final
+            
+            for pos in [initial, final]:
+                color = (244, 247, 166) if (pos.row + pos.col) % 2 == 0 else (172, 195, 51)
+                rect = (pos.col * SQSIZE, pos.row * SQSIZE, SQSIZE, SQSIZE)
+                pygame.draw.rect(surface, color, rect)
+
+    def show_hover(self, surface):
+        if self.hovered_sqr:
+            color = (180, 180, 180)
+            rect = (self.hovered_sqr.col * SQSIZE, self.hovered_sqr.row * SQSIZE, SQSIZE, SQSIZE)
+            pygame.draw.rect(surface, color, rect, width=3)
+        
     def next_turn(self):
         self.next_player = 'white' if self.next_player == 'black' else 'black'
+        
+    def set_hover(self, row, col):
+        self.hovered_sqr = self.board.squares[row][col]
+        
+    def change_theme(self):
+        pass
+        
+    def play_sound(self, captured=False):
+        if captured:
+            self.config.capture_sound.play()
+        else:
+            self.config.move_sound.play()
+
+    def reset(self):
+        self.__init__()
