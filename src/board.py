@@ -194,10 +194,7 @@ class Board:
                         
                         if bool:
                             if not self.in_check(piece, move):
-                                
                                 piece.add_move(move)
-                            else:
-                                break
                         else:
                             piece.add_move(move)
                             
@@ -227,8 +224,6 @@ class Board:
                         if bool:
                             if not self.in_check(piece, move):
                                 piece.add_move(move)
-                            else:
-                                break
                         else:
                             piece.add_move(move)
 
