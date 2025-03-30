@@ -35,7 +35,7 @@ class Game:
                     lbl = self.config.font.render(Square.get_alphacol(col), 1, color)
                     lbl_pos = (col * SQSIZE + SQSIZE - 20, HEIGHT - 20)
                     surface.blit(lbl, lbl_pos)
-    
+
     def show_pieces(self, surface):
         for row in range(ROWS):
             for col in range(COLS):
