@@ -14,6 +14,57 @@ class Board:
         self._add_pieces('white')
         self._add_pieces('black')
     
+    def is_in_check(self, color):
+    # Find the king's position for the given color
+        king_position = None
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_piece():
+                    piece = self.squares[row][col].piece
+                    if isinstance(piece, King) and piece.color == color:
+                        king_position = (row, col)
+                        break
+            if king_position:
+                break
+        if king_position is None:
+            # Should not happen in a valid game
+            return False
+        king_row, king_col = king_position
+
+        # Check if any enemy piece has a move that attacks the king
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_piece():
+                    piece = self.squares[row][col].piece
+                    if piece.color != color:
+                        piece.clear_moves()
+                        # Use bool=False to add all possible moves regardless of check filtering
+                        self.calc_moves(piece, row, col, bool=False)
+                        for move in piece.moves:
+                            if move.final.row == king_row and move.final.col == king_col:
+                                return True
+        return False
+
+    def is_checkmate(self, color):
+        # Checkmate only occurs if the king is in check
+        if not self.is_in_check(color):
+            return False
+
+        # Iterate over all pieces of the given color
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_piece() and self.squares[row][col].piece.color == color:
+                    piece = self.squares[row][col].piece
+                    piece.clear_moves()
+                    # Use bool=True to add only legal moves (i.e. moves that do not leave the king in check)
+                    self.calc_moves(piece, row, col, bool=True)
+                    if piece.moves:
+                        # Found at least one legal move—so it’s not checkmate
+                        return False
+        # No legal moves found and the king is in check: checkmate!
+        return True
+
+    
     def move(self, piece, move, testing=False):
         initial = move.initial
         final = move.final

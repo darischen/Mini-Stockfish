@@ -12,6 +12,7 @@ class Game:
         self.board = Board()
         self.dragger = Dragger()
         self.config = Config()
+        self.game_over = False
     
     
     #Functions to show
@@ -77,6 +78,11 @@ class Game:
         
     def next_turn(self):
         self.next_player = 'white' if self.next_player == 'black' else 'black'
+        
+        if self.board.is_checkmate(self.next_player):
+            self.game_over = True
+            winner = "Black" if self.next_player == "white" else "White"
+            print(f"{winner} wins!")
         
     def set_hover(self, row, col):
         self.hovered_sqr = self.board.squares[row][col]
