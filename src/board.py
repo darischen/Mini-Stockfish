@@ -13,6 +13,32 @@ class Board:
         self._create()
         self._add_pieces('white')
         self._add_pieces('black')
+        
+    @staticmethod
+    def moves_to_str(moves):
+        return ", ".join(f"(({m.initial.row},{m.initial.col}) -> ({m.final.row},{m.final.col}))" for m in moves)
+    
+    def make_move(self, piece, move):
+        move_history = {
+            'piece': piece,
+            'initial': (move.initial.row, move.initial.col),
+            'final': (move.final.row, move.final.col),
+            'captured': self.squares[move.final.row][move.final.col].piece,
+            'piece_moved': piece.moved,
+        }
+        # Move the piece
+        self.squares[move.final.row][move.final.col].piece = piece
+        self.squares[move.initial.row][move.initial.col].piece = None
+        piece.moved = True
+        return move_history
+
+    def undo_move(self, move_history):
+        piece = move_history['piece']
+        init_row, init_col = move_history['initial']
+        final_row, final_col = move_history['final']
+        self.squares[init_row][init_col].piece = piece
+        self.squares[final_row][final_col].piece = move_history['captured']
+        piece.moved = move_history['piece_moved']
     
     def is_in_check(self, color):
     # Find the king's position for the given color
@@ -46,6 +72,13 @@ class Board:
         return False
 
     def is_checkmate(self, color):
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_piece() and self.squares[row][col].piece.color == 'white':
+                    piece = self.squares[row][col].piece
+                    piece.clear_moves()
+                    self.calc_moves(piece, row, col, bool=True)
+                    print(f"{piece} at ({row},{col}) moves: {self.moves_to_str(piece.moves)}")
         # Checkmate only occurs if the king is in check
         if not self.is_in_check(color):
             return False
@@ -93,11 +126,15 @@ class Board:
                 rook = piece.left_rook if (diff < 0) else piece.right_rook
                 self.move(rook, rook.moves[-1])
 
-        piece.moved = True
+        # piece.moved = True
 
-        piece.clear_moves()
+        # piece.clear_moves()
 
-        self.last_move = move
+        # self.last_move = move
+        if not testing:
+            piece.moved = True
+            piece.clear_moves()
+            self.last_move = move
 
     def valid_move(self, piece, move):
         return move in piece.moves
@@ -122,20 +159,50 @@ class Board:
         piece.en_passant = True
 
     def in_check(self, piece, move):
-        temp_piece = copy.deepcopy(piece)
-        temp_board = copy.deepcopy(self)
-        temp_board.move(temp_piece, move, testing=True)
-        
+        """
+        Simulate the move, check whether the king would be in check, then undo the move.
+        To avoid recursion, enemy moves are generated as pseudo-legal (bool=False).
+        """
+        # Apply the move and record state
+        move_history = self.make_move(piece, move)
+
+        # Locate the king for piece's color
+        king_position = None
         for row in range(ROWS):
             for col in range(COLS):
-                if temp_board.squares[row][col].has_enemy_piece(piece.color):
-                    p = temp_board.squares[row][col].piece
-                    temp_board.calc_moves(p, row, col, bool=False)
-                    for m in p.moves:
-                        if isinstance(m.final.piece, King):
-                            return True
-        
-        return False
+                if self.squares[row][col].has_piece():
+                    p = self.squares[row][col].piece
+                    if isinstance(p, King) and p.color == piece.color:
+                        king_position = (row, col)
+                        break
+            if king_position:
+                break
+
+        check_found = False
+        if king_position:
+            king_row, king_col = king_position
+            # Instead of generating fully legal moves (which would call in_check again),
+            # we generate pseudo-legal moves (bool=False) for each enemy piece.
+            for row in range(ROWS):
+                for col in range(COLS):
+                    if self.squares[row][col].has_piece():
+                        enemy = self.squares[row][col].piece
+                        if enemy.color != piece.color:
+                            enemy.clear_moves()
+                            # Use bool=False to avoid recursive check validations.
+                            self.calc_moves(enemy, row, col, bool=False)
+                            for m in enemy.moves:
+                                if m.final.row == king_row and m.final.col == king_col:
+                                    check_found = True
+                                    break
+                            if check_found:
+                                break
+                if check_found:
+                    break
+
+        # Undo the simulated move regardless of the outcome
+        self.undo_move(move_history)
+        return check_found
 
     def calc_moves(self, piece, row, col, bool=True):
         
