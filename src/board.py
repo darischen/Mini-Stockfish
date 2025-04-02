@@ -18,6 +18,26 @@ class Board:
     def moves_to_str(moves):
         return ", ".join(f"(({m.initial.row},{m.initial.col}) -> ({m.final.row},{m.final.col}))" for m in moves)
     
+    def is_stalemate(self, color):
+        # If the king is in check, it's not a stalemate.
+        if self.is_in_check(color):
+            return False
+
+        # For every piece of the given color, calculate legal moves.
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_piece():
+                    piece = self.squares[row][col].piece
+                    if piece.color == color:
+                        piece.clear_moves()
+                        self.calc_moves(piece, row, col, bool=True)
+                        if piece.moves:
+                            # If at least one legal move is found, not stalemate.
+                            return False
+
+        # No legal moves and king is not in check: stalemate!
+        return True
+    
     def make_move(self, piece, move):
         move_history = {
             'piece': piece,
@@ -74,27 +94,29 @@ class Board:
     def is_checkmate(self, color):
         for row in range(ROWS):
             for col in range(COLS):
-                if self.squares[row][col].has_piece() and self.squares[row][col].piece.color == 'white':
+                if self.squares[row][col].has_piece():
                     piece = self.squares[row][col].piece
-                    piece.clear_moves()
-                    self.calc_moves(piece, row, col, bool=True)
-                    print(f"{piece} at ({row},{col}) moves: {self.moves_to_str(piece.moves)}")
-        # Checkmate only occurs if the king is in check
+                    if piece.color == color:
+                        piece.clear_moves()
+                        self.calc_moves(piece, row, col, bool=True)
+                        # Debug (optional):
+                        # print(f"{piece} at ({row},{col}) moves: {self.moves_to_str(piece.moves)}")
+
+        # 2) If the king of 'color' is not currently in check, it cannot be checkmate
         if not self.is_in_check(color):
             return False
 
-        # Iterate over all pieces of the given color
+        # 3) If the king is in check, see if any piece of 'color' has at least one legal move
         for row in range(ROWS):
             for col in range(COLS):
-                if self.squares[row][col].has_piece() and self.squares[row][col].piece.color == color:
+                if self.squares[row][col].has_piece():
                     piece = self.squares[row][col].piece
-                    piece.clear_moves()
-                    # Use bool=True to add only legal moves (i.e. moves that do not leave the king in check)
-                    self.calc_moves(piece, row, col, bool=True)
-                    if piece.moves:
-                        # Found at least one legal move—so it’s not checkmate
-                        return False
-        # No legal moves found and the king is in check: checkmate!
+                    if piece.color == color:
+                        if piece.moves:
+                            # Found at least one legal move => not checkmate
+                            return False
+
+        # 4) No legal moves remain, and the king is in check => checkmate
         return True
 
     
