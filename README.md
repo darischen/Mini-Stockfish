@@ -1,9 +1,10 @@
 # ChessAI
 
-## Based of this tutorial
-(Coding Spot's YouTube Tutorial)[https://www.youtube.com/watch?v=OpL0Gcfn4B4]
+## Based off this tutorial
+[Coding Spot's (AlejoG10) YouTube Tutorial](https://www.youtube.com/watch?v=OpL0Gcfn4B4)
 
-(AlejoG10's GitHub Repository)[https://github.com/AlejoG10/python-chess-ai-yt]
+
+[AlejoG10's GitHub Repository](https://github.com/AlejoG10/python-chess-ai-yt)
 
 ## Current improvements on the code base
 - Fixed various bugs with checkmate and check detection and limiting movements of other pieces.
