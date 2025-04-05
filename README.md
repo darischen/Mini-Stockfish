@@ -12,9 +12,11 @@
 - Added check detection
 - Added checkmate detection
 - Added stalemate detection
+- Added sounds for check, checkmate, piece movement and capture, castling, promoting, and invalid moves'
+- The king is highlighted in red when in check
 
 ## Future improvements
-- Notifying the player when a king is in check
+- [x] Notifying the player when a king is in check
 - Draw detection
   - Threefold repetition
   - Fifty-move rule
