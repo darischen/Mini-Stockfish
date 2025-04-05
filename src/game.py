@@ -86,6 +86,20 @@ class Game:
         elif self.board.is_stalemate(self.next_player):
             self.game_over = True
             print("Stalemate! It's a draw.")
+        elif self.board.is_in_check(self.next_player):
+            self.config.check_sound.play()
+            
+    def show_check(self, surface):
+        theme = self.config.theme
+        for row in range(ROWS):
+            for col in range(COLS):
+                square = self.board.squares[row][col]
+                if square.has_piece():
+                    piece = square.piece
+                    if piece.__class__.__name__ == "King" and self.board.is_in_check(piece.color):
+                        color = theme.moves.light if (row + col) % 2 == 0 else theme.moves.dark
+                        rect = (col * SQSIZE, row * SQSIZE, SQSIZE, SQSIZE)
+                        pygame.draw.rect(surface, color, rect)
         
     def set_hover(self, row, col):
         self.hovered_sqr = self.board.squares[row][col]

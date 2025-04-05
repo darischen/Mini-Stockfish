@@ -90,7 +90,6 @@ class Board:
                         self.calc_moves(piece, row, col, bool=False)
                         for move in piece.moves:
                             if move.final.row == king_row and move.final.col == king_col:
-                                self.config.check_sound.play()
                                 return True
         return False
 

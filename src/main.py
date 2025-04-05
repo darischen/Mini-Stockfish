@@ -24,6 +24,7 @@ class Main:
             game.show_bg(screen)
             game.show_last_move(screen)
             game.show_moves(screen)
+            game.show_check(screen)
             game.show_pieces(screen)
             game.show_hover(screen)
             
@@ -64,6 +65,7 @@ class Main:
                         game.show_bg(screen)
                         game.show_last_move(screen)
                         game.show_moves(screen)
+                        game.show_check(screen)
                         game.show_pieces(screen)
                         game.show_hover(screen)
                         dragger.update_blit(screen)
