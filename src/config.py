@@ -13,9 +13,19 @@ class Config:
         self.theme = self.themes[self.idx]
         self.font = pygame.font.SysFont('monospace', 18, bold=True)
         self.move_sound = Sound(
-            os.path.join('../assets/sounds/move.wav'))
+            os.path.join('../assets/sounds/move.mp3'))
         self.capture_sound = Sound(
-            os.path.join('../assets/sounds/capture.wav'))
+            os.path.join('../assets/sounds/capture.mp3'))
+        self.castle_sound = Sound(
+            os.path.join('../assets/sounds/castle.mp3'))
+        self.check_sound = Sound(
+            os.path.join('../assets/sounds/check.mp3'))
+        self.checkmate_sound = Sound(
+            os.path.join('../assets/sounds/checkmate.mp3'))
+        self.illegal_sound = Sound(
+            os.path.join('../assets/sounds/illegal.mp3'))
+        self.promotion_sound = Sound(
+            os.path.join('../assets/sounds/promote.mp3'))
         
     def change_theme(self):
         self.idx += 1

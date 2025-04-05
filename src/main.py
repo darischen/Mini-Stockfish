@@ -5,6 +5,7 @@ from const import *
 from game import Game
 from move import Move
 from square import Square
+from piece import *
 
 class Main:
     def __init__(self):
@@ -91,8 +92,13 @@ class Main:
                             game.show_pieces(screen)
                             
                             game.next_turn()
+                        else:
+                            # if the released square is the same as the initial square don't play the sound
+                            if (dragger.initial_row, dragger.initial_col) != (released_row, released_col):
+                                game.config.illegal_sound.play()
 
                     dragger.undrag_piece()
+                    
                     
                 elif event.type == pygame.KEYDOWN:
                     

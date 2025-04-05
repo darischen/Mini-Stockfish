@@ -3,6 +3,7 @@ from square import Square
 from piece import *
 from move import Move
 from sound import Sound
+from config import Config
 import copy
 import os
 
@@ -13,6 +14,7 @@ class Board:
         self._create()
         self._add_pieces('white')
         self._add_pieces('black')
+        self.config = Config()
         
     @staticmethod
     def moves_to_str(moves):
@@ -88,6 +90,7 @@ class Board:
                         self.calc_moves(piece, row, col, bool=False)
                         for move in piece.moves:
                             if move.final.row == king_row and move.final.col == king_col:
+                                self.config.check_sound.play()
                                 return True
         return False
 
@@ -117,6 +120,7 @@ class Board:
                             return False
 
         # 4) No legal moves remain, and the king is in check => checkmate
+        self.config.checkmate_sound.play()
         return True
 
     
@@ -130,13 +134,14 @@ class Board:
         self.squares[final.row][final.col].piece = piece
 
         if isinstance(piece, Pawn):
+            # If the pawn moves two squares forward, set en_passant to True
             diff = final.col - initial.col
             if diff != 0 and en_passant_empty:
                 self.squares[initial.row][initial.col + diff].piece = None
                 self.squares[final.row][final.col].piece = piece
                 if not testing:
                     sound = Sound(
-                        os.path.join('../assets/sounds/capture.wav'))
+                        os.path.join('../assets/sounds/capture.mp3'))
                     sound.play()
             
             else:
@@ -147,6 +152,7 @@ class Board:
                 diff = final.col - initial.col
                 rook = piece.left_rook if (diff < 0) else piece.right_rook
                 self.move(rook, rook.moves[-1])
+                self.config.castle_sound.play()
 
         # piece.moved = True
 
@@ -158,11 +164,9 @@ class Board:
             piece.clear_moves()
             self.last_move = move
 
-    def valid_move(self, piece, move):
-        return move in piece.moves
-
     def check_promotion(self, piece, final):
         if final.row == 0 or final.row == 7:
+            self.config.promotion_sound.play()
             self.squares[final.row][final.col].piece = Queen(piece.color)
 
     def castling(self, initial, final):
@@ -181,10 +185,6 @@ class Board:
         piece.en_passant = True
 
     def in_check(self, piece, move):
-        """
-        Simulate the move, check whether the king would be in check, then undo the move.
-        To avoid recursion, enemy moves are generated as pseudo-legal (bool=False).
-        """
         # Apply the move and record state
         move_history = self.make_move(piece, move)
 
