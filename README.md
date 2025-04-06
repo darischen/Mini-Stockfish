@@ -12,6 +12,7 @@
 - Added check detection
 - Added checkmate detection
 - Added stalemate detection
+- Added Threefold repetition detection
 - Added sounds for check, checkmate, piece movement and capture, castling, promoting, and invalid moves'
 - The king is highlighted in red when in check
 
