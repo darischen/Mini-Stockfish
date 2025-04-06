@@ -79,6 +79,8 @@ class Game:
     def next_turn(self):
         self.next_player = 'white' if self.next_player == 'black' else 'black'
         
+        self.board.update_position_history(self.next_player)
+        
         if self.board.is_checkmate(self.next_player):
             self.game_over = True
             winner = "Black" if self.next_player == "white" else "White"
@@ -86,6 +88,9 @@ class Game:
         elif self.board.is_stalemate(self.next_player):
             self.game_over = True
             print("Stalemate! It's a draw.")
+        elif self.board.is_threefold_repetition():
+            self.game_over = True
+            print("Draw! Threefold repetition.")
         elif self.board.is_in_check(self.next_player):
             self.config.check_sound.play()
             

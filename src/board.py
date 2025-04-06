@@ -15,6 +15,39 @@ class Board:
         self._add_pieces('white')
         self._add_pieces('black')
         self.config = Config()
+        self.position_history = {}
+        self.update_position_history('white')
+        
+    def board_signature(self, next_player):
+        signature = [next_player]
+        for row in range(ROWS):
+            for col in range(COLS):
+                square = self.squares[row][col]
+                if square.has_piece():
+                    piece = square.piece
+                    # Use the first letter of the piece's name; for Knight, use 'N'
+                    letter = piece.__class__.__name__[0]
+                    if piece.__class__.__name__ == "Knight":
+                        letter = "N"
+                    # Represent white pieces as uppercase, black as lowercase.
+                    letter = letter.upper() if piece.color == 'white' else letter.lower()
+                    signature.append(letter)
+                else:
+                    signature.append('.')
+        return ''.join(signature)
+
+    def update_position_history(self, next_player):
+        sig = self.board_signature(next_player)
+        if sig in self.position_history:
+            self.position_history[sig] += 1
+        else:
+            self.position_history[sig] = 1
+
+    def is_threefold_repetition(self):
+        for count in self.position_history.values():
+            if count >= 3:
+                return True
+        return False
         
     @staticmethod
     def moves_to_str(moves):
