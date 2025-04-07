@@ -19,7 +19,7 @@
 ## Future improvements
 - [x] Notifying the player when a king is in check
 - Draw detection
-  - Threefold repetition
+  - [x]Threefold repetition
   - Fifty-move rule
   - Insufficient material
 - Deep Learning Neural Network to play against
