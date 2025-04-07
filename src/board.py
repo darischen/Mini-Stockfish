@@ -17,6 +17,7 @@ class Board:
         self.config = Config()
         self.position_history = {}
         self.update_position_history('white')
+        self.half_move_clock = 0
         
     def board_signature(self, next_player):
         signature = [next_player]
@@ -96,7 +97,7 @@ class Board:
         piece.moved = move_history['piece_moved']
     
     def is_in_check(self, color):
-    # Find the king's position for the given color
+    # Find the king's position for the given color.
         king_position = None
         for row in range(ROWS):
             for col in range(COLS):
@@ -108,23 +109,11 @@ class Board:
             if king_position:
                 break
         if king_position is None:
-            # Should not happen in a valid game
+            # In a valid game, the king should always be present.
             return False
         king_row, king_col = king_position
-
-        # Check if any enemy piece has a move that attacks the king
-        for row in range(ROWS):
-            for col in range(COLS):
-                if self.squares[row][col].has_piece():
-                    piece = self.squares[row][col].piece
-                    if piece.color != color:
-                        piece.clear_moves()
-                        # Use bool=False to add all possible moves regardless of check filtering
-                        self.calc_moves(piece, row, col, bool=False)
-                        for move in piece.moves:
-                            if move.final.row == king_row and move.final.col == king_col:
-                                return True
-        return False
+        # Check if the king's square is attacked by any enemy piece.
+        return self.is_square_attacked(king_row, king_col, color)
 
     def is_checkmate(self, color):
         for row in range(ROWS):
@@ -155,10 +144,45 @@ class Board:
         self.config.checkmate_sound.play()
         return True
 
+    def is_move_safe(self, piece, move):
+        # Simulate the move
+        move_history = self.make_move(piece, move)
+        # Check if the king of the moving color is in check after the move
+        safe = not self.is_in_check(piece.color)
+        # Undo the move to restore the original board state
+        self.undo_move(move_history)
+        return safe
+
+
+    def is_square_attacked(self, row, col, color):
+        for r in range(ROWS):
+            for c in range(COLS):
+                if self.squares[r][c].has_piece():
+                    piece = self.squares[r][c].piece
+                    if piece.color != color:
+                        # Handle enemy kings separately to avoid recursion.
+                        if isinstance(piece, King):
+                            if abs(r - row) <= 1 and abs(c - col) <= 1:
+                                return True
+                        else:
+                            piece.clear_moves()
+                            self.calc_moves(piece, r, c, bool=False)
+                            for move in piece.moves:
+                                if move.final.row == row and move.final.col == col:
+                                    return True
+        return False
     
     def move(self, piece, move, testing=False):
         initial = move.initial
         final = move.final
+        
+        was_capture = False
+        # Check if destination square originally has a piece (normal capture)
+        if not self.squares[final.row][final.col].isempty():
+            was_capture = True
+        # For pawn moves, if the move is diagonal then it is a capture (even en passant)
+        if isinstance(piece, Pawn) and (final.col != initial.col):
+            was_capture = True
 
         en_passant_empty = self.squares[final.row][final.col].isempty()
 
@@ -185,13 +209,13 @@ class Board:
                 rook = piece.left_rook if (diff < 0) else piece.right_rook
                 self.move(rook, rook.moves[-1])
                 self.config.castle_sound.play()
-
-        # piece.moved = True
-
-        # piece.clear_moves()
-
-        # self.last_move = move
+        
         if not testing:
+            if was_capture or isinstance(piece, Pawn):
+                self.half_move_clock = 0
+            else:
+                self.half_move_clock += 1
+                
             piece.moved = True
             piece.clear_moves()
             self.last_move = move
@@ -384,19 +408,12 @@ class Board:
             
             for possible_move in adjs:
                 possible_move_row, possible_move_col = possible_move
-
                 if Square.in_range(possible_move_row, possible_move_col):
                     if self.squares[possible_move_row][possible_move_col].isempty_or_enemy(piece.color):
-            
                         initial = Square(row, col)
                         final = Square(possible_move_row, possible_move_col)
-            
                         move = Move(initial, final)
-                        
-                        if bool:
-                            if not self.in_check(piece, move):
-                                piece.add_move(move)
-                        else:
+                        if self.is_move_safe(piece, move):
                             piece.add_move(move)
 
             

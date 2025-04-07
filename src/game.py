@@ -88,6 +88,9 @@ class Game:
         elif self.board.is_stalemate(self.next_player):
             self.game_over = True
             print("Stalemate! It's a draw.")
+        elif self.board.half_move_clock >= 100:
+            self.game_over = True
+            print("Draw! 50-move rule.")
         elif self.board.is_threefold_repetition():
             self.game_over = True
             print("Draw! Threefold repetition.")
