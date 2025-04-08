@@ -79,13 +79,25 @@ class Board:
             'piece': piece,
             'initial': (move.initial.row, move.initial.col),
             'final': (move.final.row, move.final.col),
-            'captured': self.squares[move.final.row][move.final.col].piece,
+            'captured': None,
             'piece_moved': piece.moved,
+            'en_passant': False,
+            'captured_location': None,
         }
-        # Move the piece
+        if isinstance(piece, Pawn) and (move.initial.col != move.final.col) and self.squares[move.final.row][move.final.col].isempty():
+            move_history['en_passant'] = True
+            captured_row = move.initial.row
+            captured_col = move.final.col
+            move_history['captured'] = self.squares[captured_row][captured_col].piece
+            move_history['captured_location'] = (captured_row, captured_col)
+            self.squares[captured_row][captured_col].piece = None
+        else:
+            move_history['captured'] = self.squares[move.final.row][move.final.col].piece
+
         self.squares[move.final.row][move.final.col].piece = piece
         self.squares[move.initial.row][move.initial.col].piece = None
         piece.moved = True
+
         return move_history
 
     def undo_move(self, move_history):
@@ -93,7 +105,13 @@ class Board:
         init_row, init_col = move_history['initial']
         final_row, final_col = move_history['final']
         self.squares[init_row][init_col].piece = piece
-        self.squares[final_row][final_col].piece = move_history['captured']
+        self.squares[final_row][final_col].piece = None
+        if move_history.get('en_passant'):
+            captured_row, captured_col = move_history['captured_location']
+            self.squares[captured_row][captured_col].piece = move_history['captured']
+        else:
+            self.squares[final_row][final_col].piece = move_history['captured']
+
         piece.moved = move_history['piece_moved']
     
     def is_in_check(self, color):
@@ -151,8 +169,9 @@ class Board:
         safe = not self.is_in_check(piece.color)
         # Undo the move to restore the original board state
         self.undo_move(move_history)
+        print(f"Move {move} is {'safe' if safe else 'unsafe'}")
+        print(f"is_move_safe returns {safe} for move {move}")
         return safe
-
 
     def is_square_attacked(self, row, col, color):
         for r in range(ROWS):
@@ -259,8 +278,6 @@ class Board:
         check_found = False
         if king_position:
             king_row, king_col = king_position
-            # Instead of generating fully legal moves (which would call in_check again),
-            # we generate pseudo-legal moves (bool=False) for each enemy piece.
             for row in range(ROWS):
                 for col in range(COLS):
                     if self.squares[row][col].has_piece():
@@ -298,8 +315,12 @@ class Board:
                         move = Move(initial, final)
 
                         if bool:
-                            if not self.in_check(piece, move):
+                            if self.is_move_safe(piece, move):
                                 piece.add_move(move)
+                                valid_moves = [str(m) for m in piece.moves]
+                                print("Valid moves for this piece:")
+                                for valid_move in valid_moves:
+                                    print(valid_move)
                         else:
                             piece.add_move(move)
                     else:
@@ -321,7 +342,7 @@ class Board:
                         move = Move(initial, final)
                         
                         if bool:
-                            if not self.in_check(piece, move):
+                            if self.is_move_safe(piece, move):
                                 piece.add_move(move)
                         else:
                             piece.add_move(move)
@@ -342,7 +363,7 @@ class Board:
                             move = Move(initial, final)
                             
                             if bool:
-                                if not self.in_check(piece, move):
+                                if self.is_move_safe(piece, move):
                                     piece.add_move(move)
                             else:
                                 piece.add_move(move)
@@ -359,7 +380,7 @@ class Board:
                             move = Move(initial, final)
                             
                             if bool:
-                                if not self.in_check(piece, move):   
+                                if self.is_move_safe(piece, move):   
                                     piece.add_move(move)
                             else:
                                 piece.add_move(move)
@@ -389,7 +410,7 @@ class Board:
                         move = Move(initial, final)
                         
                         if bool:
-                            if not self.in_check(piece, move):
+                            if self.is_move_safe(piece, move):
                                 piece.add_move(move)
                         else:
                             piece.add_move(move)
@@ -438,7 +459,7 @@ class Board:
                                 moveK = Move(initial, final)
 
                                 if bool:
-                                    if not self.in_check(piece, moveK) and not self.in_check(left_rook, moveR):
+                                    if self.is_move_safe(piece, moveK) and self.is_move_safe(left_rook, moveR):
                                         left_rook.add_move(moveR)   
                                         piece.add_move(moveK)
                                 else:
@@ -466,7 +487,7 @@ class Board:
 
                 
                                 if bool:
-                                    if not self.in_check(piece, moveK) and not self.in_check(right_rook, moveR):
+                                    if self.is_move_safe(piece, moveK) and self.is_move_safe(right_rook, moveR):
                                         right_rook.add_move(moveR)
                                         piece.add_move(moveK)
                                 else:
@@ -490,14 +511,14 @@ class Board:
 
                         if self.squares[possible_move_row][possible_move_col].isempty():
                             if bool:
-                                if not self.in_check(piece, move):
+                                if self.is_move_safe(piece, move):
                                     piece.add_move(move)
                             else:
                                 piece.add_move(move)
 
                         elif self.squares[possible_move_row][possible_move_col].has_enemy_piece(piece.color):
                             if bool:
-                                if not self.in_check(piece, move):
+                                if self.is_move_safe(piece, move):
                                     piece.add_move(move)
                             else:
                                 piece.add_move(move)

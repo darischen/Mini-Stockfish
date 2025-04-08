@@ -77,6 +77,7 @@ class Game:
             pygame.draw.rect(surface, color, rect, width=3)
         
     def next_turn(self):
+        print (f"next_turn + {self.next_player}")
         self.next_player = 'white' if self.next_player == 'black' else 'black'
         
         self.board.update_position_history(self.next_player)

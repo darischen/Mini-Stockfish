@@ -44,6 +44,7 @@ class Main:
                         piece = board.squares[clicked_row][clicked_col].piece
                         
                         if piece.color == game.next_player:
+                            piece.clear_moves()
                             board.calc_moves(piece, clicked_row, clicked_col, bool=True)
                             dragger.save_initial(event.pos)
                             dragger.drag_piece(piece)
@@ -61,6 +62,8 @@ class Main:
                     game.set_hover(motion_row, motion_col)
                     
                     if dragger.dragging:
+                        dragger.piece.clear_moves()
+                        board.calc_moves(dragger.piece, dragger.initial_row, dragger.initial_col, bool=True)
                         dragger.update_mouse(event.pos)
                         game.show_bg(screen)
                         game.show_last_move(screen)
@@ -77,6 +80,10 @@ class Main:
                         released_row = dragger.mouseY // SQSIZE
                         released_col = dragger.mouseX // SQSIZE
                         
+                        dragger.piece.clear_moves()
+                        board.calc_moves(dragger.piece, dragger.initial_row, dragger.initial_col, bool=True)
+
+                        
                         initial = Square(dragger.initial_row, dragger.initial_col)
                         final = Square(released_row, released_col)
                         move = Move(initial, final)
@@ -84,6 +91,7 @@ class Main:
                         if board.valid_move(dragger.piece, move):
                             captured = board.squares[released_row][released_col].has_piece()
                             board.move(dragger.piece, move)
+                            print(f"{dragger.piece} moved to {released_row}, {released_col}")
                             
                             board.set_true_en_passant(dragger.piece)
                             
@@ -98,6 +106,11 @@ class Main:
                             # if the released square is the same as the initial square don't play the sound
                             if (dragger.initial_row, dragger.initial_col) != (released_row, released_col):
                                 game.config.illegal_sound.play()
+                            dragger.piece.clear_moves()
+                            game.show_bg(screen)
+                            game.show_last_move(screen)
+                            game.show_moves(screen)
+                            game.show_pieces(screen)
 
                     dragger.undrag_piece()
                     
