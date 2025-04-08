@@ -95,6 +95,9 @@ class Game:
         elif self.board.is_threefold_repetition():
             self.game_over = True
             print("Draw! Threefold repetition.")
+        elif self.board.is_insufficient_material():
+            self.game_over = True
+            print("Draw! Insufficient material.")
         elif self.board.is_in_check(self.next_player):
             self.config.check_sound.play()
             

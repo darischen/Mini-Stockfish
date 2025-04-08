@@ -49,6 +49,40 @@ class Board:
             if count >= 3:
                 return True
         return False
+    
+    def is_insufficient_material(self):
+        white_extra = []
+        black_extra = []
+        # Iterate over all squares and collect non-king pieces for each side.
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.squares[row][col].has_piece():
+                    piece = self.squares[row][col].piece
+                    if isinstance(piece, King):
+                        continue
+                    # Append the piece to the appropriate list.
+                    if piece.color == 'white':
+                        white_extra.append(piece)
+                    else:
+                        black_extra.append(piece)
+                        
+        # If any pawn is present, then there is sufficient material.
+        for p in white_extra + black_extra:
+            # Assuming Pawn is defined in piece.py.
+            if isinstance(p, Pawn):
+                return False
+
+        # Define allowed extra material for a draw: either no extra piece
+        # or a single knight or a single bishop.
+        def allowed(piece_list):
+            if len(piece_list) == 0:
+                return True
+            if len(piece_list) == 1 and (isinstance(piece_list[0], Knight) or isinstance(piece_list[0], Bishop)):
+                return True
+            return False
+
+        return allowed(white_extra) and allowed(black_extra)
+
         
     @staticmethod
     def moves_to_str(moves):
