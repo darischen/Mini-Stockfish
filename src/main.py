@@ -91,7 +91,7 @@ class Main:
                         if board.valid_move(dragger.piece, move):
                             captured = board.squares[released_row][released_col].has_piece()
                             board.move(dragger.piece, move)
-                            print(f"{dragger.piece} moved to {released_row}, {released_col}")
+                            # print(f"{dragger.piece} moved to {released_row}, {released_col}")
                             
                             board.set_true_en_passant(dragger.piece)
                             

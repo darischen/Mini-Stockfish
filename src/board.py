@@ -203,8 +203,8 @@ class Board:
         safe = not self.is_in_check(piece.color)
         # Undo the move to restore the original board state
         self.undo_move(move_history)
-        print(f"Move {move} is {'safe' if safe else 'unsafe'}")
-        print(f"is_move_safe returns {safe} for move {move}")
+        # print(f"Move {move} is {'safe' if safe else 'unsafe'}")
+        # print(f"is_move_safe returns {safe} for move {move}")
         return safe
 
     def is_square_attacked(self, row, col, color):
@@ -352,9 +352,9 @@ class Board:
                             if self.is_move_safe(piece, move):
                                 piece.add_move(move)
                                 valid_moves = [str(m) for m in piece.moves]
-                                print("Valid moves for this piece:")
-                                for valid_move in valid_moves:
-                                    print(valid_move)
+                                # print("Valid moves for this piece:")
+                                # for valid_move in valid_moves:
+                                #     print(valid_move)
                         else:
                             piece.add_move(move)
                     else:
