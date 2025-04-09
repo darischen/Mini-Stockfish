@@ -22,7 +22,24 @@
   - [x]Threefold repetition
   - [x]Fifty-move rule
   - [x]Insufficient material
-- Deep Learning Neural Network to play against
+- AI Opponent to play against
+  - Bitboard representation
+  - Minimax algorithm
+  - alpha-beta pruning
+  - transposition table
+  - quiescence search
+  - move ordering
+  - evaluation function
+    - material value
+    - positional value
+  - book moves
+  - parallelization
+  - Deep Neural Network
+    - Monte Carlo Tree Search - ?
+    - CNN: each channel is a bitboard
+    - DNN for predicting the score of a position
+      - DNN for predicting the best move
+      - Find large dataset of positions
 
 ## How to run
 - Clone, fork or download the project
