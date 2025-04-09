@@ -21,7 +21,7 @@
 - Draw detection
   - [x]Threefold repetition
   - [x]Fifty-move rule
-  - Insufficient material
+  - [x]Insufficient material
 - Deep Learning Neural Network to play against
 
 ## How to run
