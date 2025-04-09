@@ -40,6 +40,9 @@
     - DNN for predicting the score of a position
       - DNN for predicting the best move
       - Find large dataset of positions
+      - Early pruning
+      - Reinforcement learning by playing against itself
+      - Q-Learning or Actor-Critic - ?
 
 ## How to run
 - Clone, fork or download the project
