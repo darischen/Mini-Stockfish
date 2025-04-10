@@ -24,14 +24,15 @@
   - [x] Insufficient material
 - AI Opponent to play against
   - Bitboard representation
-  - Minimax algorithm
-  - alpha-beta pruning
+  - [x] Minimax algorithm
+  - [x] alpha-beta pruning
+  - [x] piece square tables
   - transposition table
   - quiescence search
   - move ordering
-  - evaluation function
-    - material value
-    - positional value
+  - [x] evaluation function
+    - [x] material value
+    - [x] positional value
   - book moves
   - parallelization
   - Deep Neural Network
