@@ -6,6 +6,7 @@ from game import Game
 from move import Move
 from square import Square
 from piece import *
+from ai import ChessAI
 
 class Main:
     def __init__(self):
@@ -13,6 +14,7 @@ class Main:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Chess AI")
         self.game = Game()
+        self.ai = ChessAI(depth=5, use_dnn=False)
 
     def mainloop(self):
         game = self.game
@@ -127,6 +129,21 @@ class Main:
                         game = self.game
                         board = self.game.board
                         dragger = self.game.dragger
+                    if event.key == pygame.K_a:
+                        # Check if it's black's turn
+                        if game.next_player == 'black':
+                            ai_move = self.ai.choose_move(board, 'black')
+                            if ai_move:
+                                piece, move = ai_move
+                                board.move(piece, move)
+                                print(f"AI (black) moves: {move}")
+                                # Optionally, play sound if needed, update en passant, etc.
+                                board.set_true_en_passant(piece)
+                                game.next_turn()
+                            else:
+                                print("AI found no legal moves for black.")
+                        else:
+                            print("It's not black's turn. AI move skipped.")
                 
                 if event.type == pygame.QUIT:
                     pygame.quit()
