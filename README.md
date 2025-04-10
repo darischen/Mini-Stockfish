@@ -18,7 +18,7 @@
 
 ## Future improvements
 - [x] Notifying the player when a king is in check
-- Draw detection
+- [x] Draw detection
   - [x] Threefold repetition
   - [x] Fifty-move rule
   - [x] Insufficient material
