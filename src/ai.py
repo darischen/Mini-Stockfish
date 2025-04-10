@@ -2,10 +2,11 @@
 import math
 import os
 import time
+import random
 import torch  # Ensure PyTorch is installed if you plan to use a DNN
 import torch.nn as nn
 from board import Board  # Board implementation
-from move import Move   # Move class
+from move import Move   # Move class (ensure it includes the algebraic() method)
 from piece import King  # King and other piece classes
 from square import Square  # Square operations
 import copy
@@ -28,6 +29,14 @@ class ChessAI:
         else:
             self.model = None
 
+        # Minimal opening book.
+        # Keys are board positions in FEN notation (or another unique board representation)
+        # and the values are lists of moves (in algebraic notation) recommended for that position.
+        self.opening_book = {
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR": ["e2e4", "d2d4", "g1f3", "c2c4"],
+            # Add more opening positions as needed.
+        }
+
     def choose_move(self, board: Board, color: str):
         """
         Choose the best move for the given board and color.
@@ -40,6 +49,12 @@ class ChessAI:
         # Reset stats for this move search.
         self.nodes_evaluated = 0
         self.branches_pruned = 0
+
+        # Check if an opening book move is available.
+        book_move = self.get_book_move(board, color)
+        if book_move:
+            print("Using book move.")
+            return book_move
 
         start_time = time.time()
         legal_moves = self.get_all_legal_moves(board, color)
@@ -69,7 +84,32 @@ class ChessAI:
         print("Best evaluation for", color, ":", best_eval)
 
         return best_move
-    
+
+    def get_book_move(self, board: Board, color: str):
+        """
+        If available, select a move from the opening book based on the current board state.
+        
+        :param board: The Board object.
+        :param color: The color to move.
+        :return: A tuple (piece, move) from the book if found, otherwise None.
+        """
+        # Assume the Board class provides a get_fen() method.
+        if hasattr(board, "get_fen"):
+            fen = board.get_fen()
+        else:
+            # Fallback: use a simple string representation.
+            fen = str(board.squares)
+        if fen in self.opening_book:
+            # Randomly choose one move from the opening book.
+            chosen_notation = random.choice(self.opening_book[fen])
+            # Find the corresponding legal move.
+            legal_moves = self.get_all_legal_moves(board, color)
+            for piece, move in legal_moves:
+                # Assumes that Move objects support an algebraic() method.
+                if hasattr(move, "algebraic") and move.algebraic() == chosen_notation:
+                    return (piece, move)
+        return None
+
     def minimax(self, board: Board, depth: int, alpha: float, beta: float, maximizing_player: bool, ai_color: str):
         """
         Minimax search with alpha-beta pruning.
@@ -82,13 +122,13 @@ class ChessAI:
         :param ai_color: The AI's color.
         :return: The evaluation score.
         """
-        # Increment the nodes evaluated counter each time minimax is called.
+        # Increment the nodes evaluated counter.
         self.nodes_evaluated += 1
 
-        # Determine which color should move on this level.
+        # Determine which color should move.
         current_color = ai_color if maximizing_player else ('white' if ai_color == 'black' else 'black')
         legal_moves = self.get_all_legal_moves(board, current_color)
-        # Terminal condition: depth limit reached or no moves available.
+        # Terminal condition: depth is zero or no moves exist.
         if depth == 0 or not legal_moves:
             return self.evaluate(board, ai_color)
 
@@ -158,7 +198,6 @@ class ChessAI:
             score = self.evaluate(board, ai_color)
             board.undo_move(move_history)
             scored_moves.append(((piece, move), score))
-        # For maximizing, higher scores first; for minimizing, lower scores first.
         scored_moves.sort(key=lambda x: x[1], reverse=maximizing)
         ordered = [move for move, score in scored_moves]
         return ordered
@@ -168,8 +207,8 @@ class ChessAI:
         Evaluate the board state from the perspective of ai_color.
         
         If DNN evaluation is enabled and a model is loaded, use it.
-        Otherwise, use an advanced evaluation function that considers material
-        and positional factors.
+        Otherwise, use the enhanced evaluation function that includes
+        material, piece-square tables, mobility, and king safety.
         
         :param board: The current board.
         :param ai_color: AI's color.
@@ -181,46 +220,165 @@ class ChessAI:
                 value = self.model(board_tensor)
             return value.item()
         else:
-            return self.advanced_evaluation(board, ai_color)
+            return self.enhanced_evaluation(board, ai_color)
 
-    def advanced_evaluation(self, board: Board, ai_color: str):
+    def enhanced_evaluation(self, board: Board, ai_color: str):
         """
-        An advanced evaluation that considers both the material value and positional
-        factors such as central control.
+        An enhanced evaluation that includes material balance, positional bonuses
+        using piece-square tables, mobility evaluation, and king safety.
         
-        :param board: The current board.
-        :param ai_color: The AI's color.
-        :return: The board's evaluation score.
+        :param board: The current board state.
+        :param ai_color: The perspective for evaluation ('white' or 'black').
+        :return: A numerical evaluation of the board.
         """
-        material_score = 0
-        positional_score = 0
-        # Define the center region (rows 2-5 and cols 2-5)
-        center_rows = range(2, 6)
-        center_cols = range(2, 6)
-        
+        # Piece-square tables (from white's perspective).
+        pawn_table = [
+            [0,    0,    0,    0,    0,    0,    0,    0],
+            [0.5,  1,    1,   -2,   -2,    1,    1,   0.5],
+            [0.5, -0.5, -1,    0,    0,   -1,  -0.5,  0.5],
+            [0,    0,    0,    2,    2,    0,    0,    0],
+            [0.5,  0.5,   1,   2.5,  2.5,   1,   0.5,  0.5],
+            [1,    1,     2,    3,    3,    2,    1,    1],
+            [5,    5,     5,   -5,   -5,    5,    5,    5],
+            [0,    0,     0,    0,    0,    0,    0,    0]
+        ]
+
+        knight_table = [
+            [-5, -4, -3, -3, -3, -3, -4, -5],
+            [-4, -2,  0,  0,  0,  0, -2, -4],
+            [-3,  0,  1,  1.5, 1.5, 1,  0, -3],
+            [-3,  0.5, 1.5, 2,  2,  1.5, 0.5, -3],
+            [-3,  0,  1.5, 2,  2,  1.5, 0, -3],
+            [-3,  0.5, 1,  1.5, 1.5, 1,  0.5, -3],
+            [-4, -2,  0,  0.5, 0.5, 0, -2, -4],
+            [-5, -4, -3, -3, -3, -3, -4, -5]
+        ]
+
+        bishop_table = [
+            [-2, -1, -1, -1, -1, -1, -1, -2],
+            [-1,  0,  0,  0,  0,  0,  0, -1],
+            [-1,  0,  0.5, 1,   1, 0.5,  0, -1],
+            [-1, 0.5, 0.5, 1,   1, 0.5, 0.5, -1],
+            [-1,  0,   1,   1,   1,   1,  0, -1],
+            [-1,  1,   1,   1,   1,   1,  1, -1],
+            [-1, 0.5,   0,   0,   0,   0, 0.5, -1],
+            [-2, -1,  -1,  -1,  -1,  -1, -1, -2]
+        ]
+
+        rook_table = [
+            [0,   0,   0,   0,   0,   0,   0,   0],
+            [0.5, 1,   1,   1,   1,   1,   1,  0.5],
+            [-0.5, 0,   0,   0,   0,   0,   0, -0.5],
+            [-0.5, 0,   0,   0,   0,   0,   0, -0.5],
+            [-0.5, 0,   0,   0,   0,   0,   0, -0.5],
+            [-0.5, 0,   0,   0,   0,   0,   0, -0.5],
+            [-0.5, 0,   0,   0,   0,   0,   0, -0.5],
+            [0,   0,   0,   0,   0,   0,   0,   0]
+        ]
+
+        queen_table = [
+            [-2, -1, -1, -0.5, -0.5, -1, -1, -2],
+            [-1,  0,  0,    0,    0,  0,  0, -1],
+            [-1,  0,  0.5, 0.5,  0.5, 0.5, 0, -1],
+            [-0.5,0,  0.5, 0.5,  0.5, 0.5, 0, -0.5],
+            [0,   0,  0.5, 0.5,  0.5, 0.5, 0, -0.5],
+            [-1, 0.5, 0.5, 0.5,  0.5, 0.5, 0, -1],
+            [-1,  0,  0.5,   0,    0,  0,  0, -1],
+            [-2, -1, -1, -0.5, -0.5, -1, -1, -2]
+        ]
+
+        king_table = [
+            [-3, -4, -4, -5, -5, -4, -4, -3],
+            [-3, -4, -4, -5, -5, -4, -4, -3],
+            [-3, -4, -4, -5, -5, -4, -4, -3],
+            [-3, -4, -4, -5, -5, -4, -4, -3],
+            [-2, -3, -3, -4, -4, -3, -3, -2],
+            [-1, -2, -2, -2, -2, -2, -2, -1],
+            [2,   2,   0,   0,   0,   0,   2,   2],
+            [2,   3,   1,   0,   0,   1,   3,   2]
+        ]
+
+        score = 0
+
+        # Evaluate material and positional factors for each piece on the board.
         for row in range(8):
             for col in range(8):
                 square = board.squares[row][col]
                 if square.has_piece():
                     piece = square.piece
-                    # Skip king evaluation.
-                    if isinstance(piece, King):
-                        continue
-                    material_score += piece.value
-                    # Add a bonus for pieces in the center.
-                    if row in center_rows and col in center_cols:
-                        bonus = 0.5 if piece.color == ai_color else -0.5
-                        positional_score += bonus
-        score = material_score + positional_score
-        # Adjust for board values being from white's perspective.
-        return score if ai_color == 'white' else -score
+                    # Base material score.
+                    piece_score = piece.value
+
+                    # Positional bonus from piece-square tables.
+                    table_value = 0
+                    piece_name = piece.__class__.__name__
+                    if piece_name == "Pawn":
+                        table_value = pawn_table[row][col] if piece.color == "white" else pawn_table[7 - row][col]
+                    elif piece_name == "Knight":
+                        table_value = knight_table[row][col] if piece.color == "white" else knight_table[7 - row][col]
+                    elif piece_name == "Bishop":
+                        table_value = bishop_table[row][col] if piece.color == "white" else bishop_table[7 - row][col]
+                    elif piece_name == "Rook":
+                        table_value = rook_table[row][col] if piece.color == "white" else rook_table[7 - row][col]
+                    elif piece_name == "Queen":
+                        table_value = queen_table[row][col] if piece.color == "white" else queen_table[7 - row][col]
+                    elif piece_name == "King":
+                        table_value = king_table[row][col] if piece.color == "white" else king_table[7 - row][col]
+
+                    # Aggregate material and positional score.
+                    if piece.color == "white":
+                        score += piece_score + table_value
+                    else:
+                        score -= piece_score + table_value
+
+        # Mobility evaluation: count legal moves for both sides.
+        my_moves = len(self.get_all_legal_moves(board, ai_color))
+        opponent = "white" if ai_color == "black" else "black"
+        opp_moves = len(self.get_all_legal_moves(board, opponent))
+        mobility_factor = 0.1
+        score += mobility_factor * (my_moves - opp_moves)
+
+        # King safety evaluation: check for friendly pawns adjacent to the king.
+        def king_safety(board, color):
+            safety_score = 0
+            king_pos = None
+            # Locate the king.
+            for r in range(8):
+                for c in range(8):
+                    if board.squares[r][c].has_piece():
+                        p = board.squares[r][c].piece
+                        if p.__class__.__name__ == "King" and p.color == color:
+                            king_pos = (r, c)
+                            break
+                if king_pos is not None:
+                    break
+            if king_pos is None:
+                return safety_score  # Failsafe; should not normally happen.
+
+            kr, kc = king_pos
+            # Check adjacent squares for friendly pawns.
+            for dr in [-1, 0, 1]:
+                for dc in [-1, 0, 1]:
+                    nr, nc = kr + dr, kc + dc
+                    if 0 <= nr < 8 and 0 <= nc < 8:
+                        if board.squares[nr][nc].has_piece():
+                            neighbor = board.squares[nr][nc].piece
+                            if neighbor.__class__.__name__ == "Pawn" and neighbor.color == color:
+                                safety_score += 0.2
+            return safety_score
+
+        king_safety_bonus = king_safety(board, ai_color) - king_safety(board, opponent)
+        score += king_safety_bonus
+
+        # Return final evaluation from ai_color's perspective.
+        return score if ai_color == "white" else -score
 
     def board_to_tensor(self, board: Board):
         """
         Convert the board into a tensor representation.
         
-        Builds a simple 8x8 tensor with each cell containing the piece value.
-        More advanced representations could include separate channels per piece type.
+        Constructs a simple 8x8 tensor with each cell containing the piece's value.
+        For kings, a value of 0 is used to avoid infinite values in the tensor.
         
         :param board: The current board.
         :return: A torch tensor of shape (1, 1, 8, 8).
@@ -232,7 +390,6 @@ class ChessAI:
                 square = board.squares[row][col]
                 if square.has_piece():
                     piece = square.piece
-                    # For kings, set to 0 to avoid math.inf in the tensor.
                     if isinstance(piece, King):
                         row_vals.append(0)
                     else:
@@ -246,7 +403,7 @@ class ChessAI:
 # Example usage (integration with your game loop is required):
 # from board import Board
 # board = Board()
-# ai = ChessAI(depth=3, use_dnn=False)  # Set use_dnn=True and provide a model_path if available.
+# ai = ChessAI(depth=3, use_dnn=False)  # Set use_dnn=True with a valid model_path if available.
 # chosen_move = ai.choose_move(board, 'black')
 # if chosen_move:
 #     piece, move = chosen_move
