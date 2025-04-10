@@ -19,9 +19,9 @@
 ## Future improvements
 - [x] Notifying the player when a king is in check
 - Draw detection
-  - [x]Threefold repetition
-  - [x]Fifty-move rule
-  - [x]Insufficient material
+  - [x] Threefold repetition
+  - [x] Fifty-move rule
+  - [x] Insufficient material
 - AI Opponent to play against
   - Bitboard representation
   - Minimax algorithm
