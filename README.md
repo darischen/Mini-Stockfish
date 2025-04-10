@@ -46,6 +46,6 @@
 
 ## How to run
 - Clone, fork or download the project
-- run 'cd ChessAI\src'
+- run 'cd Mini-Stockfish\src'
 - run 'pip install pygame>=2.0.0'
 - run 'python main.py'
