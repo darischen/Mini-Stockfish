@@ -34,6 +34,7 @@
     - [x] material value
     - [x] positional value
   - book moves
+  - Syzygy Endgame Tablebase
   - parallelization
   - Deep Neural Network
     - Monte Carlo Tree Search - ?
