@@ -1,4 +1,4 @@
-# ChessAI
+# Mini Stockfish
 
 ## Based off this tutorial
 [Coding Spot's (AlejoG10) YouTube Tutorial](https://www.youtube.com/watch?v=OpL0Gcfn4B4)
