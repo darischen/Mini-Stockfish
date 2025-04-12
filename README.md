@@ -27,9 +27,10 @@
   - [x] Minimax algorithm
   - [x] alpha-beta pruning
   - [x] piece square tables
+    - nnue 
   - transposition table
   - quiescence search
-  - move ordering
+  - [x] move ordering
   - [x] evaluation function
     - [x] material value
     - [x] positional value
