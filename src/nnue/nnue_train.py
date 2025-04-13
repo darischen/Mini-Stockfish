@@ -1,3 +1,4 @@
+# nnue_train.py
 import os
 import math
 import pandas as pd
@@ -7,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm  # Import tqdm for progress bars
 
 # --- Helper: Forced Mate Evaluation Parser ---
 def parse_evaluation(eval_str, mate_base=10000):
@@ -75,21 +77,25 @@ def fen_to_features(fen):
 
 # --- Step 2: Define the NNUE Model ---
 class NNUEModel(nn.Module):
-    def __init__(self, input_size=768, hidden_size=256):
+    def __init__(self, input_size=768, hidden_size1=1024, hidden_size2=512):
         """
         A simple feedforward NNUE-like model.
         :param input_size: Size of the input feature vector (768 = 64 * 12)
         :param hidden_size: Number of neurons in the hidden layer.
         """
         super(NNUEModel, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, 1)  # Outputs a single evaluation value
+        self.fc1 = nn.Linear(input_size, hidden_size1)
+        self.relu1 = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_size1, hidden_size2)
+        self.relu2 = nn.ReLU()
+        self.fc3 = nn.Linear(hidden_size2, 1)  # Single scalar output
 
     def forward(self, x):
         x = self.fc1(x)
-        x = self.relu(x)
+        x = self.relu1(x)
         x = self.fc2(x)
+        x = self.relu2(x)
+        x = self.fc3(x)
         return x
 
 # --- Step 3: Create a Custom Dataset ---
@@ -118,22 +124,23 @@ class ChessDataset(Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         fen = row['FEN']
-        target = parse_evaluation(row['Evaluation'])
+        scale = 10000.0
+        target = parse_evaluation(row['Evaluation']) / scale
         features = fen_to_features(fen)
         features_tensor = torch.from_numpy(features)
         target_tensor = torch.tensor([target], dtype=torch.float32)
         return features_tensor, target_tensor
 
 # --- Step 4: Training the Model ---
-def train_model(csv_file, num_epochs=10, batch_size=128, learning_rate=1e-3):
+def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2_lambda=1e-7):
     # Create the dataset and dataloader.
     dataset = ChessDataset(csv_file)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
     # Initialize the NNUE model.
     model = NNUEModel()
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    criterion = nn.SmoothL1Loss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=l2_lambda)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
@@ -142,7 +149,9 @@ def train_model(csv_file, num_epochs=10, batch_size=128, learning_rate=1e-3):
     model.train()
     for epoch in range(num_epochs):
         running_loss = 0.0
-        for i, (features, targets) in enumerate(dataloader):
+        # Wrap the dataloader in tqdm for a progress bar
+        pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc=f"Epoch {epoch+1}")
+        for i, (features, targets) in pbar:
             features = features.to(device)
             targets = targets.to(device)
             optimizer.zero_grad()
@@ -152,10 +161,9 @@ def train_model(csv_file, num_epochs=10, batch_size=128, learning_rate=1e-3):
             optimizer.step()
             
             running_loss += loss.item()
-            if (i + 1) % 100 == 0:
-                avg_loss = running_loss / 100
-                print(f"Epoch {epoch+1}, Step {i+1}, Loss: {avg_loss:.4f}")
-                running_loss = 0.0
+            # Update progress bar with current average loss
+            avg_loss = running_loss / (i + 1)
+            pbar.set_postfix(loss=f"{avg_loss:.4e}")
     
     print("Training complete.")
     torch.save(model.state_dict(), "nnue_model.pth")
@@ -164,4 +172,4 @@ def train_model(csv_file, num_epochs=10, batch_size=128, learning_rate=1e-3):
 if __name__ == "__main__":
     # Change the csv file path if needed.
     csv_file = "chessData.csv"
-    train_model(csv_file, num_epochs=5)
+    train_model(csv_file, num_epochs=15)
