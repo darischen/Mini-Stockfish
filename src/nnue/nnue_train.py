@@ -7,7 +7,7 @@ import chess
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 from tqdm import tqdm  # For progress bars
 
 # --- Helper: Forced Mate Evaluation Parser ---
@@ -184,12 +184,25 @@ class ChessDataset(Dataset):
         target_tensor = torch.tensor([target], dtype=torch.float32)
         return features_tensor, target_tensor
 
-# --- Step 4: Training the Model ---
+# --- Step 4: Training, Validation, and Testing the Model ---
 def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2_lambda=1e-7):
-    dataset = ChessDataset(csv_file)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    # Load the full dataset.
+    full_dataset = ChessDataset(csv_file)
+    total_len = len(full_dataset)
     
-    model = NNUEModel()  # Using our existing two-hidden-layer model with input size 771
+    # Define split ratios: 80% training, 10% validation, 10% testing
+    train_len = int(0.8 * total_len)
+    val_len = int(0.1 * total_len)
+    test_len = total_len - train_len - val_len
+    
+    # Randomly split the dataset.
+    train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_len, val_len, test_len])
+    
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    
+    model = NNUEModel()  # Using our two-hidden-layer model with input size 771
     criterion = nn.SmoothL1Loss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=l2_lambda)
     
@@ -198,34 +211,73 @@ def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2
     model.to(device)
     
     model.train()
-    # For demonstration, also instantiate an Accumulator (not used for training per se)
-    accumulator = Accumulator()
+    accumulator = Accumulator()  # For demonstration, not used in training per se.
+    
+    best_val_loss = float('inf')
     
     for epoch in range(num_epochs):
-        running_loss = 0.0
-        pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc=f"Epoch {epoch+1}")
+        model.train()
+        running_train_loss = 0.0
+        pbar = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {epoch+1} Training")
         for i, (features, targets) in pbar:
             features = features.to(device)
             targets = targets.to(device)
+            
             optimizer.zero_grad()
             outputs = model(features)
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
             
-            running_loss += loss.item()
-            avg_loss = running_loss / (i + 1)
-            pbar.set_postfix(loss=f"{avg_loss:.4e}")
+            running_train_loss += loss.item()
+            avg_loss = running_train_loss / (i + 1)
+            pbar.set_postfix(train_loss=f"{avg_loss:.4e}")
         
-        # Optional: demonstrate accumulator update by caching features from first sample of this epoch.
-        first_fen = dataset.data.iloc[0]['FEN']
+        # Evaluate on the validation set after each epoch
+        model.eval()
+        running_val_loss = 0.0
+        with torch.no_grad():
+            for features, targets in val_loader:
+                features = features.to(device)
+                targets = targets.to(device)
+                outputs = model(features)
+                loss = criterion(outputs, targets)
+                running_val_loss += loss.item()
+        avg_val_loss = running_val_loss / len(val_loader)
+        
+        print(f"Epoch {epoch+1}: Average Training Loss: {avg_loss:.4e} | Validation Loss: {avg_val_loss:.4e}")
+        
+        # Save best model (optional)
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            torch.save(model.state_dict(), "best_nnue_model.pth")
+        
+        # Demonstrate accumulator update (optional)
+        first_fen = full_dataset.data.iloc[0]['FEN']
         accumulator.reset(first_fen)
-        # In a practical engine, after a move you would call accumulator.update(new_fen)
-        
+    
     print("Training complete.")
-    torch.save(model.state_dict(), "nnue_model.pth")
+    
+    # Load best model for testing (if saved)
+    model.load_state_dict(torch.load("best_nnue_model.pth"))
+    model.eval()
+    
+    # Evaluate on the test set
+    running_test_loss = 0.0
+    with torch.no_grad():
+        for features, targets in test_loader:
+            features = features.to(device)
+            targets = targets.to(device)
+            outputs = model(features)
+            loss = criterion(outputs, targets)
+            running_test_loss += loss.item()
+    avg_test_loss = running_test_loss / len(test_loader)
+    print(f"Test Loss: {avg_test_loss:.4e}")
+    
+    # Save final model (if desired)
+    torch.save(model.state_dict(), "nnue_model_final.pth")
     return model
 
 if __name__ == "__main__":
-    csv_file = "chessData.csv"  # Adjust path as needed
+    csv_file = "chessData.csv"  # Adjust path as needed.
     train_model(csv_file, num_epochs=15)
