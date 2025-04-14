@@ -12,46 +12,114 @@ from square import Square  # Square operations
 import copy
 import concurrent.futures
 import bitboard  # Our bitboard module (should provide square_bb, popcount, king_attacks, etc.)
+import numpy as np
+from nnue.nnue_train import NNUEModel
+
+# We now import our enhanced feature function;
+# For example, you can place the enhanced_fen_to_features in a helper module,
+# but here we define it inline.
+
+def enhanced_fen_to_features(fen):
+    """
+    Convert a FEN string into an enriched feature vector.
+    Starts with a 768-dimensional one-hot encoding (64 squares x 12 piece types)
+    and then appends three extra features:
+        - White king safety: count of friendly pawns adjacent to the white king.
+        - Black king safety: same for the black king.
+        - Mobility: total number of legal moves.
+    Final dimension: 768 + 3 = 771.
+    """
+    board = None
+    try:
+        # Use python-chess to parse the fen.
+        import chess
+        board = chess.Board(fen)
+    except Exception as e:
+        raise ValueError("Invalid FEN string") from e
+
+    base_features = np.zeros(64 * 12, dtype=np.float32)
+    piece_to_index = {
+         chess.PAWN: 0,
+         chess.KNIGHT: 1,
+         chess.BISHOP: 2,
+         chess.ROOK: 3,
+         chess.QUEEN: 4,
+         chess.KING: 5,
+    }
+    for square in chess.SQUARES:
+        piece = board.piece_at(square)
+        if piece is not None:
+            idx = piece_to_index[piece.piece_type]
+            if not piece.color:  # chess.BLACK is False, chess.WHITE is True
+                idx += 6
+            base_features[square * 12 + idx] = 1.0
+
+    # Extra Feature 1: King Safety for each color.
+    def king_safety(color):
+        king_sq = board.king(color)
+        if king_sq is None:
+            return 0.0
+        safety = 0.0
+        # Define adjacent offsets (simulate king's move offsets)
+        offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
+        for offset in offsets:
+            neighbor = king_sq + offset
+            if neighbor < 0 or neighbor >= 64:
+                continue
+            if abs((neighbor % 8) - (king_sq % 8)) > 1:
+                continue
+            n_piece = board.piece_at(neighbor)
+            if n_piece is not None and n_piece.color == color and n_piece.piece_type == chess.PAWN:
+                safety += 1.0
+        return safety
+
+    white_king_safety = king_safety(chess.WHITE)
+    black_king_safety = king_safety(chess.BLACK)
+
+    # Extra Feature 2: Mobility (number of legal moves).
+    mobility = float(len(list(board.legal_moves)))
+    
+    extra_features = np.array([white_king_safety, black_king_safety, mobility], dtype=np.float32)
+    full_features = np.concatenate((base_features, extra_features))
+    return full_features
+
+# Use our enhanced features as the main feature extraction.
+def fen_to_features(fen):
+    return enhanced_fen_to_features(fen)
 
 class ChessAI:
     def __init__(self, depth=3, use_dnn=False, model_path=None):
         """
         Initialize the chess AI.
-
         :param depth: How many plies to search.
-        :param use_dnn: Whether to use a deep neural network for evaluation.
+        :param use_dnn: Whether to use a deep neural network (NNUE) for evaluation.
         :param model_path: Path to the pretrained model.
         """
         self.depth = depth
         self.use_dnn = use_dnn
         if self.use_dnn and model_path is not None and os.path.exists(model_path):
-            self.model = torch.load(model_path)
+            self.model = NNUEModel(input_size=768)
+            self.model.load_state_dict(torch.load(model_path))
             self.model.eval()
         else:
             self.model = None
 
         # Minimal opening book.
-        # Keys are board positions in FEN notation (or another unique board representation)
-        # and the values are lists of moves (in algebraic notation) recommended for that position.
         self.opening_book = {
             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR": ["e2e4", "d2d4", "g1f3", "c2c4"],
-            # Add more opening positions as needed.
         }
 
     def choose_move(self, board: Board, color: str):
         """
         Choose the best move for the given board and color.
-
         :param board: The Board object.
         :param color: The color to move ('white' or 'black').
         :return: A tuple (piece, move) representing the chosen move,
                  or None if no legal move exists.
         """
-        # Reset stats for this move search.
         self.nodes_evaluated = 0
         self.branches_pruned = 0
 
-        # Check if an opening book move is available.
         book_move = self.get_book_move(board, color)
         if book_move:
             print("Using book move.")
@@ -60,7 +128,7 @@ class ChessAI:
         start_time = time.time()
         legal_moves = self.get_all_legal_moves(board, color)
         if not legal_moves:
-            return None  # No legal moves; game over or stalemate.
+            return None
         best_move = None
         best_eval = -math.inf if color == 'white' else math.inf
 
@@ -76,21 +144,14 @@ class ChessAI:
                 best_move = (piece, move)
 
         end_time = time.time()
-
-        # Print out search stats.
         print("AI move search complete.")
         print("Nodes evaluated:", self.nodes_evaluated)
         print("Branches pruned:", self.branches_pruned)
         print("Time taken (seconds):", end_time - start_time)
         print("Best evaluation for", color, ":", best_eval)
-
         return best_move
 
     def get_book_move(self, board: Board, color: str):
-        """
-        If available, select a move from the opening book based on the current board state.
-        """
-        # Assume the Board class provides a get_fen() method.
         if hasattr(board, "get_fen"):
             fen = board.get_fen()
         else:
@@ -104,9 +165,6 @@ class ChessAI:
         return None
 
     def minimax(self, board: Board, depth: int, alpha: float, beta: float, maximizing_player: bool, ai_color: str):
-        """
-        Minimax search with alpha-beta pruning.
-        """
         self.nodes_evaluated += 1
 
         current_color = ai_color if maximizing_player else ('white' if ai_color == 'black' else 'black')
@@ -142,11 +200,8 @@ class ChessAI:
             return min_eval
 
     def get_all_legal_moves(self, board: Board, color: str):
-        """
-        Generate all legal moves for the given color.
-        """
         moves = []
-        for row in range(8):  # Assuming board has 8 rows.
+        for row in range(8):
             for col in range(8):
                 square = board.squares[row][col]
                 if square.has_piece():
@@ -160,10 +215,6 @@ class ChessAI:
         return moves
 
     def order_moves(self, board: Board, moves_list, maximizing: bool, ai_color: str):
-        """
-        Order moves using a simple heuristic by simulating the move
-        and evaluating the resulting board state.
-        """
         scored_moves = []
         for piece, move in moves_list:
             move_history = board.make_move(piece, move)
@@ -176,8 +227,7 @@ class ChessAI:
 
     def evaluate(self, board: Board, ai_color: str):
         """
-        Evaluate the board state from the perspective of ai_color.
-        If DNN evaluation is enabled and a model is loaded, use it.
+        Evaluate the board state. If NNUE is enabled and a model is loaded, use it.
         Otherwise, use our bitboard-based evaluation.
         """
         if self.use_dnn and self.model:
@@ -190,12 +240,10 @@ class ChessAI:
 
     def evaluate_bitboard(self, board: Board, ai_color: str):
         """
-        Evaluate the board using bitboards.
-        This method builds bitboards by scanning board.squares and then calculates
-        material and positional scores by iterating over the set bits.
+        Evaluate using a bitboard-based method.
+        (This method remains unchanged.)
         """
-        # Build bitboards from board.squares.
-        bitboards = {}  # key: (color, piece_type), value: integer bitboard
+        bitboards = {}
         for row in range(8):
             for col in range(8):
                 sq_index = row * 8 + col
@@ -205,7 +253,6 @@ class ChessAI:
                     key = (piece.color, piece.__class__.__name__)
                     bitboards[key] = bitboards.get(key, 0) | (1 << sq_index)
 
-        # Define material values (in centipawns) and piece-square tables.
         piece_values = {
             "Pawn": 100,
             "Knight": 320,
@@ -275,8 +322,14 @@ class ChessAI:
             [2,   3,   1,   0,   0,   1,   3,   2]
         ]
         score = 0
-
-        # Compute material + positional evaluation by iterating over bitboards.
+        piece_values = {
+            "Pawn": 100,
+            "Knight": 320,
+            "Bishop": 330,
+            "Rook": 500,
+            "Queen": 900,
+            "King": 20000
+        }
         piece_tables = {
             "Pawn": pawn_table,
             "Knight": knight_table,
@@ -291,7 +344,6 @@ class ChessAI:
             for sq in self._bits_iter(bb):
                 row = sq // 8
                 col = sq % 8
-                # For black pieces, flip the table vertically.
                 bonus = piece_tables[ptype][row][col] if color_key == "white" else piece_tables[ptype][7 - row][col]
                 val = piece_values[ptype] + bonus
                 if color_key == ai_color:
@@ -299,12 +351,9 @@ class ChessAI:
                 else:
                     score -= val
 
-        # Mobility bonus using the standard move generator.
         opponent = "white" if ai_color == "black" else "black"
         mobility_factor = 0.1
         score += mobility_factor * (len(self.get_all_legal_moves(board, ai_color)) - len(self.get_all_legal_moves(board, opponent)))
-
-        # King safety: bonus for friendly pawns adjacent to the king.
         king_sq = None
         for row in range(8):
             for col in range(8):
@@ -323,9 +372,6 @@ class ChessAI:
         return score if ai_color == "white" else -score
 
     def _bits_iter(self, bb: int):
-        """
-        Generator to iterate over indices (0 to 63) for bits set in bb.
-        """
         while bb:
             lsb = bb & -bb
             yield lsb.bit_length() - 1
@@ -333,31 +379,23 @@ class ChessAI:
 
     def board_to_tensor(self, board: Board):
         """
-        Convert the board into a tensor representation.
-        This method still uses board.squares (for compatibility with the DNN model).
+        Convert the board into a tensor representation using the enhanced feature extraction.
+        This function assumes that either the board provides a get_fen() method or that board.squares can be processed.
         """
-        board_array = []
-        for row in range(8):
-            row_vals = []
-            for col in range(8):
-                square = board.squares[row][col]
-                if square.has_piece():
-                    piece = square.piece
-                    # To avoid issues with King value being extremely high, set to 0.
-                    if isinstance(piece, King):
-                        row_vals.append(0)
-                    else:
-                        row_vals.append(piece.value)
-                else:
-                    row_vals.append(0)
-            board_array.append(row_vals)
-        tensor = torch.tensor(board_array, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+        if hasattr(board, "get_fen"):
+            fen = board.get_fen()
+        else:
+            # Fallback: reconstruct FEN from board.squares if necessary.
+            raise NotImplementedError("Board does not provide get_fen method.")
+        features = fen_to_features(fen)  # This now returns a 771-dimensional vector.
+        features = features[:768]
+        tensor = torch.from_numpy(features).unsqueeze(0)  # Shape: [1, 771]
         return tensor
 
 # Example usage (integration with your game loop is required):
 # from board import Board
 # board = Board()
-# ai = ChessAI(depth=3, use_dnn=False)  # Set use_dnn=True with a valid model_path if available.
+# ai = ChessAI(depth=3, use_dnn=True, model_path="nnue_model.pth")  # Ensure you have a valid model path
 # chosen_move = ai.choose_move(board, 'black')
 # if chosen_move:
 #     piece, move = chosen_move

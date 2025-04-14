@@ -635,3 +635,37 @@ class Board:
         # Create Queen and King
         self.squares[row_other][3] = Square(row_other, 3, Queen(color))
         self.squares[row_other][4] = Square(row_other, 4, King(color))
+        
+    def get_fen(self):
+        """
+        Generate a FEN string for the current board.
+        Assumes:
+         - Row 0 is rank 8 (top) and row 7 is rank 1 (bottom).
+         - Castling rights and en passant are not tracked.
+         - Turn is stored in self.turn (default 'white').
+         - Half-move clock is 0 and full move number is 1.
+        """
+        fen_rows = []
+        for row in range(8):
+            fen_row = ""
+            empty_count = 0
+            for col in range(8):
+                square = self.squares[row][col]
+                if not square.has_piece():
+                    empty_count += 1
+                else:
+                    if empty_count > 0:
+                        fen_row += str(empty_count)
+                        empty_count = 0
+                    piece = square.piece
+                    letter = piece.__class__.__name__[0]
+                    if piece.__class__.__name__ == "Knight":
+                        letter = "N"
+                    letter = letter.upper() if piece.color == 'white' else letter.lower()
+                    fen_row += letter
+            if empty_count > 0:
+                fen_row += str(empty_count)
+            fen_rows.append(fen_row)
+        fen_piece_placement = "/".join(fen_rows)
+        turn = self.turn if hasattr(self, "turn") else "w"
+        return f"{fen_piece_placement} {turn} - - 0 1"

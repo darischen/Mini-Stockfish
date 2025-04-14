@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-from tqdm import tqdm  # Import tqdm for progress bars
+from tqdm import tqdm  # For progress bars
 
 # --- Helper: Forced Mate Evaluation Parser ---
 def parse_evaluation(eval_str, mate_base=10000):
@@ -43,20 +43,20 @@ def parse_evaluation(eval_str, mate_base=10000):
     else:
         return float(s)
 
-# --- Step 1: Convert FEN to Feature Vector ---
-def fen_to_features(fen):
+# --- Step 1: Enhanced Feature Extraction and Accumulator Simulation ---
+def enhanced_fen_to_features(fen):
     """
-    Convert a FEN string into a 768-dimensional one-hot encoded feature vector.
+    Convert a FEN string into an enriched feature vector.
     
-    We assume the following ordering for piece types:
-      Indices 0-5: White Pawn, Knight, Bishop, Rook, Queen, King
-      Indices 6-11: Black Pawn, Knight, Bishop, Rook, Queen, King
-    For each of the 64 squares, we create a binary vector of length 12.
-    The final vector is flattened into a 768-dimensional numpy array.
+    This function first computes the standard 768-dimensional one-hot encoded vector
+    (64 squares x 12 piece types) and then appends three extra features:
+      - White king safety (count of adjacent friendly pawns)
+      - Black king safety (same for black)
+      - Mobility: total number of legal moves
+    Final output dimension: 768 + 3 = 771.
     """
     board = chess.Board(fen)
-    features = np.zeros(64 * 12, dtype=np.float32)
-    
+    base_features = np.zeros(64 * 12, dtype=np.float32)
     piece_to_index = {
          chess.PAWN: 0,
          chess.KNIGHT: 1,
@@ -72,16 +72,71 @@ def fen_to_features(fen):
             idx = piece_to_index[piece.piece_type]
             if not piece.color:  # chess.BLACK is False, chess.WHITE is True
                 idx += 6
-            features[square * 12 + idx] = 1.0
-    return features
+            base_features[square * 12 + idx] = 1.0
 
-# --- Step 2: Define the NNUE Model ---
+    # Extra Feature 1: King Safety for a given color (count adjacent friendly pawns)
+    def king_safety(color):
+        king_sq = board.king(color)
+        if king_sq is None:
+            return 0.0
+        safety = 0.0
+        offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
+        for offset in offsets:
+            neighbor = king_sq + offset
+            if neighbor < 0 or neighbor >= 64:
+                continue
+            # Check file difference to avoid wrap-around (difference must be at most 1)
+            if abs((neighbor % 8) - (king_sq % 8)) > 1:
+                continue
+            n_piece = board.piece_at(neighbor)
+            if n_piece is not None and n_piece.color == color and n_piece.piece_type == chess.PAWN:
+                safety += 1.0
+        return safety
+
+    white_king_safety = king_safety(chess.WHITE)
+    black_king_safety = king_safety(chess.BLACK)
+
+    # Extra Feature 2: Mobility as total number of legal moves.
+    mobility = float(len(list(board.legal_moves)))
+
+    extra_features = np.array([white_king_safety, black_king_safety, mobility], dtype=np.float32)
+    full_features = np.concatenate((base_features, extra_features))
+    return full_features
+
+# For backward compatibility, redefine fen_to_features to use the enhanced version.
+def fen_to_features(fen):
+    return enhanced_fen_to_features(fen)
+
+# Simulated Accumulator class to cache the current feature vector.
+class Accumulator:
+    def __init__(self):
+        self.features = None
+
+    def reset(self, fen):
+        """
+        Compute and cache the full feature vector from the board state.
+        """
+        self.features = enhanced_fen_to_features(fen)
+        return self.features
+
+    def update(self, new_fen):
+        """
+        Simulate an incremental update:
+        In a full implementation, only the changed features would be updated.
+        Here we recompute the full feature vector.
+        """
+        new_features = enhanced_fen_to_features(new_fen)
+        self.features = new_features
+        return self.features
+
+# --- Step 2: Define the NNUE Model (keeping the same depth and values) ---
 class NNUEModel(nn.Module):
-    def __init__(self, input_size=768, hidden_size1=1024, hidden_size2=512):
+    def __init__(self, input_size=771, hidden_size1=1024, hidden_size2=512):
         """
         A simple feedforward NNUE-like model.
-        :param input_size: Size of the input feature vector (768 = 64 * 12)
-        :param hidden_size: Number of neurons in the hidden layer.
+        :param input_size: Size of the input feature vector (now 771 due to extra features)
+        :param hidden_size1: Number of neurons in the first hidden layer.
+        :param hidden_size2: Number of neurons in the second hidden layer.
         """
         super(NNUEModel, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size1)
@@ -106,10 +161,8 @@ class ChessDataset(Dataset):
         :param csv_file: Path to the CSV file containing 'FEN' and 'Evaluation' columns.
         """
         self.data = pd.read_csv(csv_file)
-        # Strip whitespace from column names in case there are leading/trailing spaces
         self.data.columns = self.data.columns.str.strip()
         
-        # Filter out rows where Evaluation cannot be parsed (if desired)
         def is_valid_eval(val):
             try:
                 _ = parse_evaluation(val)
@@ -124,21 +177,19 @@ class ChessDataset(Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         fen = row['FEN']
-        scale = 10000.0
+        scale = 10000.0  # Use scale for normalization (adjust if needed)
         target = parse_evaluation(row['Evaluation']) / scale
-        features = fen_to_features(fen)
+        features = enhanced_fen_to_features(fen)  # Use enhanced features (771-dim)
         features_tensor = torch.from_numpy(features)
         target_tensor = torch.tensor([target], dtype=torch.float32)
         return features_tensor, target_tensor
 
 # --- Step 4: Training the Model ---
 def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2_lambda=1e-7):
-    # Create the dataset and dataloader.
     dataset = ChessDataset(csv_file)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
-    # Initialize the NNUE model.
-    model = NNUEModel()
+    model = NNUEModel()  # Using our existing two-hidden-layer model with input size 771
     criterion = nn.SmoothL1Loss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=l2_lambda)
     
@@ -147,9 +198,11 @@ def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2
     model.to(device)
     
     model.train()
+    # For demonstration, also instantiate an Accumulator (not used for training per se)
+    accumulator = Accumulator()
+    
     for epoch in range(num_epochs):
         running_loss = 0.0
-        # Wrap the dataloader in tqdm for a progress bar
         pbar = tqdm(enumerate(dataloader), total=len(dataloader), desc=f"Epoch {epoch+1}")
         for i, (features, targets) in pbar:
             features = features.to(device)
@@ -161,15 +214,18 @@ def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2
             optimizer.step()
             
             running_loss += loss.item()
-            # Update progress bar with current average loss
             avg_loss = running_loss / (i + 1)
             pbar.set_postfix(loss=f"{avg_loss:.4e}")
-    
+        
+        # Optional: demonstrate accumulator update by caching features from first sample of this epoch.
+        first_fen = dataset.data.iloc[0]['FEN']
+        accumulator.reset(first_fen)
+        # In a practical engine, after a move you would call accumulator.update(new_fen)
+        
     print("Training complete.")
     torch.save(model.state_dict(), "nnue_model.pth")
     return model
 
 if __name__ == "__main__":
-    # Change the csv file path if needed.
-    csv_file = "chessData.csv"
+    csv_file = "chessData.csv"  # Adjust path as needed
     train_model(csv_file, num_epochs=15)
