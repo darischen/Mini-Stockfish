@@ -131,7 +131,7 @@ class Accumulator:
 
 # --- Step 2: Define the NNUE Model (keeping the same depth and values) ---
 class NNUEModel(nn.Module):
-    def __init__(self, input_size=771, hidden_size1=1024, hidden_size2=512):
+    def __init__(self, input_size=771, hidden_size1=1024, hidden_size2=1024):
         """
         A simple feedforward NNUE-like model.
         :param input_size: Size of the input feature vector (now 771 due to extra features)
@@ -185,7 +185,7 @@ class ChessDataset(Dataset):
         return features_tensor, target_tensor
 
 # --- Step 4: Training, Validation, and Testing the Model ---
-def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2_lambda=1e-7):
+def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2_lambda=1e-4):
     # Load the full dataset.
     full_dataset = ChessDataset(csv_file)
     total_len = len(full_dataset)
@@ -198,9 +198,9 @@ def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2
     # Randomly split the dataset.
     train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_len, val_len, test_len])
     
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
     
     model = NNUEModel()  # Using our two-hidden-layer model with input size 771
     criterion = nn.SmoothL1Loss()
@@ -279,5 +279,15 @@ def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2
     return model
 
 if __name__ == "__main__":
-    csv_file = "chessData.csv"  # Adjust path as needed.
-    train_model(csv_file, num_epochs=15)
+    chess_df = pd.read_csv("./data/chessData.csv")
+    random_df = pd.read_csv("./data/random_evals.csv")
+    tactic_df = pd.read_csv("./data/tactic_evals.csv", usecols=["FEN", "Evaluation"])
+
+    
+    combined_df = pd.concat([chess_df, random_df, tactic_df], ignore_index=True)
+    
+    combined_csv_path = "./data/combined_chessData.csv"
+    combined_df.to_csv(combined_csv_path, index=False)
+    
+    csv_file = combined_csv_path  # Adjust path as needed.
+    train_model(csv_file, num_epochs=35)
