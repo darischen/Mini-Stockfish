@@ -23,11 +23,10 @@
   - [x] Fifty-move rule
   - [x] Insufficient material
 - AI Opponent to play against
-  - Bitboard representation
+  - [x] Bitboard representation
   - [x] Minimax algorithm
   - [x] alpha-beta pruning
   - [x] piece square tables
-    - nnue 
   - transposition table
   - quiescence search
   - [x] move ordering
@@ -38,11 +37,16 @@
   - Syzygy Endgame Tablebase
   - parallelization
   - Deep Neural Network
+    - [x] Dataset of Stockfish Evaluations
+    - Dual Network System
+      - Simple material evaluation to decide whether to use large or small network
+      - [x] Small network for fast evaluation of positions (NNUE)
+      - Large network for deep evaluation of positions (CNN)
     - Monte Carlo Tree Search - ?
     - CNN: each channel is a bitboard
-    - DNN for predicting the score of a position
-      - DNN for predicting the best move
-      - Find large dataset of positions
+    - [x] DNN for predicting the score of a position
+      - [x] DNN for predicting the best move
+      - [x] Find large dataset of positions
       - Early pruning
       - Reinforcement learning by playing against itself
       - Q-Learning or Actor-Critic - ?

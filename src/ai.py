@@ -98,7 +98,7 @@ class ChessAI:
         self.depth = depth
         self.use_dnn = use_dnn
         if self.use_dnn and model_path is not None and os.path.exists(model_path):
-            self.model = NNUEModel(input_size=768)
+            self.model = NNUEModel(input_size=771)
             self.model.load_state_dict(torch.load(model_path))
             self.model.eval()
         else:
@@ -388,7 +388,6 @@ class ChessAI:
             # Fallback: reconstruct FEN from board.squares if necessary.
             raise NotImplementedError("Board does not provide get_fen method.")
         features = fen_to_features(fen)  # This now returns a 771-dimensional vector.
-        features = features[:768]
         tensor = torch.from_numpy(features).unsqueeze(0)  # Shape: [1, 771]
         return tensor
 
