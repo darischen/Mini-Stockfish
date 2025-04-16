@@ -185,7 +185,7 @@ class ChessDataset(Dataset):
         return features_tensor, target_tensor
 
 # --- Step 4: Training, Validation, and Testing the Model ---
-def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2_lambda=1e-4):
+def train_model(csv_file, num_epochs=10, batch_size=4096, learning_rate=1e-4, l2_lambda=1e-7):
     # Load the full dataset.
     full_dataset = ChessDataset(csv_file)
     total_len = len(full_dataset)
@@ -250,7 +250,7 @@ def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2
         # Save best model (optional)
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), "best_nnue_model.pth")
+            torch.save(model.state_dict(), "best_nnue.pth")
         
         # Demonstrate accumulator update (optional)
         first_fen = full_dataset.data.iloc[0]['FEN']
@@ -259,7 +259,7 @@ def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2
     print("Training complete.")
     
     # Load best model for testing (if saved)
-    model.load_state_dict(torch.load("best_nnue_model.pth"))
+    model.load_state_dict(torch.load("best_nnue.pth"))
     model.eval()
     
     # Evaluate on the test set
@@ -275,7 +275,7 @@ def train_model(csv_file, num_epochs=10, batch_size=1024, learning_rate=1e-3, l2
     print(f"Test Loss: {avg_test_loss:.4e}")
     
     # Save final model (if desired)
-    torch.save(model.state_dict(), "nnue_model_final.pth")
+    # torch.save(model.state_dict(), "nnue_final.pth")
     return model
 
 if __name__ == "__main__":
@@ -290,4 +290,4 @@ if __name__ == "__main__":
     combined_df.to_csv(combined_csv_path, index=False)
     
     csv_file = combined_csv_path  # Adjust path as needed.
-    train_model(csv_file, num_epochs=35)
+    train_model(csv_file, num_epochs=50)
