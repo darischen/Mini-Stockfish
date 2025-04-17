@@ -82,7 +82,7 @@ def fen_to_features(fen):
 
 # --- Revised NNUE Model Architecture ---
 class NNUEModel(nn.Module):
-    def __init__(self, hidden_size=1024):
+    def __init__(self, hidden_size=1542):
         """
         This NNUE-like model mimics Stockfish’s efficient architecture.
         It splits the input features into two parts:
@@ -165,7 +165,7 @@ class ChessDataset(Dataset):
         return features_tensor, target_tensor
 
 # --- Training Function ---
-def train_model(csv_file, num_epochs=10, batch_size=8192, learning_rate=1e-3, l2_lambda=1e-7, hidden_size=1024):
+def train_model(csv_file, num_epochs=10, batch_size=8192, learning_rate=1e-3, l2_lambda=1e-7, hidden_size=1542):
     full_dataset = ChessDataset(csv_file)
     total_len = len(full_dataset)
     
@@ -175,9 +175,9 @@ def train_model(csv_file, num_epochs=10, batch_size=8192, learning_rate=1e-3, l2
     
     train_dataset, val_dataset, test_dataset = random_split(full_dataset, [train_len, val_len, test_len])
     
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
     
     model = NNUEModel(hidden_size=hidden_size)
     criterion = nn.SmoothL1Loss()
@@ -245,10 +245,10 @@ def train_model(csv_file, num_epochs=10, batch_size=8192, learning_rate=1e-3, l2
 def objective(trial):
     # Define hyperparameter search space.
     learning_rate = trial.suggest_float("learning_rate", 1e-7, 1e1, log=True)
-    batch_size = trial.suggest_categorical("batch_size", [512, 2048, 4096, 8192, 16384])
-    hidden_size = trial.suggest_categorical("hidden_size", [512, 771, 1024, 1542, 2048])
-    num_epochs = 10
-    l2_lambda = trial.suggest_float("l2_lambda", 1e-9, 1e-3, log=True)
+    batch_size = 4096
+    hidden_size = 1542
+    num_epochs = 1
+    l2_lambda = trial.suggest_float("l2_lambda", 1e-9, 1e-6, log=True)
     
     # Use the global CSV file (set later in __main__) as the dataset.
     full_dataset = ChessDataset(csv_file)
@@ -258,8 +258,8 @@ def objective(trial):
     _ = total_len - train_len - val_len  # Unused test split for hyperparameter optimization
     
     train_dataset, val_dataset, _ = random_split(full_dataset, [train_len, val_len, total_len - train_len - val_len])
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
     
     model = NNUEModel(hidden_size=hidden_size)
     criterion = nn.SmoothL1Loss()
