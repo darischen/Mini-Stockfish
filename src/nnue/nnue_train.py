@@ -131,7 +131,7 @@ class Accumulator:
 
 # --- Step 2: Define the NNUE Model (keeping the same depth and values) ---
 class NNUEModel(nn.Module):
-    def __init__(self, input_size=771, hidden_size1=1024, hidden_size2=1024):
+    def __init__(self, input_size=771, hidden_size=1542):
         """
         A simple feedforward NNUE-like model.
         :param input_size: Size of the input feature vector (now 771 due to extra features)
@@ -139,11 +139,11 @@ class NNUEModel(nn.Module):
         :param hidden_size2: Number of neurons in the second hidden layer.
         """
         super(NNUEModel, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size1)
+        self.fc1 = nn.Linear(input_size, hidden_size)
         self.relu1 = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size1, hidden_size2)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.relu2 = nn.ReLU()
-        self.fc3 = nn.Linear(hidden_size2, 1)  # Single scalar output
+        self.fc3 = nn.Linear(hidden_size, 1)  # Single scalar output
 
     def forward(self, x):
         x = self.fc1(x)
@@ -185,7 +185,7 @@ class ChessDataset(Dataset):
         return features_tensor, target_tensor
 
 # --- Step 4: Training, Validation, and Testing the Model ---
-def train_model(csv_file, num_epochs=10, batch_size=4096, learning_rate=1e-4, l2_lambda=1e-7):
+def train_model(csv_file, num_epochs=10, batch_size=8192, learning_rate=1e-3, l2_lambda=1e-7):
     # Load the full dataset.
     full_dataset = ChessDataset(csv_file)
     total_len = len(full_dataset)
