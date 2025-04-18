@@ -34,6 +34,7 @@
     - [x] material value
     - [x] positional value
   - book moves
+  - MVV-LVA (Least Valuable Victim - Most Valuable Attacker)
   - Syzygy Endgame Tablebase
   - parallelization
   - Deep Neural Network
