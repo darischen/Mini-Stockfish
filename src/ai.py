@@ -215,15 +215,44 @@ class ChessAI:
         return moves
 
     def order_moves(self, board: Board, moves_list, maximizing: bool, ai_color: str):
-        scored_moves = []
+        """
+        Order moves by MVV-LVA (Most Valuable Victim - Least Valuable Attacker).
+        Non-captures get score 0.
+        """
+        # Static piece values for MVV‑LVA
+        piece_values = {
+            "Pawn":   100,
+            "Knight": 300,
+            "Bishop": 310,
+            "Rook":   400,
+            "Queen":  900,
+            "King":   20000
+        }
+
+        scored = []
         for piece, move in moves_list:
-            move_history = board.make_move(piece, move)
-            score = self.evaluate(board, ai_color)
-            board.undo_move(move_history)
-            scored_moves.append(((piece, move), score))
-        scored_moves.sort(key=lambda x: x[1], reverse=maximizing)
-        ordered = [move for move, score in scored_moves]
-        return ordered
+            # Use move.final which is a Square(row,col,…)
+            dest_row = move.final.row
+            dest_col = move.final.col
+
+            # See if there’s a victim on the target
+            victim_sq = board.squares[dest_row][dest_col]
+            if victim_sq.has_piece():
+                victim = victim_sq.piece
+                victim_val = piece_values.get(victim.__class__.__name__, 0)
+            else:
+                victim_val = 0
+
+            attacker_val = piece_values.get(piece.__class__.__name__, 0)
+            # MVV-LVA score: prioritize big captures
+            score = 1000 * victim_val - attacker_val
+            scored.append(((piece, move), score))
+
+        # Sort descending if it’s your turn to maximize, ascending if minimizing
+        scored.sort(key=lambda x: x[1], reverse=maximizing)
+        # Unwrap back to list of (piece, move)
+        return [pair for (pair, _) in scored]
+
 
     def evaluate(self, board: Board, ai_color: str):
         """
@@ -255,9 +284,9 @@ class ChessAI:
 
         piece_values = {
             "Pawn": 100,
-            "Knight": 320,
-            "Bishop": 330,
-            "Rook": 500,
+            "Knight": 300,
+            "Bishop": 310,
+            "Rook": 400,
             "Queen": 900,
             "King": 20000
         }
@@ -324,9 +353,9 @@ class ChessAI:
         score = 0
         piece_values = {
             "Pawn": 100,
-            "Knight": 320,
-            "Bishop": 330,
-            "Rook": 500,
+            "Knight": 300,
+            "Bishop": 310,
+            "Rook": 400,
             "Queen": 900,
             "King": 20000
         }
