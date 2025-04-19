@@ -185,7 +185,7 @@ class ChessDataset(Dataset):
         return features_tensor, target_tensor
 
 # --- Step 4: Training, Validation, and Testing the Model ---
-def train_model(csv_file, num_epochs=10, batch_size=8192, learning_rate=5e-3, l2_lambda=5e-7):
+def train_model(csv_file, num_epochs=10, batch_size=4096, learning_rate=5e-4, l2_lambda=1e-7):
     # Load the full dataset.
     full_dataset = ChessDataset(csv_file)
     total_len = len(full_dataset)

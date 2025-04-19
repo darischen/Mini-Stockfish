@@ -27,6 +27,7 @@
   - [x] Minimax algorithm
   - [x] alpha-beta pruning
   - piece square tables
+    - Interpolation (midgame and endgame)
   - transposition table
   - quiescence search
   - [x] move ordering

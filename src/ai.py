@@ -87,7 +87,7 @@ class ChessAI:
         final   = Square(7 - dst_rank, dst_file)
         mv = Move(initial, final)
 
-        piece = board.squares[src_rank][src_file].piece
+        piece = board.squares[initial.row][initial.col].piece
         return (piece, mv)
 
     def _minimax(self, board: chess.Board, depth, alpha, beta, maximizing_player, ai_color):
