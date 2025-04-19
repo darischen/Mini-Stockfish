@@ -11,6 +11,7 @@ import bitboard  # Our bitboard module (square_bb, popcount, attacks, etc.)
 from nnue.nnue_train import NNUEModel
 from move import Move  # Move class for interoperability with the game engine
 from square import Square
+from accumulator import Accumulator  # Accumulator for incremental feature updates
 
 class ChessAI:
     def __init__(self, depth=3, use_dnn=False, model_path=None):
@@ -49,6 +50,9 @@ class ChessAI:
         search_board = chess.Board(root_fen)
         search_board.turn = chess.BLACK
 
+        self.acc = Accumulator()
+        self.acc.init(search_board)
+
         best_move = None
         # For white we maximize, for black we minimize
         maximizing = (color == 'white')
@@ -57,10 +61,11 @@ class ChessAI:
         start = time.time()
         # Generate all legal moves via python-chess
         for uci in search_board.legal_moves:
+            captured = search_board.piece_at(uci.to_square)
             search_board.push(uci)
-            val = self._minimax(search_board, self.depth - 1,
-                                 -math.inf, math.inf,
-                                 not maximizing, color)
+            self.acc.update(uci, captured)
+            val = self._minimax(search_board, self.depth - 1, -math.inf, math.inf, not maximizing, color)
+            self.acc.rollback(uci, captured)
             search_board.pop()
 
             if maximizing and val > best_eval:
@@ -93,16 +98,21 @@ class ChessAI:
     def _minimax(self, board: chess.Board, depth, alpha, beta, maximizing_player, ai_color):
         self.nodes_evaluated += 1
         if depth == 0 or board.is_game_over():
-            return self._evaluate_bb(board, ai_color)
+            # If you’re at leaf, just feed the current accumulator state
+            with torch.no_grad():
+                return self.model(self.acc.state.to(self.device)).item()
 
         if maximizing_player:
             max_eval = -math.inf
             # Order moves using simple MVV-LVA on python-chess board
             ordered = self._order_moves(bb=board, maximize=True)
             for uci in ordered:
+                captured = board.piece_at(uci.to_square)
                 board.push(uci)
+                self.acc.update(uci, captured)
                 val = self._minimax(board, depth - 1, alpha, beta, False, ai_color)
                 board.pop()
+                self.acc.rollback(uci, captured)
                 max_eval = max(max_eval, val)
                 alpha = max(alpha, val)
                 if beta <= alpha:
@@ -113,9 +123,13 @@ class ChessAI:
             min_eval = math.inf
             ordered = self._order_moves(bb=board, maximize=False)
             for uci in ordered:
+                captured = board.piece_at(uci.to_square)
                 board.push(uci)
+                self.acc.update(uci, captured)
                 val = self._minimax(board, depth - 1, alpha, beta, True, ai_color)
                 board.pop()
+                self.acc.rollback(uci, captured)
+
                 min_eval = min(min_eval, val)
                 beta = min(beta, val)
                 if beta <= alpha:
