@@ -139,38 +139,123 @@ class ChessAI:
 
     def _evaluate_bb(self, bb: chess.Board, ai_color: str):
         """
-        Bitboard-based static evaluation using our bitboard module,
-        computed directly on a python-chess Board instance.
+        Bitboard-based static evaluation using PST interpolation.
         """
-        # Build per-piece bitboards from python-chess piece_map()
+        # --- 1) Build per-piece bitboards from python-chess ---
         bitboards = {}
         for sq, pc in bb.piece_map().items():
-            key = ( 'white' if pc.color else 'black', pc.piece_type )
+            color = 'white' if pc.color else 'black'
+            key = (color, pc.piece_type)
             bitboards[key] = bitboards.get(key, 0) | bitboard.square_bb(sq)
 
-        # Material + piece-square tables
-        score = 0.0
-        # define values & PSTs here (omitted for brevity)—you can reuse your existing tables
-        # ... (use bitboard.popcount & bitboard.king_attacks, etc.)
+        # --- 2) Define material values and phase weights ---
+        mat_values = {
+            chess.PAWN:   100,
+            chess.KNIGHT: 300,
+            chess.BISHOP: 310,
+            chess.ROOK:   400,
+            chess.QUEEN:  900,
+            chess.KING:   20000
+        }
+        phase_weights = {
+            chess.PAWN:   0,
+            chess.KNIGHT: 1,
+            chess.BISHOP: 1,
+            chess.ROOK:   2,
+            chess.QUEEN:  4,
+            chess.KING:   0
+        }
+        max_phase = sum(phase_weights[p] * 2 for p in phase_weights)  # both sides
 
-        # For now, fallback to model or simple material:
-        if self.use_dnn and self.model:
-            # Use NNUE: convert bb.fen() back to feature tensor
-            fen = bb.fen()
-            feat = self._fen_to_tensor(fen)
-            feat = feat.to(self.device)
-            with torch.no_grad():
-                return self.model(feat).item()
-        # Simple material:
-        for (color, ptype), b in bitboards.items():
-            val = {chess.PAWN:100,
-                   chess.KNIGHT:300,
-                   chess.BISHOP:310,
-                   chess.ROOK:400,
-                   chess.QUEEN:900,
-                   chess.KING:20000}[ptype]
-            cnt = bitboard.popcount(b)
-            score += val * cnt if color=='white' else -val*cnt
+        # --- 3) PSTs for middle-game and endgame (64‐length lists) ---
+        #   (you can tweak these values or replace with more complete tables)
+        mg_pst = {
+            chess.PAWN:   [0]*64,  # simple placeholder
+            chess.KNIGHT: [
+                -50,-40,-30,-30,-30,-30,-40,-50,
+                -40,-20,  0,  5,  5,  0,-20,-40,
+                -30,  5, 10, 15, 15, 10,  5,-30,
+                -30,  0, 15, 20, 20, 15,  0,-30,
+                -30,  5, 15, 20, 20, 15,  5,-30,
+                -30,  0, 10, 15, 15, 10,  0,-30,
+                -40,-20,  0,  0,  0,  0,-20,-40,
+                -50,-40,-30,-30,-30,-30,-40,-50
+            ],
+            chess.BISHOP: [
+                -20,-10,-10,-10,-10,-10,-10,-20,
+                -10,  5,  0,  0,  0,  0,  5,-10,
+                -10, 10, 10, 10, 10, 10, 10,-10,
+                -10,  0, 10, 10, 10, 10,  0,-10,
+                -10,  5,  5, 10, 10,  5,  5,-10,
+                -10,  0,  5, 10, 10,  5,  0,-10,
+                -10,  0,  0,  0,  0,  0,  0,-10,
+                -20,-10,-10,-10,-10,-10,-10,-20
+            ],
+            chess.ROOK: [
+                  0,  0,  5, 10, 10,  5,  0,  0,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                 -5,  0,  0,  0,  0,  0,  0, -5,
+                  5, 10, 10, 10, 10, 10, 10,  5,
+                  0,  0,  0,  0,  0,  0,  0,  0
+            ],
+            chess.QUEEN: [0]*64,
+            chess.KING: [
+               20, 30, 10,  0,  0, 10, 30, 20,
+               20, 20,  0,  0,  0,  0, 20, 20,
+              -10,-20,-20,-20,-20,-20,-20,-10,
+              -20,-30,-30,-40,-40,-30,-30,-20,
+              -30,-40,-40,-50,-50,-40,-40,-30,
+              -30,-40,-40,-50,-50,-40,-40,-30,
+              -30,-40,-40,-50,-50,-40,-40,-30,
+              -30,-40,-40,-50,-50,-40,-40,-30
+            ]
+        }
+        eg_pst = {
+            # In endgame we often prefer king more central; simple example:
+            **mg_pst,
+            chess.KING: [
+                 -50,-40,-30,-20,-20,-30,-40,-50,
+                 -30,-20,-10,  0,  0,-10,-20,-30,
+                 -30,-10, 20, 30, 30, 20,-10,-30,
+                 -30,-10, 30, 40, 40, 30,-10,-30,
+                 -30,-10, 30, 40, 40, 30,-10,-30,
+                 -30,-10, 20, 30, 30, 20,-10,-30,
+                 -30,-30,  0,  0,  0,  0,-30,-30,
+                 -50,-30,-30,-30,-30,-30,-30,-50
+            ]
+        }
+
+        # --- 4) Compute game-phase factor ---
+        phase = 0
+        for (color, ptype), bb in bitboards.items():
+            cnt = bitboard.popcount(bb)
+            phase += phase_weights[ptype] * cnt
+        phase = max(0, min(phase, max_phase))
+        mg_phase = phase / max_phase
+        eg_phase = 1.0 - mg_phase
+
+        # --- 5) Accumulate material + PSTs ---
+        score = 0.0
+        for (color, ptype), bb in bitboards.items():
+            pcs = bitboard.popcount(bb)
+            mat = mat_values[ptype] * pcs
+            # for each bit in bb, add PST contribution
+            pst_score = 0
+            b = bb
+            while b:
+                sq = (b & -b).bit_length() - 1
+                b &= b - 1
+                # use mg and eg PST, mirror black squares
+                mg_val = mg_pst[ptype][sq if color=='white' else sq^56]
+                eg_val = eg_pst[ptype][sq if color=='white' else sq^56]
+                pst_score += mg_phase * mg_val + eg_phase * eg_val
+
+            total = mat + pst_score
+            score += total if color=='white' else -total
+
         return score if ai_color=='white' else -score
 
     def _fen_to_tensor(self, fen_str: str):
@@ -180,6 +265,3 @@ class ChessAI:
         from nnue.nnue_train import fen_to_features
         arr = fen_to_features(fen_str)
         return torch.from_numpy(arr).unsqueeze(0)
-
-# Note: This version keeps your outer game engine untouched (board moves, graphics, etc.)—
-# the entire minimax and move generation runs on a separate python-chess.Board (bitboard-backed) instance.
