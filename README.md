@@ -26,8 +26,8 @@
   - [x] Bitboard representation
   - [x] Minimax algorithm
   - [x] alpha-beta pruning
-  - piece square tables
-    - Interpolation (midgame and endgame)
+  - [x] piece square tables
+    - [x] Interpolation (midgame and endgame)
   - transposition table
   - quiescence search
   - [x] move ordering
