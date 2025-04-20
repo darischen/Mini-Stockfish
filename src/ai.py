@@ -173,7 +173,7 @@ class ChessAI:
 
         # leaf
         if depth == 0 or board.is_game_over():
-            val = self.model(acc.state).item() if self.model else self._evaluate_bb(board, ai_color)
+            val = self._quiescence(board, alpha, beta, ai_color)
             self.tt.store(key, depth, val)
             return val
 
@@ -220,13 +220,43 @@ class ChessAI:
         scored = []
         for move in bb.legal_moves:
             victim = bb.piece_at(move.to_square)
-            v_val = piece_vals.get(victim.symbol().upper(),0) if victim else 0
             attacker = bb.piece_at(move.from_square)
+            
+            # MVV-LVA
+            v_val = piece_vals.get(victim.symbol().upper(),0) if victim else 0
             a_val = piece_vals.get(attacker.symbol().upper(),0)
             score = 1000*v_val - a_val
+            
+            # Hanging Pieces
+            if victim and not bb.is_attacked_by(not bb.turn, move.to_square):
+                score += 5000
+            
             scored.append((move, score))
         scored.sort(key=lambda x: x[1], reverse=maximize)
         return [m for (m,_) in scored]
+    
+    def _quiescence(self, board, alpha, beta, ai_color):
+        stand_pat = self._evaluate_bb(board, ai_color)
+
+        if stand_pat >= beta:
+            return beta
+        if alpha < stand_pat:
+            alpha = stand_pat
+
+        for move in self._order_moves(board, maximize=True):
+            if not board.is_capture(move):
+                continue  # only consider capturing moves
+
+            board.push(move)
+            score = -self._quiescence(board, -beta, -alpha, ai_color)
+            board.pop()
+
+            if score >= beta:
+                return beta
+            if score > alpha:
+                alpha = score
+
+        return alpha
 
     def _evaluate_bb(self, bb: chess.Board, ai_color: str):
         """
