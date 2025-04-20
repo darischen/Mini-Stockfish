@@ -417,14 +417,14 @@ class ChessAI:
         final_score = score if ai_color =='white' else -score
         # --- Bonus for Checks ---
         if bb.is_check():
-            check_bonus = 50  # increase/decrease as necessary
+            check_bonus = 50
             if bb.turn == (ai_color == 'white'):
                 final_score += check_bonus
             else:
                 final_score -= check_bonus
 
         # --- Bonus for Promotions ---
-        promotion_bonus = 200  # strong bonus to prioritize promotions
+        promotion_bonus = 200
         for move in bb.legal_moves:
             if move.promotion:
                 if bb.turn == (ai_color == 'white'):

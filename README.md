@@ -51,7 +51,7 @@
       - [x] DNN for predicting the best move
       - [x] Find large dataset of positions
       - Early pruning
-      - Reinforcement learning by playing against itself
+      - Reinforcement learning by playing against itself - ?
       - Q-Learning or Actor-Critic - ?
 
 ## How to run
