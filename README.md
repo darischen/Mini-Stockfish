@@ -28,7 +28,7 @@
   - [x] alpha-beta pruning
   - [x] piece square tables
     - [x] Interpolation (midgame and endgame)
-  - transposition table
+  - [x] transposition table
   - [x] accumulator
   - quiescence search
   - [x] move ordering
@@ -38,7 +38,7 @@
   - book moves
   - [x] MVV-LVA (Least Valuable Victim - Most Valuable Attacker)
   - Syzygy Endgame Tablebase
-  - parallelization
+  - [x] multithreading
   - Deep Neural Network
     - [x] Dataset of Stockfish Evaluations (16 million positions)
     - Dual Network System
