@@ -30,7 +30,7 @@
     - [x] Interpolation (midgame and endgame)
   - [x] transposition table
   - [x] accumulator
-  - quiescence search
+  - [x] quiescence search
   - [x] move ordering
   - [x] evaluation function
     - [x] material value
