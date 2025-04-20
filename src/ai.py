@@ -2,7 +2,6 @@
 import math
 import os
 import time
-import random
 import torch  # Ensure PyTorch is installed if you plan to use a DNN
 import torch.nn as nn
 import chess  # Use python-chess for fast bitboard-backed move generation
@@ -24,13 +23,12 @@ class ChessAI:
         self.depth = depth
         self.use_dnn = use_dnn
         
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
-        if self.use_dnn and model_path is not None and os.path.exists(model_path):
-            self.model = NNUEModel(input_size=771).to(self.device)
-            state_dict = torch.load(model_path, map_location=self.device)
-            self.model.load_state_dict(state_dict)
+        if self.use_dnn and model_path and os.path.isfile(model_path):
+            # Load the compiled TorchScript model on CPU
+            self.model = torch.jit.load(model_path, map_location="cpu")
             self.model.eval()
+            # Optimize CPU threading for small models
+            torch.set_num_threads(os.cpu_count() or 1)
         else:
             self.model = None
 
@@ -59,19 +57,47 @@ class ChessAI:
         best_eval = -math.inf if maximizing else math.inf
 
         start = time.time()
-        # Generate all legal moves via python-chess
-        for uci in search_board.legal_moves:
-            captured = search_board.piece_at(uci.to_square)
-            search_board.push(uci)
-            self.acc.update(uci, captured)
-            val = self._minimax(search_board, self.depth - 1, -math.inf, math.inf, not maximizing, color)
-            self.acc.rollback(uci, captured)
-            search_board.pop()
+        moves = list(search_board.legal_moves)
+        if self.model:
+            # Eliminate autograd overhead
+            with torch.no_grad():
+                for uci in moves:
+                    captured = search_board.piece_at(uci.to_square)
+                    search_board.push(uci)
+                    self.acc.update(uci, captured)
 
-            if maximizing and val > best_eval:
-                best_eval, best_move = val, uci
-            elif not maximizing and val < best_eval:
-                best_eval, best_move = val, uci
+                    val = self._minimax(
+                        search_board, self.depth - 1,
+                        -math.inf, math.inf,
+                        not maximizing, color
+                    )
+
+                    self.acc.rollback(uci, captured)
+                    search_board.pop()
+
+                    if maximizing and val > best_eval:
+                        best_eval, best_move = val, uci
+                    elif not maximizing and val < best_eval:
+                        best_eval, best_move = val, uci
+        else:
+            for uci in moves:
+                captured = search_board.piece_at(uci.to_square)
+                search_board.push(uci)
+                self.acc.update(uci, captured)
+
+                val = self._minimax(
+                    search_board, self.depth - 1,
+                    -math.inf, math.inf,
+                    not maximizing, color
+                )
+
+                self.acc.rollback(uci, captured)
+                search_board.pop()
+
+                if maximizing and val > best_eval:
+                    best_eval, best_move = val, uci
+                elif not maximizing and val < best_eval:
+                    best_eval, best_move = val, uci
 
         elapsed = time.time() - start
         print(f"AI search complete. Nodes: {self.nodes_evaluated}, Pruned: {self.branches_pruned}, Time: {elapsed:.2f}s")
@@ -98,9 +124,11 @@ class ChessAI:
     def _minimax(self, board: chess.Board, depth, alpha, beta, maximizing_player, ai_color):
         self.nodes_evaluated += 1
         if depth == 0 or board.is_game_over():
-            # If you’re at leaf, just feed the current accumulator state
-            with torch.no_grad():
-                return self.model(self.acc.state.to(self.device)).item()
+            if self.model:
+                # TorchScript model on CPU; state tensor stays on CPU
+                return self.model(self.acc.state).item()
+            else:
+                return self._evaluate_bb(board, ai_color)
 
         if maximizing_player:
             max_eval = -math.inf
@@ -184,63 +212,130 @@ class ChessAI:
         # --- 3) PSTs for middle-game and endgame (64‐length lists) ---
         #   (you can tweak these values or replace with more complete tables)
         mg_pst = {
-            chess.PAWN:   [0]*64,  # simple placeholder
+            chess.PAWN: [
+                 0,   0,   0,   0,   0,   0,   0,   0,
+                78,  83,  86,  73, 102,  82,  85,  90,
+                 7,  29,  21,  44,  40,  31,  44,   7,
+               -17,  16,  -2,  15,  14,   0,  15, -13,
+               -26,   3,  10,   9,   6,   1,   0, -23,
+               -22,   9,   5, -11, -10,  -2,   3, -19,
+               -31,   8,  -7, -37, -36, -14,   3, -31,
+                 0,   0,   0,   0,   0,   0,   0,   0
+            ],
             chess.KNIGHT: [
-                -50,-40,-30,-30,-30,-30,-40,-50,
-                -40,-20,  0,  5,  5,  0,-20,-40,
-                -30,  5, 10, 15, 15, 10,  5,-30,
-                -30,  0, 15, 20, 20, 15,  0,-30,
-                -30,  5, 15, 20, 20, 15,  5,-30,
-                -30,  0, 10, 15, 15, 10,  0,-30,
-                -40,-20,  0,  0,  0,  0,-20,-40,
-                -50,-40,-30,-30,-30,-30,-40,-50
+               -66, -53, -75, -75, -10, -55, -58, -70,
+                -3,  -6, 100, -36,   4,  62,  -4, -14,
+                10,  67,   1,  74,  73,  27,  62,  -2,
+                24,  24,  45,  37,  33,  41,  25,  17,
+                -1,   5,  31,  21,  22,  35,   2,   0,
+               -18,  10,  13,  22,  18,  15,  11, -14,
+               -23, -15,   2,   0,   2,   0, -23, -20,
+               -74, -23, -26, -24, -19, -35, -22, -69
             ],
             chess.BISHOP: [
-                -20,-10,-10,-10,-10,-10,-10,-20,
-                -10,  5,  0,  0,  0,  0,  5,-10,
-                -10, 10, 10, 10, 10, 10, 10,-10,
-                -10,  0, 10, 10, 10, 10,  0,-10,
-                -10,  5,  5, 10, 10,  5,  5,-10,
-                -10,  0,  5, 10, 10,  5,  0,-10,
-                -10,  0,  0,  0,  0,  0,  0,-10,
-                -20,-10,-10,-10,-10,-10,-10,-20
+               -59, -78, -82, -76, -23,-107, -37, -50,
+               -11,  20,  35, -42, -39,  31,   2, -22,
+                -9,  39, -32,  41,  52, -10,  28, -14,
+                25,  17,  20,  34,  26,  25,  15,  10,
+                13,  10,  17,  23,  17,  16,   0,   7,
+                14,  25,  24,  15,   8,  25,  20,  15,
+                19,  20,  11,   6,   7,   6,  20,  16,
+                -7,   2, -15, -12, -14, -15, -10, -10
             ],
             chess.ROOK: [
-                  0,  0,  5, 10, 10,  5,  0,  0,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                  5, 10, 10, 10, 10, 10, 10,  5,
-                  0,  0,  0,  0,  0,  0,  0,  0
+                35,  29,  33,   4,  37,  33,  56,  50,
+                55,  29,  56,  67,  55,  62,  34,  60,
+                19,  35,  28,  33,  45,  27,  25,  15,
+                 0,   5,  16,  13,  18,  15,   2,   0,
+                -2,   0,   2,   0,   0,   0,  -2, -15,
+               -14, -14, -10, -10,  -2, -10, -14, -14,
+               -14, -17, -18, -19, -19, -16, -17, -14,
+               -23, -23, -23, -23, -23, -23, -23, -23
             ],
-            chess.QUEEN: [0]*64,
+            chess.QUEEN: [
+               -28,   0,  29,  12,  59,  44,  43,  45,
+               -24, -39,  -5,   1, -16,  57,  28,  54,
+               -13, -17,   7,   8,  29,  56,  47,  57,
+               -27, -27, -16, -16,  -1,  17,  -2,  -9,
+               -23,  -9,  12,  10,  19,  17,  -2,  -5,
+               -22, -17,   4,   3,  14,   5,  -5, -17,
+               -31, -28, -19, -21, -15, -22, -28, -31,
+               -36, -53, -60, -64, -64, -60, -53, -36
+            ],
             chess.KING: [
-               20, 30, 10,  0,  0, 10, 30, 20,
-               20, 20,  0,  0,  0,  0, 20, 20,
-              -10,-20,-20,-20,-20,-20,-20,-10,
-              -20,-30,-30,-40,-40,-30,-30,-20,
-              -30,-40,-40,-50,-50,-40,-40,-30,
-              -30,-40,-40,-50,-50,-40,-40,-30,
-              -30,-40,-40,-50,-50,-40,-40,-30,
-              -30,-40,-40,-50,-50,-40,-40,-30
+               -65,  23,  16, -15, -56, -34,   2,  13,
+                29,  -1, -20,  -7,  -8,  -4, -38, -29,
+                -9,  24,   2, -16, -20,   6,  22, -22,
+               -17, -20, -12, -27, -30, -25, -14, -36,
+               -49,  -1, -27, -39, -46, -44, -33, -51,
+               -14, -14, -22, -46, -44, -30, -15, -27,
+                 1,   7,  13, -13, -16,   3,   7, -35,
+                40,  41,  26,  21,  16,  27,  47,  57
             ]
         }
         eg_pst = {
-            # In endgame we often prefer king more central; simple example:
-            **mg_pst,
+            chess.PAWN: [
+                 0,   0,   0,   0,   0,   0,   0,   0,
+                178, 173, 158, 134, 147, 132, 165, 187,
+                 94, 100,  85,  67,  56,  53,  82,  84,
+                 32,  24,  13,   5,  -2,   4,  -6,  -8,
+                 -6,   9,  -9,  -5,  -1,  -3,   0,  -7,
+                 -8,   2,  -6,  -2,  -2,   1,  -1,  -8,
+                -16,   0, -12,  -7,  -4,  -6,   3, -14,
+                  0,   0,   0,   0,   0,   0,   0,   0
+            ],
+            chess.KNIGHT: [
+               -58, -38, -13, -28, -31, -27, -63, -99,
+               -25,  -8, -25,  -2,  -9, -25, -24, -52,
+                -24, -20,  10,   9,  -1,  -9, -19, -41,
+                -17,   3,  22,  22,  22,   8,   0, -20,
+                -18, -11,  11,  12,  12,   7,   4, -17,
+                -23,  -9,   1,   11,  10,   7,  -9, -23,
+                -29, -53, -12,  -3,  -1, -32, -55, -58,
+                -64, -31, -35, -13, -24, -19, -29, -78
+            ],
+            chess.BISHOP: [
+               -14, -21, -11, -8, -7, -9, -17, -24,
+                -8,  -4,   7, -12, -3, -13, -4, -14,
+                 2,  -1,  -8, -10, -14, -15,  -2,   5,
+                -3,   9,   12,   9,   14,   10,    3,   -1,
+                -6,    3,   13,   19,   7,   10,   -3,   -9,
+               -12,   -3,    8,   10,   13,    3,   -7,  -15,
+               -14,  -18,   -7,   -1,    4,   -9,  -15,  -27,
+               -23,   -9,  -23,   -5,   -9,  -16,   -5,  -17
+            ],
+            chess.ROOK: [
+                13,   10,   18,   15,   12,   12,    8,    5,
+                11,   13,   13,   11,    -3,    3,    8,    3,
+                 7,    7,    7,    5,     4,    5,    3,    5,
+                 3,    5,    5,    4,     5,    5,    4,    3,
+                 2,    2,    2,    2,     3,    2,    2,    2,
+                 1,    1,    2,    2,     2,    2,    1,    1,
+                 2,    2,    2,    2,     2,    2,    2,    2,
+                 2,    2,    2,    2,     2,    2,    2,    2
+            ],
+            chess.QUEEN: [
+                -9,    3,   -5,   -1,   -5,  -13,    4,  -20,
+                -3,   -9,   10,   -5,    3,    6,   -6,  -12,
+                -6,   -1,    9,   10,  -23,  -11,   -3,   -9,
+                -3,   -1,   -5,  -13,  -15,  -14,    2,  -22,
+                -9,  -18,  -10,   -8,   -8,  -15,  -10,  -23,
+               -16,  -27,   -9,   -5,   -9,  -23,  -11,  -23,
+               -22,  -23,  -16,  -21,  -13,  -29,  -23,  -31,
+               -55,  -38,  -19,  -29,  -53,  -38,  -37,  -64
+            ],
             chess.KING: [
-                 -50,-40,-30,-20,-20,-30,-40,-50,
-                 -30,-20,-10,  0,  0,-10,-20,-30,
-                 -30,-10, 20, 30, 30, 20,-10,-30,
-                 -30,-10, 30, 40, 40, 30,-10,-30,
-                 -30,-10, 30, 40, 40, 30,-10,-30,
-                 -30,-10, 20, 30, 30, 20,-10,-30,
-                 -30,-30,  0,  0,  0,  0,-30,-30,
-                 -50,-30,-30,-30,-30,-30,-30,-50
+               -74,  -35,  -18,  -18,  -11,  -19,  -23,  -28,
+               -33,  -11,    4,    9,     6,    4,  -11,  -16,
+               -45,  -16,   37,   42,    42,   37,  -16,  -58,
+               -74,  -44,   -2,   -1,    -1,   -2,  -44,  -71,
+               -36,  -26,  -12,   -1,     2,  -12,  -24,  -43,
+               -30,  -16,  -21,   -6,    -8,  -16,  -15,  -28,
+               -31,  -19,  -18,  -10,    -7,  -11,  -17,  -30,
+               -49,  -32,  -31,  -29,   -30,  -31,  -36,  -50
             ]
         }
+
 
         # --- 4) Compute game-phase factor ---
         phase = 0
