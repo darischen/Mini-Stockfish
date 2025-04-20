@@ -110,7 +110,6 @@ class ChessAI:
             print(f"Depth {depth} → best={best_move} eval={best_eval:.4f}")
 
         elapsed = time.time() - total_start
-        self.progress.close()
         print(f"AI search complete. Nodes: {self.nodes_evaluated}, Pruned: {self.branches_pruned}, Time: {elapsed:.2f}s")
         print(f"Best eval for {color}: {best_eval:.4f}")
 
@@ -414,6 +413,24 @@ class ChessAI:
 
             total = mat + pst_score
             score += total if color=='white' else -total
+        
+        final_score = score if ai_color =='white' else -score
+        # --- Bonus for Checks ---
+        if bb.is_check():
+            check_bonus = 50  # increase/decrease as necessary
+            if bb.turn == (ai_color == 'white'):
+                final_score += check_bonus
+            else:
+                final_score -= check_bonus
+
+        # --- Bonus for Promotions ---
+        promotion_bonus = 200  # strong bonus to prioritize promotions
+        for move in bb.legal_moves:
+            if move.promotion:
+                if bb.turn == (ai_color == 'white'):
+                    final_score += promotion_bonus
+                else:
+                    final_score -= promotion_bonus
 
         return score if ai_color=='white' else -score
 
