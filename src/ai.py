@@ -57,73 +57,77 @@ class ChessAI:
 
     def choose_move(self, board, color: str):
         """
-        Choose the best move for the given board and color.
-        Uses python-chess internally (bitboard-backed) for fast move generation and push/pop,
-        instead of mutating the game engine's Board instance.
-        Returns a (piece, Move) tuple keyed back to the game engine.
+        Iterative deepening with one tqdm per depth.
         """
-        # Initialize statistics
+        # reset overall stats
         self.nodes_evaluated = 0
         self.branches_pruned = 0
-        
-        # tqdm progress bar for search
-        self.progress = tqdm(
-            desc="Search",
-            total=None
-        )
 
-        # Convert current game state to a python-chess Board
-        root_fen = board.get_fen()
-        search_board = chess.Board(root_fen)
-        search_board.turn = chess.BLACK
-
-        self.acc = Accumulator()
-        self.acc.init(search_board)
+        root_fen   = board.get_fen()
+        root_board = chess.Board(root_fen)
+        # set the side to move correctly
+        root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
 
         best_move = None
-        # For white we maximize, for black we minimize
-        maximizing = (color == 'white')
-        best_eval = -math.inf if maximizing else math.inf
+        best_eval = -math.inf if color == 'white' else math.inf
 
-        start = time.time()
-        moves = list(chess.Board(root_fen).legal_moves)
-        with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
-            futures = []
-            for uci in moves:
-                futures.append(executor.submit(
-                    self._search_move, root_fen, uci, maximizing, color
-                ))
-            for future in as_completed(futures):
-                val, uci = future.result()
-                if maximizing and val > best_eval:
-                    best_eval, best_move = val, uci
-                elif not maximizing and val < best_eval:
-                    best_eval, best_move = val, uci
+        total_start = time.time()
 
-        elapsed = time.time() - start
+        # iterate depths 1..self.depth
+        for depth in range(1, self.depth + 1):
+            bar = tqdm(desc=f"Depth {depth}", total=None)
+            maximizing = (color == 'white')
+            current_best = None
+            current_eval = -math.inf if maximizing else math.inf
+
+            moves = list(root_board.legal_moves)
+            # launch one thread per root move
+            with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
+                futures = [
+                    executor.submit(
+                        self._search_move,
+                        root_fen,
+                        uci,
+                        depth,
+                        maximizing,
+                        color,
+                        bar
+                    )
+                    for uci in moves
+                ]
+                # collect results
+                for fut in as_completed(futures):
+                    val, uci = fut.result()
+                    if maximizing:
+                        if val > current_eval:
+                            current_eval, current_best = val, uci
+                    else:
+                        if val < current_eval:
+                            current_eval, current_best = val, uci
+
+            bar.close()
+            best_move, best_eval = current_best, current_eval
+            print(f"Depth {depth} → best={best_move} eval={best_eval:.4f}")
+
+        elapsed = time.time() - total_start
         self.progress.close()
         print(f"AI search complete. Nodes: {self.nodes_evaluated}, Pruned: {self.branches_pruned}, Time: {elapsed:.2f}s")
         print(f"Best eval for {color}: {best_eval:.4f}")
 
-        if not best_move:
+        if best_move is None:
             return None
-        # Map back to game-engine Move and piece
-        src_idx = best_move.from_square
-        dst_idx = best_move.to_square
 
-        # unpack
-        src_rank, src_file = divmod(src_idx, 8)
-        dst_rank, dst_file = divmod(dst_idx, 8)
-
-        # convert so that rank=0→row=7, rank=7→row=0
-        initial = Square(7 - src_rank, src_file)
-        final   = Square(7 - dst_rank, dst_file)
+        # map UCI back to your Move/Square classes
+        src, dst = best_move.from_square, best_move.to_square
+        sr, sf = divmod(src, 8)
+        dr, df = divmod(dst, 8)
+        initial = Square(7 - sr, sf)
+        final   = Square(7 - dr, df)
         mv = Move(initial, final)
-
         piece = board.squares[initial.row][initial.col].piece
         return (piece, mv)
     
-    def _search_move(self, root_fen, uci, maximizing, ai_color):
+    def _search_move(self, root_fen, uci, depth, maximizing, ai_color, progress_bar):
         # Each thread gets its own board and accumulator
         board = chess.Board(root_fen)
         board.turn = chess.BLACK
@@ -133,71 +137,80 @@ class ChessAI:
         captured = board.piece_at(uci.to_square)
         board.push(uci)
         acc.update(uci, captured)
-        val = self._minimax(board, acc, self.depth - 1,
-                             -math.inf, math.inf,
-                             not maximizing, ai_color)
+        val = self._minimax(
+            board, acc,
+            depth - 1,
+            -math.inf, math.inf,
+            not maximizing,
+            ai_color,
+            progress_bar
+        )
         return val, uci
 
-    def _minimax(self, board, acc, depth, alpha, beta, maximizing_player, ai_color):
-        # Shared, thread-safe stat increment
+    def _minimax(self,
+                 board: chess.Board,
+                 acc: Accumulator,
+                 depth: int,
+                 alpha: float,
+                 beta: float,
+                 maximizing_player: bool,
+                 ai_color: str,
+                 progress_bar: tqdm):
+        """
+        Alpha‐beta + TT + accumulator + per‐node progress updates.
+        """
+        # stats + bar update
         with self.stats_lock:
             self.nodes_evaluated += 1
-            self.progress.update(1)
-            self.progress.set_postfix({
-                "nodes":    self.nodes_evaluated,
-                "pruned":   self.branches_pruned
+            progress_bar.update(1)
+            progress_bar.set_postfix({
+                "nodes":  self.nodes_evaluated,
+                "pruned": self.branches_pruned
             })
 
-        # Zobrist key for TT lookup
         key = zobrist_hash(board)
-        # Probe TT
-        tt_val = self.tt.get(key, depth)
-        if tt_val is not None:
-            return tt_val
+        if (cached := self.tt.get(key, depth)) is not None:
+            return cached
 
+        # leaf
         if depth == 0 or board.is_game_over():
-            if self.model:
-                val = self.model(acc.state).item()
-            else:
-                val = self._evaluate_bb(board, ai_color)
+            val = self.model(acc.state).item() if self.model else self._evaluate_bb(board, ai_color)
             self.tt.store(key, depth, val)
             return val
 
         if maximizing_player:
             value = -math.inf
-            moves = self._order_moves(board, True)
-            for uci in moves:
-                captured = board.piece_at(uci.to_square)
-                board.push(uci)
-                acc.update(uci, captured)
-                child_val = self._minimax(board, acc, depth-1, alpha, beta, False, ai_color)
-                acc.rollback(uci, captured)
-                board.pop()
-                value = max(value, child_val)
-                alpha = max(alpha, child_val)
+            for mv in self._order_moves(board, True):
+                cap = board.piece_at(mv.to_square)
+                board.push(mv); acc.update(mv, cap)
+                child = self._minimax(board, acc, depth - 1, alpha, beta, False, ai_color, progress_bar)
+                acc.rollback(mv, cap); board.pop()
+
+                value = max(value, child)
+                alpha = max(alpha, child)
                 if beta <= alpha:
                     with self.stats_lock:
                         self.branches_pruned += 1
-                        self.progress.set_postfix(pruned=self.branches_pruned)
+                        progress_bar.set_postfix(pruned=self.branches_pruned)
                     break
+
             self.tt.store(key, depth, value)
             return value
+
         else:
             value = math.inf
-            moves = self._order_moves(board, False)
-            for uci in moves:
-                captured = board.piece_at(uci.to_square)
-                board.push(uci)
-                acc.update(uci, captured)
-                child_val = self._minimax(board, acc, depth-1, alpha, beta, True, ai_color)
-                acc.rollback(uci, captured)
-                board.pop()
-                value = min(value, child_val)
-                beta = min(beta, child_val)
+            for mv in self._order_moves(board, False):
+                cap = board.piece_at(mv.to_square)
+                board.push(mv); acc.update(mv, cap)
+                child = self._minimax(board, acc, depth - 1, alpha, beta, True, ai_color, progress_bar)
+                acc.rollback(mv, cap); board.pop()
+
+                value = min(value, child)
+                beta = min(beta, child)
                 if beta <= alpha:
                     with self.stats_lock:
                         self.branches_pruned += 1
-                        self.progress.set_postfix(pruned=self.branches_pruned)
+                        progress_bar.set_postfix(pruned=self.branches_pruned)
                     break
             self.tt.store(key, depth, value)
             return value
