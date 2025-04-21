@@ -249,12 +249,23 @@ class ChessAI:
         scored.sort(key=lambda x: x[1], reverse=maximize)
         return [m for (m,_) in scored]
     
-    def _stand_pat(self, acc: Accumulator, ai_color: str):
-        # if you have an NNUE model:
-        if self.model:
-            return self.model(acc.state).item()
-        else:
-            return self._evaluate_bb(acc.board, ai_color)
+    def _stand_pat(self,
+                   acc: Accumulator,
+                   board: chess.Board,
+                   ai_color: str) -> float:
+        """Compute blended NNUE/static eval, then apply all handcrafted bonuses/penalties."""
+        # 1) raw NNUE
+        nnue_cp    = self.model(acc.state).item() if self.model else 0.0
+        # 2) raw static
+        static_cp  = self._evaluate_bb(board, ai_color)
+        # 3) phase (0=midgame,1=endgame)
+        eg_phase   = acc._compute_phase()  # you can expose this via Accumulator
+        # 4) blend: more NNUE early, more static late
+        w_nnue     = 1.0 - eg_phase * 0.5
+        w_static   = 1.0 - w_nnue
+        combined   = w_nnue * nnue_cp + w_static * static_cp
+        # 5) apply every bonus/penalty in one pass
+        return self.bonus(board, combined, ai_color)
     
     def _quiescence(self, board: chess.Board, acc: Accumulator,
                     alpha: float, beta: float, ai_color: str):
@@ -264,7 +275,7 @@ class ChessAI:
             return cached
         
         # 1) Stand‑pat
-        stand_pat = self._stand_pat(acc, ai_color)
+        stand_pat = self._stand_pat(acc, board, ai_color)
         if stand_pat >= beta:
             return beta
         if alpha < stand_pat:
@@ -306,6 +317,74 @@ class ChessAI:
 
         return alpha
 
+    def bonus(self,
+                                     board: chess.Board,
+                                     base_score: float,
+                                     ai_color: str) -> float:
+        """Tack on every hanging‑piece penalty, queen safety, pawn‑attack bonus, etc."""
+        s = base_score
+        us = chess.WHITE if ai_color=='white' else chess.BLACK
+        them = not us
+
+        # — hanging‑piece penalty
+        pen = 200
+        for sq in chess.SQUARES:
+            pc = board.piece_at(sq)
+            if pc and pc.color==us:
+                if board.is_attacked_by(them, sq) and not board.is_attacked_by(us, sq):
+                    s -= pen
+
+        # — bonus for unprotected enemy captures
+        bonus = 150
+        for m in board.legal_moves:
+            if board.is_capture(m):
+                vic = board.piece_at(m.to_square)
+                if vic and not board.is_attacked_by(us, m.to_square):
+                    s += (1 if board.turn==us else -1)*bonus
+
+        # — mobility bonus
+        mob = len(list(board.legal_moves))
+        s += (1 if board.turn==us else -1)*mob*10
+
+        # — bishop‑pair
+        if sum(1 for p in board.piece_map().values()
+               if p.piece_type==chess.BISHOP and p.color==us)==2:
+            s += 50
+
+        # — check bonus
+        if board.is_check():
+            s += (100 if board.turn==us else -100)
+
+        # — promotion bonus
+        for m in board.legal_moves:
+            if m.promotion:
+                s += (200 if board.turn==us else -200)
+
+        # — queen safety & mobility
+        qa, qs, qm = 500, 75, 20
+        for sq, p in board.piece_map().items():
+            if p.piece_type==chess.QUEEN and p.color==us:
+                attacked = board.is_attacked_by(them, sq)
+                defended = board.is_attacked_by(us, sq)
+                if attacked and not defended: s -= qa
+                rank = chess.square_rank(sq)
+                if (us==chess.WHITE and rank<=2) or (us==chess.BLACK and rank>=5):
+                    s += qs
+                s += sum(1 for m in board.legal_moves if m.from_square==sq)*qm
+                break
+
+        # — pawn‑attack bonus
+        pawn_bonus = {chess.KNIGHT:50, chess.BISHOP:50,
+                      chess.ROOK:75,    chess.QUEEN:100}
+        for sq, p in board.piece_map().items():
+            if p.piece_type==chess.PAWN and p.color==us:
+                for tgt in board.attacks_from(chess.PAWN, sq):
+                    vic = board.piece_at(tgt)
+                    if vic and vic.color!=us and vic.piece_type in pawn_bonus:
+                        s += pawn_bonus[vic.piece_type]
+
+        return s
+    
     def _evaluate_bb(self, board: chess.Board, ai_color: str):
         """
         Bitboard-based static evaluation using PST interpolation.
