@@ -137,3 +137,15 @@ class Accumulator:
         mob = float(len(list(bb.legal_moves)))
 
         return torch.tensor([white_ks, black_ks, mob], dtype=torch.float32)
+
+    def game_phase(self) -> float:
+        """
+        Compute the endgame fraction (0 = opening/middlegame, 1 = endgame) based on piece counts.
+        """
+        phase = 0
+        for sq, pc in self.board.piece_map().items():
+            w = self._phase_weights.get(pc.piece_type, 0)
+            # each piece appears once per side, so double weight
+            phase += w
+        eg_phase = min(max(phase / self._max_phase, 0.0), 1.0)
+        return eg_phase

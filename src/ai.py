@@ -179,7 +179,7 @@ class ChessAI:
             self.tt.store(key, depth, val)
             return val
 
-        if depth >= R + 1 and not board.is_check():
+        if depth >= R + 1 and not board.is_check() and alpha > -math.inf and beta < math.inf:
             # do a “pass” (flip turn) without updating acc
             board.turn = not board.turn
             score = -self._minimax(
@@ -254,7 +254,7 @@ class ChessAI:
         if self.model:
             return self.model(acc.state).item()
         else:
-            return acc.static_eval() if ai_color=='white' else -acc.static_eval()
+            return self._evaluate_bb(acc.board, ai_color)
     
     def _quiescence(self, board: chess.Board, acc: Accumulator,
                     alpha: float, beta: float, ai_color: str):
@@ -495,7 +495,7 @@ class ChessAI:
         final_score = score if ai_color =='white' else -score
         
         # --- Penalty for Hanging a Piece ---
-        own_penalty = 100
+        own_penalty = 200
         # scan every square on the board
         for sq in chess.SQUARES:
             pc = board.piece_at(sq)
@@ -536,7 +536,7 @@ class ChessAI:
                     
         # --- Bonus for Checks ---
         if board.is_check():
-            check_bonus = 50
+            check_bonus = 100
             if board.turn == (ai_color == 'black'):
                 final_score += check_bonus
             else:
@@ -550,8 +550,60 @@ class ChessAI:
                     final_score += promotion_bonus
                 else:
                     final_score -= promotion_bonus
+                    
+        # --- Queen Safety & Mobility ---
+        queen_attack_penalty = 500
+        queen_safe_bonus    = 75
+        queen_mobility_bonus = 20
 
-        return score if ai_color=='white' else -score
+        # scan for your queen
+        for sq, pc in board.piece_map().items():
+            if pc.piece_type == chess.QUEEN and pc.color == (chess.WHITE if ai_color=='white' else chess.BLACK):
+                # 1) attacked & under‑defended?
+                attacked   = board.is_attacked_by(not board.turn, sq)
+                defended   = board.is_attacked_by(board.turn, sq)
+                sign = 1 if pc.color == (chess.WHITE if ai_color=='white' else chess.BLACK) else -1
+                if attacked and not defended:
+                    final_score -= queen_attack_penalty * sign
+
+                # 2) queen safely behind pawn shield?
+                rank = chess.square_rank(sq)  # 0=rank1, …,7=rank8
+                if pc.color == chess.WHITE:
+                    # safe if on ranks 1–3 (behind pawns)
+                    if rank <= 2:
+                        final_score += queen_safe_bonus * sign
+                else:
+                    # black safe on ranks 6–8
+                    if rank >= 5:
+                        final_score += queen_safe_bonus * sign
+
+                # 3) queen mobility
+                qm = 0
+                for m in board.legal_moves:
+                    if m.from_square == sq:
+                        qm += 1
+                final_score += qm * queen_mobility_bonus * sign
+        
+        # --- Pawn‐attack on higher‐value piece bonus ---
+        pawn_attack_bonus = {
+            chess.KNIGHT:  50,
+            chess.BISHOP:  50,
+            chess.ROOK:    75,
+            chess.QUEEN:  100,
+        }
+        # for each pawn of the AI’s side
+        for sq, pc in board.piece_map().items():
+            if pc.piece_type == chess.PAWN and pc.color == (chess.WHITE if ai_color=='white' else chess.BLACK):
+                # squares this pawn could attack
+                mask = board.attacks_mask(sq)
+                for tgt in chess.SquareSet(mask):
+                    vic = board.piece_at(tgt)
+                    # if there’s an enemy piece of greater value
+                    if vic and vic.color != pc.color and vic.piece_type in pawn_attack_bonus:
+                        sign = 1 if pc.color == (chess.WHITE if ai_color=='white' else chess.BLACK) else -1
+                        final_score += sign * pawn_attack_bonus[vic.piece_type]
+
+        return final_score if ai_color=='white' else -final_score
 
     def _fen_to_tensor(self, fen_str: str):
         """

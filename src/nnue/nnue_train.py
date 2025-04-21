@@ -135,8 +135,7 @@ class NNUEModel(nn.Module):
         """
         A simple feedforward NNUE-like model.
         :param input_size: Size of the input feature vector (now 771 due to extra features)
-        :param hidden_size1: Number of neurons in the first hidden layer.
-        :param hidden_size2: Number of neurons in the second hidden layer.
+        :param hidden_size: Number of neurons in the hidden layer.
         """
         super(NNUEModel, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
@@ -177,7 +176,7 @@ class ChessDataset(Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         fen = row['FEN']
-        scale = 10000.0  # Use scale for normalization (adjust if needed)
+        scale = 1000.0  # Use scale for normalization (adjust if needed)
         target = parse_evaluation(row['Evaluation']) / scale
         features = enhanced_fen_to_features(fen)  # Use enhanced features (771-dim)
         features_tensor = torch.from_numpy(features)
@@ -290,4 +289,4 @@ if __name__ == "__main__":
     combined_df.to_csv(combined_csv_path, index=False)
     
     csv_file = combined_csv_path  # Adjust path as needed.
-    train_model(csv_file, num_epochs=100)
+    train_model(csv_file, num_epochs=50)
