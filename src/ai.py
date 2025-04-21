@@ -493,6 +493,47 @@ class ChessAI:
             score += total if color=='white' else -total
         
         final_score = score if ai_color =='white' else -score
+        
+        # --- Penalty for Hanging a Piece ---
+        own_penalty = 100
+        # scan every square on the board
+        for sq in chess.SQUARES:
+            pc = board.piece_at(sq)
+            if pc and pc.color == (chess.WHITE if ai_color=='white' else chess.BLACK):
+                # attacked by opponent but not defended by you
+                if board.is_attacked_by(not board.turn, sq) and not board.is_attacked_by(board.turn, sq):
+                    final_score -= own_penalty
+                    
+        # --- Bonus for hanging enemy captures ---
+        hanging_bonus = 150
+        for mv in board.legal_moves:
+            if board.is_capture(mv):
+                vic = board.piece_at(mv.to_square)
+                # if the victim is unprotected on its square
+                if vic and not board.is_attacked_by(board.turn, mv.to_square):
+                    # board.turn is side to move who would do this capture
+                    sign = 1 if (board.turn == (ai_color == 'white')) else -1
+                    final_score += sign * hanging_bonus
+        
+        # --- Open Position Bonus ---
+        mobility = board.legal_moves.count()
+        mob_bonus = 10
+        # if it's your turn, reward your mobility, else penalize
+        if board.turn == (ai_color == 'white'):
+            final_score += mobility * mob_bonus
+        else:
+            final_score -= mobility * mob_bonus
+            
+        # --- Bishop‑pair bonus ---
+        # give a small bonus if you still have both bishops
+        bishops = 0
+        for sq, pc in board.piece_map().items():
+            if pc.piece_type == chess.BISHOP and pc.color == (chess.WHITE if ai_color=='white' else chess.BLACK):
+                bishops += 1
+        if bishops == 2:
+            pair_bonus = 50
+            final_score += pair_bonus
+                    
         # --- Bonus for Checks ---
         if board.is_check():
             check_bonus = 50
