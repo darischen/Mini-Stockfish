@@ -34,6 +34,7 @@ class TranspositionTable:
             self.table[key] = {'depth': depth, 'value': value}
             
 class ChessAI:
+    PIECE_VALUES = (0, 100, 300, 310, 400, 900, 20000)
     def __init__(self, depth=3, use_dnn=False, model_path=None):
         """
         Initialize the chess AI.
@@ -173,7 +174,7 @@ class ChessAI:
 
         # leaf
         if depth == 0 or board.is_game_over():
-            val = self._quiescence(board, alpha, beta, ai_color)
+            val = self._quiescence(board, acc, alpha, beta, ai_color)
             self.tt.store(key, depth, val)
             return val
 
@@ -235,22 +236,52 @@ class ChessAI:
         scored.sort(key=lambda x: x[1], reverse=maximize)
         return [m for (m,_) in scored]
     
-    def _quiescence(self, board, alpha, beta, ai_color):
-        stand_pat = self._evaluate_bb(board, ai_color)
+    def _stand_pat(self, acc: Accumulator, ai_color: str):
+        # if you have an NNUE model:
+        if self.model:
+            return self.model(acc.state).item()
+        else:
+            return acc.static_eval() if ai_color=='white' else -acc.static_eval()
+    
+    def _quiescence(self, board: chess.Board, acc: Accumulator,
+                    alpha: float, beta: float, ai_color: str):
 
+        # 1) Stand‑pat
+        stand_pat = self._stand_pat(acc, ai_color)
         if stand_pat >= beta:
             return beta
         if alpha < stand_pat:
             alpha = stand_pat
 
-        for move in self._order_moves(board, maximize=True):
-            if not board.is_capture(move):
-                continue  # only consider capturing moves
+        # 2) Hoist locals
+        pv = ChessAI.PIECE_VALUES
+        is_capture = board.is_capture
+        legal_moves = board.legal_moves
+        piece_at    = board.piece_at
+        quiesce     = self._quiescence  # for recursive call
 
-            board.push(move)
-            score = -self._quiescence(board, -beta, -alpha, ai_color)
+        # 3) Only captures, SEE via piece_type lookup
+        for mv in legal_moves:
+            if not is_capture(mv):
+                continue
+
+            vic = piece_at(mv.to_square)
+            atk = piece_at(mv.from_square)
+            gain = (pv[vic.piece_type] if vic else 0) \
+                 - (pv[atk.piece_type] if atk else 0)
+
+            # 4) Delta prune
+            if stand_pat + gain < alpha:
+                continue
+
+            # 5) Recurse
+            board.push(mv)
+            acc.update(mv, vic)
+            score = -quiesce(board, acc, -beta, -alpha, ai_color)
+            acc.rollback(mv, vic)
             board.pop()
 
+            # 6) Cut or raise
             if score >= beta:
                 return beta
             if score > alpha:
@@ -258,13 +289,13 @@ class ChessAI:
 
         return alpha
 
-    def _evaluate_bb(self, bb: chess.Board, ai_color: str):
+    def _evaluate_bb(self, board: chess.Board, ai_color: str):
         """
         Bitboard-based static evaluation using PST interpolation.
         """
         # --- 1) Build per-piece bitboards from python-chess ---
         bitboards = {}
-        for sq, pc in bb.piece_map().items():
+        for sq, pc in board.piece_map().items():
             color = 'white' if pc.color else 'black'
             key = (color, pc.piece_type)
             bitboards[key] = bitboards.get(key, 0) | bitboard.square_bb(sq)
@@ -418,8 +449,8 @@ class ChessAI:
 
         # --- 4) Compute game-phase factor ---
         phase = 0
-        for (color, ptype), bb in bitboards.items():
-            cnt = bitboard.popcount(bb)
+        for (color, ptype), mask in bitboards.items():
+            cnt = bitboard.popcount(mask)
             phase += phase_weights[ptype] * cnt
         phase = max(0, min(phase, max_phase))
         mg_phase = phase / max_phase
@@ -427,12 +458,12 @@ class ChessAI:
 
         # --- 5) Accumulate material + PSTs ---
         score = 0.0
-        for (color, ptype), bb in bitboards.items():
-            pcs = bitboard.popcount(bb)
+        for (color, ptype), mask in bitboards.items():
+            pcs = bitboard.popcount(mask)
             mat = mat_values[ptype] * pcs
             # for each bit in bb, add PST contribution
             pst_score = 0
-            b = bb
+            b = mask
             while b:
                 sq = (b & -b).bit_length() - 1
                 b &= b - 1
@@ -446,18 +477,18 @@ class ChessAI:
         
         final_score = score if ai_color =='white' else -score
         # --- Bonus for Checks ---
-        if bb.is_check():
+        if board.is_check():
             check_bonus = 50
-            if bb.turn == (ai_color == 'white'):
+            if board.turn == (ai_color == 'black'):
                 final_score += check_bonus
             else:
                 final_score -= check_bonus
 
         # --- Bonus for Promotions ---
         promotion_bonus = 200
-        for move in bb.legal_moves:
+        for move in board.legal_moves:
             if move.promotion:
-                if bb.turn == (ai_color == 'white'):
+                if board.turn == (ai_color == 'white'):
                     final_score += promotion_bonus
                 else:
                     final_score -= promotion_bonus
