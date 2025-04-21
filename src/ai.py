@@ -159,6 +159,7 @@ class ChessAI:
         """
         Alpha‐beta + TT + accumulator + per‐node progress updates.
         """
+        R = 2 
         # stats + bar update
         with self.stats_lock:
             self.nodes_evaluated += 1
@@ -177,6 +178,18 @@ class ChessAI:
             val = self._quiescence(board, acc, alpha, beta, ai_color)
             self.tt.store(key, depth, val)
             return val
+
+        if depth >= R + 1 and not board.is_check():
+            # do a “pass” (flip turn) without updating acc
+            board.turn = not board.turn
+            score = -self._minimax(
+                board, acc, depth - R - 1,
+                -beta, -beta + 1,
+                not maximizing_player, ai_color, progress_bar
+            )
+            board.turn = not board.turn
+            if score >= beta:
+                return beta
 
         if maximizing_player:
             value = -math.inf
@@ -246,6 +259,10 @@ class ChessAI:
     def _quiescence(self, board: chess.Board, acc: Accumulator,
                     alpha: float, beta: float, ai_color: str):
 
+        key = zobrist_hash(board)
+        if (cached := self.tt.get(key, 0)) is not None:
+            return cached
+        
         # 1) Stand‑pat
         stand_pat = self._stand_pat(acc, ai_color)
         if stand_pat >= beta:
