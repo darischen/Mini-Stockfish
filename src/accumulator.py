@@ -23,6 +23,17 @@ class Accumulator:
 
     # adjacency offsets for king‑safety features
     _king_offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
+    
+    _phase_weights = {
+        chess.PAWN:   0,
+        chess.KNIGHT: 1,
+        chess.BISHOP: 1,
+        chess.ROOK:   2,
+        chess.QUEEN:  4,
+        chess.KING:   0,
+    }
+    
+    _max_phase = sum(w * 2 for w in _phase_weights.values())
 
     def __init__(self):
         self.state = None  # torch.Tensor of shape [1,771]
@@ -143,9 +154,7 @@ class Accumulator:
         Compute the endgame fraction (0 = opening/middlegame, 1 = endgame) based on piece counts.
         """
         phase = 0
-        for sq, pc in self.board.piece_map().items():
-            w = self._phase_weights.get(pc.piece_type, 0)
-            # each piece appears once per side, so double weight
-            phase += w
-        eg_phase = min(max(phase / self._max_phase, 0.0), 1.0)
-        return eg_phase
+        for pc in self.board.piece_map().values():
+            phase += self._phase_weights.get(pc.piece_type, 0)
+        # clamp into [0,1]
+        return min(max(phase / self._max_phase, 0.0), 1.0)

@@ -15,6 +15,7 @@ import threading
 from chess.polyglot import zobrist_hash
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+from chess import SquareSet
 
 class TranspositionTable:
     def __init__(self):
@@ -254,18 +255,13 @@ class ChessAI:
                    board: chess.Board,
                    ai_color: str) -> float:
         """Compute blended NNUE/static eval, then apply all handcrafted bonuses/penalties."""
-        # 1) raw NNUE
-        nnue_cp    = self.model(acc.state).item() if self.model else 0.0
-        # 2) raw static
-        static_cp  = self._evaluate_bb(board, ai_color)
-        # 3) phase (0=midgame,1=endgame)
-        eg_phase   = acc._compute_phase()  # you can expose this via Accumulator
-        # 4) blend: more NNUE early, more static late
-        w_nnue     = 1.0 - eg_phase * 0.5
-        w_static   = 1.0 - w_nnue
-        combined   = w_nnue * nnue_cp + w_static * static_cp
-        # 5) apply every bonus/penalty in one pass
-        return self.bonus(board, combined, ai_color)
+        if self.model:
+            # NNUE returns a centipawn score from White’s POV; flip sign for Black to move.
+            val = self.model(acc.state).item()
+            return val if ai_color == 'white' else -val
+        else:
+            # static evaluator already returns flipped score based on ai_color
+            return self._evaluate_bb(board, ai_color)
     
     def _quiescence(self, board: chess.Board, acc: Accumulator,
                     alpha: float, beta: float, ai_color: str):
@@ -374,15 +370,42 @@ class ChessAI:
                 break
 
         # — pawn‑attack bonus
-        pawn_bonus = {chess.KNIGHT:50, chess.BISHOP:50,
-                      chess.ROOK:75,    chess.QUEEN:100}
+        pawn_bonus = {chess.KNIGHT:50,
+                      chess.BISHOP:50,
+                      chess.ROOK:75,
+                      chess.QUEEN:100}
         for sq, p in board.piece_map().items():
-            if p.piece_type==chess.PAWN and p.color==us:
-                for tgt in board.attacks_from(chess.PAWN, sq):
+            if p.piece_type == chess.PAWN and p.color == us:
+                mask = board.attacks_mask(sq)
+                for tgt in chess.SquareSet(mask):
                     vic = board.piece_at(tgt)
-                    if vic and vic.color!=us and vic.piece_type in pawn_bonus:
+                    if vic and vic.color != us and vic.piece_type in pawn_bonus:
                         s += pawn_bonus[vic.piece_type]
-
+                        
+        # - capture checking piece bonus
+        if board.is_check():
+            us = chess.WHITE if ai_color=='white' else chess.BLACK
+            # bitboard of all checkers
+            checkers_bb = board.checkers()
+            for checker_sq in SquareSet(checkers_bb):
+                # if you have a legal move that lands on the checker’s square
+                for m in board.legal_moves:
+                    if m.to_square == checker_sq:
+                        s += 1000  # tweak this as needed
+                        # once per checker is enough
+                        break
+        
+        # — piece safety bonus
+        W = 50.0
+        for sq, pc in board.piece_map().items():
+            if pc.color == us:
+                attackers = board.attackers(them, sq)
+                defenders = board.attackers(us,   sq)
+                net_threat = len(attackers) - len(defenders)
+                if net_threat > 0:
+                    # PIECE_VALUES maps pawn→100, knight→300, …, queen→900
+                    s -= W * net_threat * ChessAI.PIECE_VALUES[pc.piece_type]
+                
         return s
     
     def _evaluate_bb(self, board: chess.Board, ai_color: str):

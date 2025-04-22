@@ -176,7 +176,7 @@ class ChessDataset(Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         fen = row['FEN']
-        scale = 1000.0  # Use scale for normalization (adjust if needed)
+        scale = 10000.0  # Use scale for normalization (adjust if needed)
         target = parse_evaluation(row['Evaluation']) / scale
         features = enhanced_fen_to_features(fen)  # Use enhanced features (771-dim)
         features_tensor = torch.from_numpy(features)
