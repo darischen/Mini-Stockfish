@@ -4,7 +4,6 @@ from piece import *
 from move import Move
 from sound import Sound
 from config import Config
-import copy
 import os
 
 class Board:

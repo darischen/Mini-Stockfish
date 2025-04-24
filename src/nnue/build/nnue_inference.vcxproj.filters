@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\daris\Desktop\School\Mini-Stockfish\src\nnue\nnue_inference.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\daris\Desktop\School\Mini-Stockfish\src\nnue\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{37E63443-E5F2-38A8-8B5F-F54EA8BF2145}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

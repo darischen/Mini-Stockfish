@@ -1,0 +1,1 @@
+C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/nnue_inference.dir/MinSizeRel/nnue_inference.obj

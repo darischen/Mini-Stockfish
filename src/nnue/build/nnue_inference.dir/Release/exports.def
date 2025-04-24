@@ -1,0 +1,351 @@
+EXPORTS 
+	??_R0?AU?$SingleElementType@$0M@UAwaitType@c10@@@c10@@@8 	 DATA
+	??_R0?AUAutogradMeta@autograd@torch@@@8 	 DATA
+	??_R0?AUAutogradMetaInterface@c10@@@8 	 DATA
+	??_R0?AUAwait@ivalue@c10@@@8 	 DATA
+	??_R0?AUAwaitType@c10@@@8 	 DATA
+	??_R0?AUDeviceGuardImplInterface@impl@c10@@@8 	 DATA
+	??_R0?AUFuture@ivalue@c10@@@8 	 DATA
+	??_R0?AUObject@ivalue@c10@@@8 	 DATA
+	??_R0?AUSharedType@c10@@@8 	 DATA
+	??_R0?AUType@c10@@@8 	 DATA
+	??_R0?AV?$_Iosb@H@std@@@8 	 DATA
+	??_R0?AV?$_Ref_count@UAwaitType@c10@@@std@@@8 	 DATA
+	??_R0?AV?$_Ref_count_obj2@UModule@jit@torch@@@std@@@8 	 DATA
+	??_R0?AV?$basic_ios@DU?$char_traits@D@std@@@std@@@8 	 DATA
+	??_R0?AV?$basic_ostream@DU?$char_traits@D@std@@@std@@@8 	 DATA
+	??_R0?AV?$basic_ostringstream@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@8 	 DATA
+	??_R0?AV?$basic_streambuf@DU?$char_traits@D@std@@@std@@@8 	 DATA
+	??_R0?AV?$basic_stringbuf@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@8 	 DATA
+	??_R0?AV?$enable_shared_from_this@USharedType@c10@@@std@@@8 	 DATA
+	??_R0?AVError@c10@@@8 	 DATA
+	??_R0?AVRRefInterface@c10@@@8 	 DATA
+	??_R0?AVValueError@c10@@@8 	 DATA
+	??_R0?AVVirtualGuardImpl@impl@c10@@@8 	 DATA
+	??_R0?AV_Generic_error_category@std@@@8 	 DATA
+	??_R0?AV_Ref_count_base@std@@@8 	 DATA
+	??_R0?AV_System_error@std@@@8 	 DATA
+	??_R0?AVbad_alloc@std@@@8 	 DATA
+	??_R0?AVbad_array_new_length@std@@@8 	 DATA
+	??_R0?AVbad_optional_access@std@@@8 	 DATA
+	??_R0?AVbad_weak_ptr@std@@@8 	 DATA
+	??_R0?AVerror_category@std@@@8 	 DATA
+	??_R0?AVexception@std@@@8 	 DATA
+	??_R0?AVintrusive_ptr_target@c10@@@8 	 DATA
+	??_R0?AVios_base@std@@@8 	 DATA
+	??_R0?AVruntime_error@std@@@8 	 DATA
+	??_R0?AVsystem_error@std@@@8 	 DATA
+	?_Static@?1???$_Immortalize_memcpy_image@V_Generic_error_category@std@@@std@@YAAEBV_Generic_error_category@1@XZ@4U?$_Constexpr_immortalize_impl@V_Generic_error_category@std@@@1@A 	 DATA
+	??$?0UAwaitType@c10@@$00@?$SingletonOrSharedTypePtr@UType@c10@@@Type@c10@@QEAA@V?$shared_ptr@UAwaitType@c10@@@std@@@Z
+	??$?6DU?$char_traits@D@std@@V?$allocator@D@1@@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@0@@Z
+	??$?6U?$char_traits@D@std@@@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@PEBD@Z
+	??$_Allocate_manually_vector_aligned@U_Default_allocate_traits@std@@@std@@YAPEAX_K@Z
+	??$_Atomic_address_as@DU?$_Atomic_padded@_N@std@@@std@@YAPECDAEAU?$_Atomic_padded@_N@0@@Z
+	??$_Atomic_address_as@DU?$_Atomic_padded@_N@std@@@std@@YAPEDDAEBU?$_Atomic_padded@_N@0@@Z
+	??$_Atomic_address_as@HU?$_Atomic_padded@I@std@@@std@@YAPECHAEAU?$_Atomic_padded@I@0@@Z
+	??$_Atomic_address_as@HU?$_Atomic_padded@I@std@@@std@@YAPEDHAEBU?$_Atomic_padded@I@0@@Z
+	??$_Atomic_address_as@JU?$_Atomic_padded@I@std@@@std@@YAPECJAEAU?$_Atomic_padded@I@0@@Z
+	??$_Atomic_address_as@_JU?$_Atomic_padded@PEBUDeviceGuardImplInterface@impl@c10@@@std@@@std@@YAPED_JAEBU?$_Atomic_padded@PEBUDeviceGuardImplInterface@impl@c10@@@0@@Z
+	??$_Atomic_reinterpret_as@D_N@std@@YADAEB_N@Z
+	??$_Atomic_reinterpret_as@HI@std@@YAHAEBI@Z
+	??$_Atomic_reinterpret_as@JI@std@@YAJAEBI@Z
+	??$_Copy_backward_memmove@PEAUDevice@c10@@PEAU12@@std@@YAPEAUDevice@c10@@PEAU12@00@Z
+	??$_Copy_memmove@PEAIPEAI@std@@YAPEAIPEAI00@Z
+	??$_Emplace_reallocate@AEBUDevice@c10@@@?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@QEAAPEAUDevice@c10@@QEAU23@AEBU23@@Z
+	??$_Emplace_reallocate@UEvent@c10@@@?$vector@UEvent@c10@@V?$allocator@UEvent@c10@@@std@@@std@@QEAAPEAUEvent@c10@@QEAU23@$$QEAU23@@Z
+	??$_Emplace_reallocate@UIValue@c10@@@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@QEAAPEAUIValue@c10@@QEAU23@$$QEAU23@@Z
+	??$_Emplace_reallocate@VStream@c10@@@?$vector@VStream@c10@@V?$allocator@VStream@c10@@@std@@@std@@QEAAPEAVStream@c10@@QEAV23@$$QEAV23@@Z
+	??$_Emplace_reallocate@W4DeviceType@c10@@AEAC@?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@QEAAPEAUDevice@c10@@QEAU23@$$QEAW4DeviceType@3@AEAC@Z
+	??$_Fill_zero_memset@PEAI@std@@YAXPEAI_K@Z
+	??$_Getvals@_W@?$time_get@DV?$istreambuf_iterator@DU?$char_traits@D@std@@@std@@@std@@IEAAX_WAEBV_Locinfo@1@@Z
+	??$_Getvals@_W@?$time_get@_WV?$istreambuf_iterator@_WU?$char_traits@_W@std@@@std@@@std@@IEAAX_WAEBV_Locinfo@1@@Z
+	??$_Immortalize_memcpy_image@V_Generic_error_category@std@@@std@@YAAEBV_Generic_error_category@0@XZ
+	??$_Insert_string@DU?$char_traits@D@std@@_K@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@QEBD_K@Z
+	??$_Is_all_bits_zero@I@std@@YA_NAEBI@Z
+	??$_Maklocstr@D@std@@YAPEADPEBDPEADAEBU_Cvtvec@@@Z
+	??$_Med3_unchecked@PEAUDevice@c10@@V<lambda_5484c513f1db82876e511b7844cff7fd>@@@std@@YAXPEAUDevice@c10@@00V<lambda_5484c513f1db82876e511b7844cff7fd>@@@Z
+	??$_Move_unchecked@PEAUIValue@c10@@PEAU12@@std@@YAPEAUIValue@c10@@PEAU12@00@Z
+	??$_Partition_by_median_guess_unchecked@PEAUDevice@c10@@V<lambda_5484c513f1db82876e511b7844cff7fd>@@@std@@YA?AU?$pair@PEAUDevice@c10@@PEAU12@@0@PEAUDevice@c10@@0V<lambda_5484c513f1db82876e511b7844cff7fd>@@@Z
+	??$_Pop_heap_hole_by_index@PEAUDevice@c10@@U12@V<lambda_5484c513f1db82876e511b7844cff7fd>@@@std@@YAXPEAUDevice@c10@@_J1$$QEAU12@V<lambda_5484c513f1db82876e511b7844cff7fd>@@@Z
+	??$_Reallocate_grow_by@V<lambda_65e615be2a453ca0576c979606f46740>@@PEBD_K@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAAAEAV01@_KV<lambda_65e615be2a453ca0576c979606f46740>@@PEBD_K@Z
+	??$_Resize_reallocate@UDevice@c10@@@?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@AEAAX_KAEBUDevice@c10@@@Z
+	??$_Resize_reallocate@U_Value_init_tag@std@@@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@AEAAX_KAEBU_Value_init_tag@1@@Z
+	??$_Sort_unchecked@PEAUDevice@c10@@V<lambda_5484c513f1db82876e511b7844cff7fd>@@@std@@YAXPEAUDevice@c10@@0_JV<lambda_5484c513f1db82876e511b7844cff7fd>@@@Z
+	??$_Uninitialized_move@PEAUEvent@c10@@V?$allocator@UEvent@c10@@@std@@@std@@YAPEAUEvent@c10@@QEAU12@0PEAU12@AEAV?$allocator@UEvent@c10@@@0@@Z
+	??$_typeMetaData@D@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@J@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@PEAD@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@PEAH@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@PEAM@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@PEAUHalf@c10@@@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@PEA_N@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@V?$unique_ptr@U?$atomic@_N@std@@U?$default_delete@U?$atomic@_N@std@@@2@@std@@@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@V?$unique_ptr@Vmutex@std@@U?$default_delete@Vmutex@std@@@2@@std@@@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@V?$vector@HV?$allocator@H@std@@@std@@@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@V?$vector@JV?$allocator@J@std@@@std@@@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@V?$vector@KV?$allocator@K@std@@@std@@@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@V?$vector@_JV?$allocator@_J@std@@@std@@@TypeMeta@caffe2@@CAGXZ
+	??$_typeMetaData@V_Uninitialized@detail@caffe2@@@TypeMeta@caffe2@@CAGXZ
+	??$assign_ptr_@UTensorImpl@c10@@UUndefinedTensorImpl@2@U?$intrusive_target_default_null_type@UTensorImpl@c10@@@detail@2@@detail@c10@@YAPEAUTensorImpl@1@PEAU21@@Z
+	??$create@$$V@AwaitType@c10@@SA?AV?$shared_ptr@UAwaitType@c10@@@std@@V?$SingletonOrSharedTypePtr@UType@c10@@@Type@1@@Z
+	??$destroy@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@@?$_Default_allocator_traits@V?$allocator@U?$_List_node@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@PEAX@std@@@std@@@std@@SAXAEAV?$allocator@U?$_List_node@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@PEAX@std@@@1@QEAU?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@1@@Z
+	??$endl@DU?$char_traits@D@std@@@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@@Z
+	??$fill@PEAV?$_List_unchecked_iterator@V?$_List_val@U?$_List_simple_types@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@@std@@@std@@@std@@V12@@std@@YAXQEAV?$_List_unchecked_iterator@V?$_List_val@U?$_List_simple_types@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@@std@@@std@@@0@0AEBV10@@Z
+	??$invokeCallback@$$CBV?$function@$$A6AXAEAUFuture@ivalue@c10@@@Z@std@@@Future@ivalue@c10@@AEAAXAEBV?$function@$$A6AXAEAUFuture@ivalue@c10@@@Z@std@@_N@Z
+	??$irange@H_K$00$00@c10@@YA?AU?$integer_range@_K$0A@$00@0@H_K@Z
+	??$irange@_K$00@c10@@YA?AU?$integer_range@_K$00$00@0@_K@Z
+	??$make_unique@UAutogradMeta@autograd@torch@@PEAUTensorImpl@c10@@AEA_N$0A@@std@@YA?AV?$unique_ptr@UAutogradMeta@autograd@torch@@U?$default_delete@UAutogradMeta@autograd@torch@@@std@@@0@$$QEAPEAUTensorImpl@c10@@AEA_N@Z
+	??$move@AEAVexception_ptr@std@@@std@@YA$$QEAVexception_ptr@0@AEAV10@@Z
+	??$str@$$BY0CD@D@c10@@YA?A_TAEAY0CD@$$CBD@Z
+	??$str@$$BY0EI@D$$BY0CP@DV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@c10@@YA?A_TAEAY0EI@$$CBDAEAY0CP@$$CBDAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z
+	??$str@$$V@c10@@YA?A_TXZ
+	??$torchCheckMsgImpl@$$BY0BD@DV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$BY0CP@DV12@$$BY01D@detail@c10@@YA?A_TPEBDAEAY0BD@$$CBDAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAY0CP@$$CBD2AEAY01$$CBD@Z
+	??$torchCheckMsgImpl@$$BY0BD@DV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$BY0DA@DV12@$$BY01D@detail@c10@@YA?A_TPEBDAEAY0BD@$$CBDAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAY0DA@$$CBD2AEAY01$$CBD@Z
+	??$torchCheckMsgImpl@$$BY0CD@DV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$BY0BI@DV12@@detail@c10@@YA?A_TPEBDAEAY0CD@$$CBDAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAY0BI@$$CBD2@Z
+	??$torchCheckMsgImpl@$$BY0CH@DUDevice@c10@@@detail@c10@@YA?A_TPEBDAEAY0CH@$$CBDAEBUDevice@1@@Z
+	??$torchCheckMsgImpl@$$BY0CI@DW4DeviceType@c10@@$$BY08D@detail@c10@@YA?A_TPEBDAEAY0CI@$$CBDAEBW4DeviceType@1@AEAY08$$CBD@Z
+	??$torchCheckMsgImpl@$$BY0DC@DW4DeviceType@c10@@$$BY0BF@DUDevice@2@@detail@c10@@YA?A_TPEBDAEAY0DC@$$CBDAEBW4DeviceType@1@AEAY0BF@$$CBDAEBUDevice@1@@Z
+	??$torchCheckMsgImpl@$$BY0DE@DUDevice@c10@@$$BY0P@D_K$$BY0P@DU12@@detail@c10@@YA?A_TPEBDAEAY0DE@$$CBDAEBUDevice@1@AEAY0P@$$CBDAEB_K32@Z
+	??$torchCheckMsgImpl@$$BY0DE@DV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$$BY0CN@DV12@@detail@c10@@YA?A_TPEBDAEAY0DE@$$CBDAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEAY0CN@$$CBD2@Z
+	??$torchCheckMsgImpl@$$BY0EJ@DUDevice@c10@@$$BY05DU12@@detail@c10@@YA?A_TPEBDAEAY0EJ@$$CBDAEBUDevice@1@AEAY05$$CBD2@Z
+	??$uninitialized_fill@PEAV?$_List_unchecked_iterator@V?$_List_val@U?$_List_simple_types@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@@std@@@std@@@std@@V12@@std@@YAXQEAV?$_List_unchecked_iterator@V?$_List_val@U?$_List_simple_types@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@@std@@@std@@@0@0AEBV10@@Z
+	??0?$InlineDeviceGuard@VVirtualGuardImpl@impl@c10@@@impl@c10@@QEAA@UDevice@2@@Z
+	??0?$InlineMultiStreamGuard@VVirtualGuardImpl@impl@c10@@@impl@c10@@QEAA@V?$ArrayRef@VStream@c10@@@2@@Z
+	??0?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAA@AEBV01@@Z
+	??0?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAA@QEBD@Z
+	??0?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@QEAA@AEBV01@@Z
+	??0Await@ivalue@c10@@AEAA@V?$SingletonOrSharedTypePtr@UType@c10@@@Type@2@@Z
+	??0Await@ivalue@c10@@AEAA@V?$SingletonOrSharedTypePtr@UType@c10@@@Type@2@V?$function@$$A6A?AUIValue@c10@@XZ@std@@@Z
+	??0Future@ivalue@c10@@AEAA@V?$SingletonOrSharedTypePtr@UType@c10@@@Type@2@V?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@@Z
+	??0Object@ivalue@c10@@QEAA@$$QEAU012@@Z
+	??0Object@ivalue@c10@@QEAA@AEBU012@@Z
+	??0Object@ivalue@c10@@QEAA@UStrongTypePtr@2@_K@Z
+	??0Object@ivalue@c10@@QEAA@UWeakOrStrongTypePtr@2@_K@Z
+	??0RRefInterface@c10@@QEAA@XZ
+	??0_System_error@std@@IEAA@Verror_code@1@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@1@@Z
+	??0_System_error@std@@QEAA@AEBV01@@Z
+	??0bad_alloc@std@@QEAA@AEBV01@@Z
+	??0bad_array_new_length@std@@QEAA@AEBV01@@Z
+	??0bad_array_new_length@std@@QEAA@XZ
+	??0bad_optional_access@std@@QEAA@AEBV01@@Z
+	??0bad_weak_ptr@std@@QEAA@AEBV01@@Z
+	??0bad_weak_ptr@std@@QEAA@XZ
+	??0exception@std@@QEAA@AEBV01@@Z
+	??0exception_ptr@std@@QEAA@AEBV01@@Z
+	??0runtime_error@std@@QEAA@AEBV01@@Z
+	??0system_error@std@@QEAA@AEBV01@@Z
+	??0system_error@std@@QEAA@Verror_code@1@@Z
+	??1?$InlineMultiStreamGuard@VVirtualGuardImpl@impl@c10@@@impl@c10@@QEAA@XZ
+	??1?$SingletonOrSharedTypePtr@UType@c10@@@Type@c10@@QEAA@XZ
+	??1?$_Ref_count_obj2@UModule@jit@torch@@@std@@UEAA@XZ
+	??1?$_Temporary_owner@UAwaitType@c10@@@std@@QEAA@XZ
+	??1?$_Tidy_guard@V?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@@std@@QEAA@XZ
+	??1?$_Uninitialized_backout_al@V?$allocator@UIValue@c10@@@std@@@std@@QEAA@XZ
+	??1?$_Vb_val@V?$allocator@_N@std@@@std@@QEAA@XZ
+	??1?$basic_ostringstream@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UEAA@XZ
+	??1?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAA@XZ
+	??1?$basic_stringbuf@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UEAA@XZ
+	??1?$function@$$A6A?AUIValue@c10@@XZ@std@@QEAA@XZ
+	??1?$intrusive_ptr@UFuture@ivalue@c10@@U?$intrusive_target_default_null_type@UFuture@ivalue@c10@@@detail@3@@c10@@QEAA@XZ
+	??1?$intrusive_ptr@UObject@ivalue@c10@@U?$intrusive_target_default_null_type@UObject@ivalue@c10@@@detail@3@@c10@@QEAA@XZ
+	??1?$intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@QEAA@XZ
+	??1?$intrusive_ptr@UTensorImpl@c10@@U?$intrusive_target_default_null_type@UTensorImpl@c10@@@detail@2@@c10@@QEAA@XZ
+	??1?$intrusive_ptr@UTensorImpl@c10@@UUndefinedTensorImpl@2@@c10@@QEAA@XZ
+	??1?$optional@V?$InlineDeviceGuard@VVirtualGuardImpl@impl@c10@@@impl@c10@@@std@@QEAA@XZ
+	??1?$optional@V?$vector@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@V?$allocator@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@@std@@@std@@@std@@QEAA@XZ
+	??1?$optional@VVirtualGuardImpl@impl@c10@@@std@@QEAA@XZ
+	??1?$shared_ptr@UModule@jit@torch@@@std@@QEAA@XZ
+	??1?$unique_lock@Vmutex@std@@@std@@QEAA@XZ
+	??1?$unique_ptr@UAutogradMeta@autograd@torch@@U?$default_delete@UAutogradMeta@autograd@torch@@@std@@@std@@QEAA@XZ
+	??1?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@QEAA@XZ
+	??1?$vector@UEvent@c10@@V?$allocator@UEvent@c10@@@std@@@std@@QEAA@XZ
+	??1?$vector@UFutureCallback@Future@ivalue@c10@@V?$allocator@UFutureCallback@Future@ivalue@c10@@@std@@@std@@QEAA@XZ
+	??1?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@QEAA@XZ
+	??1?$vector@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@V?$allocator@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@@std@@@std@@QEAA@XZ
+	??1?$vector@VStream@c10@@V?$allocator@VStream@c10@@@std@@@std@@QEAA@XZ
+	??1?$vector@_NV?$allocator@_N@std@@@std@@QEAA@XZ
+	??1?$weak_ptr@UCompilationUnit@jit@torch@@@std@@QEAA@XZ
+	??1Await@ivalue@c10@@UEAA@XZ
+	??1Event@c10@@QEAA@XZ
+	??1Future@ivalue@c10@@UEAA@XZ
+	??1MultiStreamGuard@c10@@QEAA@XZ
+	??1Object@ivalue@c10@@UEAA@XZ
+	??1OptionalDeviceGuard@c10@@QEAA@XZ
+	??1RRefInterface@c10@@UEAA@XZ
+	??1VirtualGuardImpl@impl@c10@@UEAA@XZ
+	??1_Ref_count_base@std@@UEAA@XZ
+	??1_Sentry_base@?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAA@XZ
+	??1bad_array_new_length@std@@UEAA@XZ
+	??1bad_optional_access@std@@UEAA@XZ
+	??1bad_weak_ptr@std@@UEAA@XZ
+	??1condition_variable@std@@QEAA@XZ
+	??1error_category@std@@UEAA@XZ
+	??1exception@std@@UEAA@XZ
+	??1exception_ptr@std@@QEAA@XZ
+	??1mutex@std@@QEAA@XZ
+	??1runtime_error@std@@UEAA@XZ
+	??1sentry@?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAA@XZ
+	??1system_error@std@@UEAA@XZ
+	??4Object@ivalue@c10@@QEAAAEAU012@$$QEAU012@@Z
+	??4Object@ivalue@c10@@QEAAAEAU012@AEBU012@@Z
+	??A?$ArrayRef@VStream@c10@@@c10@@QEBAAEBVStream@1@_K@Z
+	??A?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@QEAAAEAUDevice@c10@@_K@Z
+	??A?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@QEBAAEBUDevice@c10@@_K@Z
+	??_7?$_Ref_count@UAwaitType@c10@@@std@@6B@
+	??_7?$_Ref_count_obj2@UModule@jit@torch@@@std@@6B@
+	??_7?$basic_ostringstream@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@6B@
+	??_7?$basic_stringbuf@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@6B@
+	??_7Await@ivalue@c10@@6B@
+	??_7Future@ivalue@c10@@6B@
+	??_7Object@ivalue@c10@@6B@
+	??_7RRefInterface@c10@@6B@
+	??_7VirtualGuardImpl@impl@c10@@6B@
+	??_7_Generic_error_category@std@@6B@
+	??_7_System_error@std@@6B@
+	??_7bad_alloc@std@@6B@
+	??_7bad_array_new_length@std@@6B@
+	??_7bad_optional_access@std@@6B@
+	??_7bad_weak_ptr@std@@6B@
+	??_7exception@std@@6B@
+	??_7runtime_error@std@@6B@
+	??_7system_error@std@@6B@
+	??_D?$basic_ostringstream@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAXXZ
+	??_H@YAXPEAX_K1P6APEAX0@Z@Z
+	?_Assign_grow@?$_Hash_vec@V?$allocator@V?$_List_unchecked_iterator@V?$_List_val@U?$_List_simple_types@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@@std@@@std@@@std@@@std@@@std@@QEAAX_KV?$_List_unchecked_iterator@V?$_List_val@U?$_List_simple_types@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@@std@@@std@@@2@@Z
+	?_Change_array@?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@AEAAXQEAUDevice@c10@@_K1@Z
+	?_Change_array@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@AEAAXQEAUIValue@c10@@_K1@Z
+	?_Change_array@?$vector@VStream@c10@@V?$allocator@VStream@c10@@@std@@@std@@AEAAXQEAVStream@c10@@_K1@Z
+	?_Clear_and_reserve_geometric@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@AEAAX_K@Z
+	?_Delete_this@?$_Ref_count@UAwaitType@c10@@@std@@EEAAXXZ
+	?_Delete_this@?$_Ref_count_obj2@UModule@jit@torch@@@std@@EEAAXXZ
+	?_Destroy@?$_Ref_count@UAwaitType@c10@@@std@@EEAAXXZ
+	?_Destroy@?$_Ref_count_obj2@UModule@jit@torch@@@std@@EEAAXXZ
+	?_Destroy@?$vector@UEvent@c10@@V?$allocator@UEvent@c10@@@std@@@std@@AEAAXPEAUEvent@c10@@0@Z
+	?_Destroy@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@AEAAXPEAUIValue@c10@@0@Z
+	?_Get_deleter@_Ref_count_base@std@@UEBAPEAXAEBVtype_info@@@Z
+	?_Getal@?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@AEAAAEAV?$allocator@UDevice@c10@@@2@XZ
+	?_Getal@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@AEAAAEAV?$allocator@UIValue@c10@@@2@XZ
+	?_Getal@?$vector@VStream@c10@@V?$allocator@VStream@c10@@@std@@@std@@AEAAAEAV?$allocator@VStream@c10@@@2@XZ
+	?_Maklocwcs@std@@YAPEA_WPEB_W@Z
+	?_Reallocate_exactly@?$vector@VStream@c10@@V?$allocator@VStream@c10@@@std@@@std@@AEAAX_K@Z
+	?_Reset_move@?$_Func_class@UIValue@c10@@$$V@std@@IEAAX$$QEAV12@@Z
+	?_Throw_bad_array_new_length@std@@YAXXZ
+	?_Throw_bad_weak_ptr@std@@YAXXZ
+	?_Throw_system_error@std@@YAXW4errc@1@@Z
+	?_Tidy@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@AEAAXXZ
+	?_Tidy@?$vector@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@V?$allocator@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@@std@@@std@@AEAAXXZ
+	?_Ufill@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@AEAAPEAUIValue@c10@@PEAU34@_KU_Value_init_tag@2@@Z
+	?_Xlen@?$vector@_NV?$allocator@_N@std@@@std@@QEBAXXZ
+	?_Xlen_string@std@@YAXXZ
+	?_Xlength@?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@CAXXZ
+	?_Xlength@?$vector@UEvent@c10@@V?$allocator@UEvent@c10@@@std@@@std@@CAXXZ
+	?_Xlength@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@CAXXZ
+	?_Xlength@?$vector@VStream@c10@@V?$allocator@VStream@c10@@@std@@@std@@CAXXZ
+	?allocate@?$allocator@D@std@@QEAAPEAD_K@Z
+	?allocate@?$allocator@I@std@@QEAAPEAI_K@Z
+	?allocate@?$allocator@UDevice@c10@@@std@@QEAAPEAUDevice@c10@@_K@Z
+	?allocate@?$allocator@UIValue@c10@@@std@@QEAAPEAUIValue@c10@@_K@Z
+	?allocate@?$allocator@VStream@c10@@@std@@QEAAPEAVStream@c10@@_K@Z
+	?append@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z
+	?args@Await@ivalue@c10@@QEAAAEAV?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@XZ
+	?assign@?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEAAAEAV12@QEBD_K@Z
+	?block@VirtualGuardImpl@impl@c10@@UEBAXPEAXAEBVStream@3@@Z
+	?call@?$_str_wrapper@PEBDAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@detail@c10@@SA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBQEBDAEBV45@@Z
+	?call@?$_str_wrapper@PEBDAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDAEBV12@@detail@c10@@SA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBQEBDAEBV45@01@Z
+	?call@?$_str_wrapper@PEBDAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@PEBDAEBV12@PEBD@detail@c10@@SA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBQEBDAEBV45@010@Z
+	?call@?$_str_wrapper@PEBDAEBW4DeviceType@c10@@PEBD@detail@c10@@SA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBQEBDAEBW4DeviceType@3@0@Z
+	?call@?$_str_wrapper@PEBDPEBDAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@detail@c10@@SA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBQEBD0AEBV45@@Z
+	?compilation_unit@Object@ivalue@c10@@QEAA?AV?$shared_ptr@UCompilationUnit@jit@torch@@@std@@XZ
+	?completed@Await@ivalue@c10@@QEAA_NXZ
+	?completed@Future@ivalue@c10@@QEBA_NXZ
+	?constValue@Future@ivalue@c10@@QEBAAEBUIValue@3@XZ
+	?create@Object@ivalue@c10@@SA?AV?$intrusive_ptr@UObject@ivalue@c10@@U?$intrusive_target_default_null_type@UObject@ivalue@c10@@@detail@3@@3@UStrongTypePtr@3@_K@Z
+	?create@Object@ivalue@c10@@SA?AV?$intrusive_ptr@UObject@ivalue@c10@@U?$intrusive_target_default_null_type@UObject@ivalue@c10@@@detail@3@@3@UWeakOrStrongTypePtr@3@_K@Z
+	?createInstance@Future@ivalue@c10@@QEAA?AV?$intrusive_ptr@UFuture@ivalue@c10@@U?$intrusive_target_default_null_type@UFuture@ivalue@c10@@@detail@3@@3@V?$SingletonOrSharedTypePtr@UType@c10@@@Type@3@@Z
+	?deallocate@?$allocator@D@std@@QEAAXQEAD_K@Z
+	?deallocate@?$allocator@UDevice@c10@@@std@@QEAAXQEAUDevice@c10@@_K@Z
+	?deallocate@?$allocator@UEvent@c10@@@std@@QEAAXQEAUEvent@c10@@_K@Z
+	?deallocate@?$allocator@UIValue@c10@@@std@@QEAAXQEAUIValue@c10@@_K@Z
+	?deallocate@?$allocator@VStream@c10@@@std@@QEAAXQEAVStream@c10@@_K@Z
+	?default_error_condition@error_category@std@@UEBA?AVerror_condition@2@H@Z
+	?destroy@Repr@?$SingletonOrSharedTypePtr@UType@c10@@@Type@c10@@AEAAXXZ
+	?destroyEvent@VirtualGuardImpl@impl@c10@@UEBAXPEAXC@Z
+	?deviceCount@VirtualGuardImpl@impl@c10@@UEBACXZ
+	?devices@Future@ivalue@c10@@QEBAAEBV?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@XZ
+	?elapsedTime@VirtualGuardImpl@impl@c10@@UEBANPEAX0C@Z
+	?elementType@Await@ivalue@c10@@QEBAAEBV?$SingletonOrSharedTypePtr@UType@c10@@@Type@3@XZ
+	?elementType@Future@ivalue@c10@@QEBAAEBV?$SingletonOrSharedTypePtr@UType@c10@@@Type@3@XZ
+	?ensureIsSubsetOfDevices@Future@ivalue@c10@@CAXAEBV?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@0@Z
+	?equivalent@error_category@std@@UEBA_NAEBVerror_code@2@H@Z
+	?equivalent@error_category@std@@UEBA_NHAEBVerror_condition@2@@Z
+	?exception_ptr@Future@ivalue@c10@@QEBA?AV0std@@XZ
+	?exchangeDevice@VirtualGuardImpl@impl@c10@@UEBA?AUDevice@3@U43@@Z
+	?exchangeStream@VirtualGuardImpl@impl@c10@@UEBA?AVStream@3@V43@@Z
+	?formatSetOfDevices@Future@ivalue@c10@@CA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@5@@Z
+	?getDefaultStream@VirtualGuardImpl@impl@c10@@UEBA?AVStream@3@UDevice@3@@Z
+	?getDevice@VirtualGuardImpl@impl@c10@@UEBA?AUDevice@3@XZ
+	?getDeviceGuardImpl@impl@c10@@YAPEBUDeviceGuardImplInterface@12@W4DeviceType@2@@Z
+	?getDevicesOfStorages@Future@ivalue@c10@@CA?AV?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@AEBVVirtualGuardImpl@impl@3@AEBV?$vector@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@V?$allocator@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@@std@@@5@@Z
+	?getNewStream@VirtualGuardImpl@impl@c10@@UEBA?AVStream@3@UDevice@3@H@Z
+	?getSlot@Object@ivalue@c10@@QEBAAEBUIValue@3@_K@Z
+	?getStream@VirtualGuardImpl@impl@c10@@UEBA?AVStream@3@UDevice@3@@Z
+	?getStreamFromGlobalPool@VirtualGuardImpl@impl@c10@@UEBA?AVStream@3@UDevice@3@_N@Z
+	?getTypeOfDevices@Future@ivalue@c10@@CA?AW4DeviceType@3@AEBV?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@@Z
+	?hasError@Future@ivalue@c10@@QEBA_NXZ
+	?hasValue@Future@ivalue@c10@@QEBA_NXZ
+	?is_empty_strong_compilation_ref@Object@ivalue@c10@@QEBA_NXZ
+	?is_weak_compilation_ref@Object@ivalue@c10@@QEBA_NXZ
+	?make_error_code@std@@YA?AVerror_code@1@W4errc@1@@Z
+	?make_variable@autograd@torch@@YA?AVTensor@at@@V34@_N1@Z
+	?markCompleted@Await@ivalue@c10@@QEAAXUIValue@3@@Z
+	?markCompleted@Future@ivalue@c10@@QEAAXUIValue@3@V?$optional@V?$vector@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@V?$allocator@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@@std@@@std@@@std@@@Z
+	?markCompleted@Future@ivalue@c10@@QEAAXXZ
+	?message@_Generic_error_category@std@@UEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@2@H@Z
+	?name@_Generic_error_category@std@@UEBAPEBDXZ
+	?overflow@?$basic_stringbuf@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@MEAAHH@Z
+	?pbackfail@?$basic_stringbuf@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@MEAAHH@Z
+	?queryEvent@VirtualGuardImpl@impl@c10@@UEBA_NPEAX@Z
+	?queryStream@VirtualGuardImpl@impl@c10@@UEBA_NAEBVStream@3@@Z
+	?record@?$InlineEvent@VVirtualGuardImpl@impl@c10@@@impl@c10@@QEAAXAEBVStream@3@@Z
+	?record@VirtualGuardImpl@impl@c10@@UEBAXPEAPEAXAEBVStream@3@CW4EventFlag@3@@Z
+	?recordDataPtrOnStream@VirtualGuardImpl@impl@c10@@UEBAXAEBVDataPtr@3@AEBVStream@3@@Z
+	?reset_@?$intrusive_ptr@UTensorImpl@c10@@UUndefinedTensorImpl@2@@c10@@AEAAXXZ
+	?resize@?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@QEAAX_K@Z
+	?rethrow_exception@std@@YAXVexception_ptr@1@@Z
+	?seekoff@?$basic_stringbuf@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@MEAA?AV?$fpos@U_Mbstatet@@@2@_JHH@Z
+	?seekpos@?$basic_stringbuf@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@MEAA?AV?$fpos@U_Mbstatet@@@2@V32@H@Z
+	?setArgs@Await@ivalue@c10@@QEAAXV?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@@Z
+	?setDevice@VirtualGuardImpl@impl@c10@@UEBAXUDevice@3@@Z
+	?setError@Future@ivalue@c10@@QEAAXVexception_ptr@std@@@Z
+	?setErrorIfNeeded@Future@ivalue@c10@@QEAAXVexception_ptr@std@@@Z
+	?setErrorInternal@Future@ivalue@c10@@AEAAXVexception_ptr@std@@AEAV?$unique_lock@Vmutex@std@@@5@@Z
+	?setFn@Await@ivalue@c10@@QEAAXV?$function@$$A6A?AUIValue@c10@@XZ@std@@@Z
+	?setSlot@Object@ivalue@c10@@QEAAX_KUIValue@3@@Z
+	?slots@Object@ivalue@c10@@QEBAAEBV?$vector@UIValue@c10@@V?$allocator@UIValue@c10@@@std@@@std@@XZ
+	?sortAndDeduplicateDevices@Future@ivalue@c10@@CA?AV?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@std@@AEBVVirtualGuardImpl@impl@3@V45@@Z
+	?storages@Future@ivalue@c10@@QEBAAEBV?$vector@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@V?$allocator@V?$weak_intrusive_ptr@UStorageImpl@c10@@U?$intrusive_target_default_null_type@UStorageImpl@c10@@@detail@2@@c10@@@std@@@std@@XZ
+	?str@?$basic_stringbuf@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@2@XZ
+	?synchronizeDevice@VirtualGuardImpl@impl@c10@@UEBAXC@Z
+	?synchronizeEvent@VirtualGuardImpl@impl@c10@@UEBAXPEAX@Z
+	?synchronizeStream@VirtualGuardImpl@impl@c10@@UEBAXAEBVStream@3@@Z
+	?synchronizeWithCurrentStreams@Future@ivalue@c10@@AEAAXXZ
+	?tryRetrieveErrorMessage@Future@ivalue@c10@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ
+	?tryRetrieveErrorMessageInternal@Future@ivalue@c10@@AEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@Vexception_ptr@5@@Z
+	?type@Await@ivalue@c10@@QEBAAEBV?$SingletonOrSharedTypePtr@UType@c10@@@Type@3@XZ
+	?type@VirtualGuardImpl@impl@c10@@UEBA?AW4DeviceType@3@XZ
+	?uncheckedSetDevice@VirtualGuardImpl@impl@c10@@UEBAXUDevice@3@@Z
+	?underflow@?$basic_stringbuf@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@MEAAHXZ
+	?unsafeRemoveSlot@Object@ivalue@c10@@QEAAX_K@Z
+	?unsafe_make_weak_compilation_ref@Object@ivalue@c10@@QEAAXXZ
+	?value@Await@ivalue@c10@@QEAA?AUIValue@3@XZ
+	?value@Future@ivalue@c10@@QEAA?AUIValue@3@XZ
+	?wait@Await@ivalue@c10@@QEAA?AUIValue@3@XZ
+	?wait@Future@ivalue@c10@@QEAAXXZ
+	?waitAndThrow@Future@ivalue@c10@@QEAAXXZ
+	?what@bad_optional_access@std@@UEBAPEBDXZ
+	?what@bad_weak_ptr@std@@UEBAPEBDXZ
+	?what@exception@std@@UEBAPEBDXZ
+	nnue_create
+	nnue_destroy
+	nnue_eval

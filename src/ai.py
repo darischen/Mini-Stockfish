@@ -16,6 +16,9 @@ from chess.polyglot import zobrist_hash
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from chess import SquareSet
+from core_search import minimax
+from core_search import set_use_nnue
+import core_search
 
 class TranspositionTable:
     def __init__(self):
@@ -47,6 +50,8 @@ class ChessAI:
         self.stats_lock = threading.Lock()
         self.depth = depth
         self.use_dnn = use_dnn
+        core_search.set_use_nnue(self.use_dnn)
+        core_search.init_nnue("nnue/7.7e-3.pt")
         
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU
@@ -57,50 +62,130 @@ class ChessAI:
         else:
             self.model = None
 
+    # def choose_move(self, board, color: str):
+    #     """
+    #     Iterative deepening with one tqdm per depth.
+    #     """
+    #     # reset overall stats
+    #     self.nodes_evaluated = 0
+    #     self.branches_pruned = 0
+
+    #     root_fen   = board.get_fen()
+    #     root_board = chess.Board(root_fen)
+    #     # set the side to move correctly
+    #     root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
+
+    #     best_move = None
+    #     best_eval = -math.inf if color == 'white' else math.inf
+
+    #     total_start = time.time()
+
+    #     # iterate depths 1..self.depth
+    #     for depth in range(1, self.depth + 1):
+    #         bar = tqdm(desc=f"Depth {depth}", total=None)
+    #         maximizing = (color == 'white')
+    #         current_best = None
+    #         current_eval = -math.inf if maximizing else math.inf
+
+    #         moves = list(root_board.legal_moves)
+    #         # launch one thread per root move
+    #         with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
+    #             futures = [
+    #                 executor.submit(
+    #                     self._search_move,
+    #                     root_fen,
+    #                     uci,
+    #                     depth,
+    #                     maximizing,
+    #                     color,
+    #                     bar
+    #                 )
+    #                 for uci in moves
+    #             ]
+    #             # collect results
+    #             for fut in as_completed(futures):
+    #                 val, uci = fut.result()
+    #                 if maximizing:
+    #                     if val > current_eval:
+    #                         current_eval, current_best = val, uci
+    #                 else:
+    #                     if val < current_eval:
+    #                         current_eval, current_best = val, uci
+
+    #         bar.close()
+    #         best_move, best_eval = current_best, current_eval
+    #         print(f"Depth {depth} → best={best_move} eval={best_eval:.4f}")
+
+    #     elapsed = time.time() - total_start
+    #     print(f"AI search complete. Nodes: {self.nodes_evaluated}, Pruned: {self.branches_pruned}, Time: {elapsed:.2f}s")
+    #     print(f"Best eval for {color}: {best_eval:.4f}")
+
+    #     if best_move is None:
+    #         return None
+
+    #     # map UCI back to your Move/Square classes
+    #     src, dst = best_move.from_square, best_move.to_square
+    #     sr, sf = divmod(src, 8)
+    #     dr, df = divmod(dst, 8)
+    #     initial = Square(7 - sr, sf)
+    #     final   = Square(7 - dr, df)
+    #     mv = Move(initial, final)
+    #     piece = board.squares[initial.row][initial.col].piece
+    #     return (piece, mv)
+    
     def choose_move(self, board, color: str):
         """
-        Iterative deepening with one tqdm per depth.
+        Iterative deepening with per-depth tqdm, parallel root evaluation using Cython minimax,
+        and per-node bar updates matching the original Python version.
         """
         # reset overall stats
-        self.nodes_evaluated = 0
-        self.branches_pruned = 0
+        core_search.nodes_evaluated = 0
+        core_search.branches_pruned = 0
+        
+        core_search.set_use_nnue(self.use_dnn)
 
-        root_fen   = board.get_fen()
-        root_board = chess.Board(root_fen)
-        # set the side to move correctly
-        root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
-
+        root_fen = board.get_fen()
+        maximize = (color == 'white')
         best_move = None
-        best_eval = -math.inf if color == 'white' else math.inf
+        best_eval = -math.inf if maximize else math.inf
 
         total_start = time.time()
 
         # iterate depths 1..self.depth
         for depth in range(1, self.depth + 1):
             bar = tqdm(desc=f"Depth {depth}", total=None)
-            maximizing = (color == 'white')
             current_best = None
-            current_eval = -math.inf if maximizing else math.inf
+            current_eval = -math.inf if maximize else math.inf
 
+            # snapshot of nodes before this depth
+            nodes_before = core_search.nodes_evaluated
+
+            # launch parallel root evaluations
+            root_board = chess.Board(root_fen)
+            root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
             moves = list(root_board.legal_moves)
-            # launch one thread per root move
             with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
-                futures = [
-                    executor.submit(
-                        self._search_move,
-                        root_fen,
-                        uci,
-                        depth,
-                        maximizing,
-                        color,
-                        bar
-                    )
-                    for uci in moves
-                ]
-                # collect results
+                futures = [executor.submit(
+                    self._evaluate_root,
+                    root_fen,
+                    uci,
+                    depth,
+                    maximize,
+                    color
+                ) for uci in moves]
                 for fut in as_completed(futures):
                     val, uci = fut.result()
-                    if maximizing:
+                    # update progress by number of nodes this branch consumed
+                    nodes_after = core_search.nodes_evaluated
+                    delta = nodes_after - nodes_before
+                    nodes_before = nodes_after
+                    bar.update(delta)
+                    bar.set_postfix({
+                        'nodes': core_search.nodes_evaluated,
+                        'pruned': core_search.branches_pruned
+                    })
+
+                    if maximize:
                         if val > current_eval:
                             current_eval, current_best = val, uci
                     else:
@@ -112,7 +197,7 @@ class ChessAI:
             print(f"Depth {depth} → best={best_move} eval={best_eval:.4f}")
 
         elapsed = time.time() - total_start
-        print(f"AI search complete. Nodes: {self.nodes_evaluated}, Pruned: {self.branches_pruned}, Time: {elapsed:.2f}s")
+        print(f"AI search complete. Nodes: {core_search.nodes_evaluated}, Pruned: {core_search.branches_pruned}, Time: {elapsed:.2f}s")
         print(f"Best eval for {color}: {best_eval:.4f}")
 
         if best_move is None:
@@ -125,8 +210,29 @@ class ChessAI:
         initial = Square(7 - sr, sf)
         final   = Square(7 - dr, df)
         mv = Move(initial, final)
+        mv.initial = initial  
+        mv.final = final
         piece = board.squares[initial.row][initial.col].piece
         return (piece, mv)
+
+    def _evaluate_root(self, root_fen, uci, depth, maximize, ai_color):
+        """Evaluate one root move via Cython minimax."""
+        board = chess.Board(root_fen)
+        board.turn = chess.WHITE if ai_color == 'white' else chess.BLACK
+        acc = Accumulator(); acc.init(board)
+
+        captured = board.piece_at(uci.to_square)
+        board.push(uci); acc.update(uci, captured)
+
+        val = minimax(
+            board, acc,
+            depth - 1,
+            -math.inf, math.inf,
+            not maximize,
+            ai_color
+        )
+        return val, uci
+
     
     def _search_move(self, root_fen, uci, depth, maximizing, ai_color, progress_bar):
         # Each thread gets its own board and accumulator

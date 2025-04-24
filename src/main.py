@@ -6,6 +6,14 @@ from game import Game
 from move import Move
 from square import Square
 from piece import *
+os.add_dll_directory(r"C:/Users/daris/libtorch/bin")
+os.add_dll_directory(r"C:/Users/daris/libtorch/lib")
+os.add_dll_directory(r"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/Release")
+os.add_dll_directory(r"C:/Users/daris/Desktop/School/Mini-Stockfish/src")
+os.add_dll_directory(r"C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/torch/lib")
+from core_search import minimax
+from core_search import set_use_nnue
+import core_search
 from ai import ChessAI
 
 class Main:
