@@ -6,10 +6,6 @@ from game import Game
 from move import Move
 from square import Square
 from piece import *
-os.add_dll_directory(r"C:/Users/daris/libtorch/bin")
-os.add_dll_directory(r"C:/Users/daris/libtorch/lib")
-os.add_dll_directory(r"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/Release")
-os.add_dll_directory(r"C:/Users/daris/Desktop/School/Mini-Stockfish/src")
 os.add_dll_directory(r"C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/torch/lib")
 from core_search import minimax
 from core_search import set_use_nnue
@@ -22,7 +18,7 @@ class Main:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Chess AI")
         self.game = Game()
-        self.ai = ChessAI(depth=3, use_dnn=True, model_path="./nnue/7.7e-3.pt")
+        self.ai = ChessAI(depth=5, use_dnn=True, model_path="./nnue/hidden256best9.527e-3.pt")
 
     def mainloop(self):
         game = self.game

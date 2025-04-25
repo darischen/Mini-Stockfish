@@ -131,7 +131,7 @@ class Accumulator:
 
 # --- Step 2: Define the NNUE Model (keeping the same depth and values) ---
 class NNUEModel(nn.Module):
-    def __init__(self, input_size=771, hidden_size=256):
+    def __init__(self, input_size=771, hidden_size=128):
         """
         A simple feedforward NNUE-like model.
         :param input_size: Size of the input feature vector (now 771 due to extra features)
@@ -249,7 +249,7 @@ def train_model(csv_file, num_epochs=10, batch_size=4096, learning_rate=5e-4, l2
         # Save best model (optional)
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), "hidden256best.pth")
+            torch.save(model.state_dict(), "hidden128best.pth")
         
         # Demonstrate accumulator update (optional)
         first_fen = full_dataset.data.iloc[0]['FEN']
@@ -258,7 +258,7 @@ def train_model(csv_file, num_epochs=10, batch_size=4096, learning_rate=5e-4, l2
     print("Training complete.")
     
     # Load best model for testing (if saved)
-    model.load_state_dict(torch.load("hidden256best.pth"))
+    model.load_state_dict(torch.load("hidden128best.pth"))
     model.eval()
     
     # Evaluate on the test set
