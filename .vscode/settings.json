@@ -84,5 +84,6 @@
     "xutility": "cpp",
     "xlocale": "cpp",
     "xstring": "cpp"
-  }
+  },
+  "cmake.sourceDirectory": "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue"
 }
