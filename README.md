@@ -45,7 +45,6 @@
       - Simple material evaluation to decide whether to use large or small network
       - [x] Small network for fast evaluation of positions (NNUE)
       - Large network for deep evaluation of positions (CNN)
-    - Monte Carlo Tree Search - ?
     - CNN: each channel is a bitboard
     - [x] DNN for predicting the score of a position
       - [x] DNN for predicting the best move
