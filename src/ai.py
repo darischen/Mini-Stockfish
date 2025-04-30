@@ -51,7 +51,7 @@ class ChessAI:
         self.depth = depth
         self.use_dnn = use_dnn
         core_search.set_use_nnue(self.use_dnn)
-        core_search.init_nnue("nnue/7.7e-3.pt")
+        core_search.init_nnue("nnue/hidden64best1.057e-2.pt")
         
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU

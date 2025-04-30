@@ -7,9 +7,6 @@ from move import Move
 from square import Square
 from piece import *
 os.add_dll_directory(r"C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/torch/lib")
-from core_search import minimax
-from core_search import set_use_nnue
-import core_search
 from ai import ChessAI
 
 class Main:
@@ -18,7 +15,7 @@ class Main:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Chess AI")
         self.game = Game()
-        self.ai = ChessAI(depth=5, use_dnn=False, model_path="./nnue/hidden128best1.0076e-2.pt")
+        self.ai = ChessAI(depth=5, use_dnn=True, model_path="./nnue/hidden128best1.0076e-2.pt")
 
     def mainloop(self):
         game = self.game

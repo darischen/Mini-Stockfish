@@ -131,7 +131,7 @@ class Accumulator:
 
 # --- Step 2: Define the NNUE Model (keeping the same depth and values) ---
 class NNUEModel(nn.Module):
-    def __init__(self, input_size=771, hidden_size=256):
+    def __init__(self, input_size=771, hidden_size=64):
         """
         A simple feedforward NNUE-like model.
         :param input_size: Size of the input feature vector (now 771 due to extra features)
