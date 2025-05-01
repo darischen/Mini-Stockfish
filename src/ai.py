@@ -20,6 +20,11 @@ from core_search import minimax
 from core_search import set_use_nnue
 import core_search
 
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+torch.set_num_threads(1)
+torch.set_num_interop_threads(1)
+
 class TranspositionTable:
     def __init__(self):
         self.lock = threading.Lock()
@@ -51,7 +56,7 @@ class ChessAI:
         self.depth = depth
         self.use_dnn = use_dnn
         core_search.set_use_nnue(self.use_dnn)
-        core_search.init_nnue("nnue/hidden64best1.057e-2.pt")
+        core_search.init_nnue("nnue/7.7e-3_int8.pt")
         
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU

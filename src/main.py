@@ -15,7 +15,7 @@ class Main:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Chess AI")
         self.game = Game()
-        self.ai = ChessAI(depth=5, use_dnn=True, model_path="./nnue/hidden128best1.0076e-2.pt")
+        self.ai = ChessAI(depth=5, use_dnn=False)
 
     def mainloop(self):
         game = self.game
