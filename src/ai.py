@@ -56,7 +56,7 @@ class ChessAI:
         self.depth = depth
         self.use_dnn = use_dnn
         core_search.set_use_nnue(self.use_dnn)
-        core_search.init_nnue("nnue/7.7e-3_int8.pt")
+        core_search.init_nnue("nnue/hidden64best1.057e-2_int8.pt")
         
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU
@@ -66,77 +66,6 @@ class ChessAI:
             torch.set_num_threads(os.cpu_count() or 1)
         else:
             self.model = None
-
-    # def choose_move(self, board, color: str):
-    #     """
-    #     Iterative deepening with one tqdm per depth.
-    #     """
-    #     # reset overall stats
-    #     self.nodes_evaluated = 0
-    #     self.branches_pruned = 0
-
-    #     root_fen   = board.get_fen()
-    #     root_board = chess.Board(root_fen)
-    #     # set the side to move correctly
-    #     root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
-
-    #     best_move = None
-    #     best_eval = -math.inf if color == 'white' else math.inf
-
-    #     total_start = time.time()
-
-    #     # iterate depths 1..self.depth
-    #     for depth in range(1, self.depth + 1):
-    #         bar = tqdm(desc=f"Depth {depth}", total=None)
-    #         maximizing = (color == 'white')
-    #         current_best = None
-    #         current_eval = -math.inf if maximizing else math.inf
-
-    #         moves = list(root_board.legal_moves)
-    #         # launch one thread per root move
-    #         with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
-    #             futures = [
-    #                 executor.submit(
-    #                     self._search_move,
-    #                     root_fen,
-    #                     uci,
-    #                     depth,
-    #                     maximizing,
-    #                     color,
-    #                     bar
-    #                 )
-    #                 for uci in moves
-    #             ]
-    #             # collect results
-    #             for fut in as_completed(futures):
-    #                 val, uci = fut.result()
-    #                 if maximizing:
-    #                     if val > current_eval:
-    #                         current_eval, current_best = val, uci
-    #                 else:
-    #                     if val < current_eval:
-    #                         current_eval, current_best = val, uci
-
-    #         bar.close()
-    #         best_move, best_eval = current_best, current_eval
-    #         print(f"Depth {depth} → best={best_move} eval={best_eval:.4f}")
-
-    #     elapsed = time.time() - total_start
-    #     print(f"AI search complete. Nodes: {self.nodes_evaluated}, Pruned: {self.branches_pruned}, Time: {elapsed:.2f}s")
-    #     print(f"Best eval for {color}: {best_eval:.4f}")
-
-    #     if best_move is None:
-    #         return None
-
-    #     # map UCI back to your Move/Square classes
-    #     src, dst = best_move.from_square, best_move.to_square
-    #     sr, sf = divmod(src, 8)
-    #     dr, df = divmod(dst, 8)
-    #     initial = Square(7 - sr, sf)
-    #     final   = Square(7 - dr, df)
-    #     mv = Move(initial, final)
-    #     piece = board.squares[initial.row][initial.col].piece
-    #     return (piece, mv)
     
     def choose_move(self, board, color: str):
         """
