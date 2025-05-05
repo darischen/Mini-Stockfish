@@ -189,9 +189,9 @@ def train_model(csv_file, num_epochs=10, batch_size=4096, learning_rate=5e-4, l2
     full_dataset = ChessDataset(csv_file)
     total_len = len(full_dataset)
     
-    # Define split ratios: 80% training, 10% validation, 10% testing
-    train_len = int(0.8 * total_len)
-    val_len = int(0.1 * total_len)
+    # Define split ratios: 50% training, 25% validation, 25% testing
+    train_len = int(0.5 * total_len)
+    val_len = int(0.25 * total_len)
     test_len = total_len - train_len - val_len
     
     # Randomly split the dataset.
