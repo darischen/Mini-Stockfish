@@ -37,10 +37,18 @@ class TranspositionTable:
                 return entry['value']
             return None
 
-    def store(self, key, depth, value):
+    def get_move(self, key):
+       with self.lock:
+           entry = self.table.get(key)
+           return entry['move'] if entry else None
+    
+    def store(self, key, depth, value, move):
         with self.lock:
-            # Always overwrite or insert
-            self.table[key] = {'depth': depth, 'value': value}
+           self.table[key] = {
+               'depth': depth,
+               'value': value,
+               'move':  move
+           }
             
 class ChessAI:
     PIECE_VALUES = (0, 100, 300, 310, 400, 900, 20000)
@@ -237,7 +245,7 @@ class ChessAI:
         # leaf
         if depth == 0 or board.is_game_over():
             val = self._quiescence(board, acc, alpha, beta, ai_color)
-            self.tt.store(key, depth, val)
+            self.tt.store(key, depth, val, None)
             return val
 
         if depth >= R + 1 and not board.is_check() and alpha > -math.inf and beta < math.inf:
@@ -254,12 +262,17 @@ class ChessAI:
 
         if maximizing_player:
             value = -math.inf
+            best_move = None
             for mv in self._order_moves(board, True):
                 cap = board.piece_at(mv.to_square)
                 board.push(mv); acc.update(mv, cap)
                 child = self._minimax(board, acc, depth - 1, alpha, beta, False, ai_color, progress_bar)
                 acc.rollback(mv, cap); board.pop()
 
+                if child > value:
+                    value     = child
+                    best_move = mv
+                
                 value = max(value, child)
                 alpha = max(alpha, child)
                 if beta <= alpha:
@@ -268,16 +281,21 @@ class ChessAI:
                         progress_bar.set_postfix(pruned=self.branches_pruned)
                     break
 
-            self.tt.store(key, depth, value)
+            self.tt.store(key, depth, value, best_move)
             return value
 
         else:
             value = math.inf
+            best_move = None
             for mv in self._order_moves(board, False):
                 cap = board.piece_at(mv.to_square)
                 board.push(mv); acc.update(mv, cap)
                 child = self._minimax(board, acc, depth - 1, alpha, beta, True, ai_color, progress_bar)
                 acc.rollback(mv, cap); board.pop()
+                
+                if child < value:
+                    value   = child
+                    best_move = mv
 
                 value = min(value, child)
                 beta = min(beta, child)
@@ -290,6 +308,8 @@ class ChessAI:
             return value
 
     def _order_moves(self, bb: chess.Board, maximize: bool):
+        hash_move = self.tt.get_move(zobrist_hash(bb))
+
         # MVV-LVA: Victim value * 1000 - attacker value
         piece_vals = {'P':100,'N':300,'B':310,'R':400,'Q':900,'K':20000}
         scored = []
@@ -320,6 +340,10 @@ class ChessAI:
             # Pawn attack Penalty  
             if (pawn_attack_mask >> move.to_square) & 1:
                 score -= a_val
+            
+            # Bonus for precalculated moves
+            if hash_move is not None and move == hash_move:
+                score += 10000
             
             scored.append((move, score))
         scored.sort(key=lambda x: x[1], reverse=maximize)
