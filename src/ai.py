@@ -72,6 +72,26 @@ class ChessAI:
         Iterative deepening with per-depth tqdm, parallel root evaluation using Cython minimax,
         and per-node bar updates matching the original Python version.
         """
+        # —— SPECIAL-CASE: mate in 1 ——
+        root_board = chess.Board(board.get_fen())
+        root_board.turn = chess.WHITE if color=='white' else chess.BLACK
+        for uci in root_board.legal_moves:
+            root_board.push(uci)
+            if root_board.is_checkmate():
+                # immediate mate found: map and return it
+                # (copied from your bottom‐of‐method mapping code)
+                src, dst = uci.from_square, uci.to_square
+                sr, sf = divmod(src, 8)
+                dr, df = divmod(dst, 8)
+                initial = Square(7 - sr, sf)
+                final   = Square(7 - dr, df)
+                mv = Move(initial, final)
+                mv.initial = initial
+                mv.final   = final
+                piece = board.squares[initial.row][initial.col].piece
+                return (piece, mv)
+            root_board.pop()
+
         # reset overall stats
         core_search.nodes_evaluated = 0
         core_search.branches_pruned = 0

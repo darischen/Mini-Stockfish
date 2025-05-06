@@ -84,6 +84,8 @@ from chess import Board, Move
 from accumulator import Accumulator
 from libc.math cimport INFINITY
 
+cdef double MATE_SCORE = 100000.0
+
 # Python‐level counters
 nodes_evaluated = 0
 branches_pruned = 0
@@ -154,7 +156,11 @@ cpdef double minimax(object board, object acc,
     nodes_evaluated += 1
     if board.is_game_over():
         if board.is_checkmate():
-            return -INFINITY if maximizing else INFINITY
+            if maximizing:
+                return -MATE_SCORE + depth
+            # otherwise it's your opponent to move who is mated → best win
+            else:
+                return  MATE_SCORE - depth
         else:
             return 0.0
 
