@@ -273,6 +273,12 @@ class ChessAI:
         # MVV-LVA: Victim value * 1000 - attacker value
         piece_vals = {'P':100,'N':300,'B':310,'R':400,'Q':900,'K':20000}
         scored = []
+        
+        opponent = not bb.turn
+        pawn_attack_mask = 0
+        for psq in bb.pieces(chess.PAWN, opponent):
+            pawn_attack_mask |= bb.attacks_mask(psq)
+        
         for move in bb.legal_moves:
             victim = bb.piece_at(move.to_square)
             attacker = bb.piece_at(move.from_square)
@@ -285,6 +291,15 @@ class ChessAI:
             # Hanging Pieces
             if victim and not bb.is_attacked_by(not bb.turn, move.to_square):
                 score += 5000
+                
+            # Promotion bonus
+            if move.promotion:
+                promo_letter = chess.PIECE_SYMBOLS[move.promotion].upper()
+                score += piece_vals[promo_letter]
+            
+            # Pawn attack Penalty  
+            if (pawn_attack_mask >> move.to_square) & 1:
+                score -= a_val
             
             scored.append((move, score))
         scored.sort(key=lambda x: x[1], reverse=maximize)

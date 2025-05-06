@@ -152,6 +152,12 @@ cpdef double minimax(object board, object acc,
     cdef object mv, captured
 
     nodes_evaluated += 1
+    if board.is_game_over():
+        if board.is_checkmate():
+            return -INFINITY if maximizing else INFINITY
+        else:
+            return 0.0
+
     if depth == 0:
         return quiesce(board, acc, alpha, beta, ai_color)
 
