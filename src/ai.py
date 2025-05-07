@@ -16,6 +16,8 @@ from chess.polyglot import zobrist_hash
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from chess import SquareSet
+from chess.polyglot import open_reader, zobrist_hash
+import json
 from core_search import minimax
 from core_search import set_use_nnue
 import core_search
@@ -66,6 +68,16 @@ class ChessAI:
         core_search.set_use_nnue(self.use_dnn)
         core_search.init_nnue("nnue/hidden64best1.057e-2_int8.pt")
         
+        with open("src/book/book.json") as f:
+            # keys are stored as strings in JSON
+            self.book_evals = {int(k): v for k, v in json.load(f).items()}
+
+        # — open the PolyGlot bin for the moves —
+        self.book = open_reader("src/book/book.bin")
+
+        # how many plies deep your opening book should go
+        self.book_depth = 10
+        
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU
             self.model = torch.jit.load(model_path, map_location="cpu")
@@ -99,6 +111,46 @@ class ChessAI:
                 piece = board.squares[initial.row][initial.col].piece
                 return (piece, mv)
             root_board.pop()
+        
+        # Book Moves
+        root_board = chess.Board(board.get_fen())
+        root_board.turn = chess.WHITE if color=='white' else chess.BLACK
+        ply = (root_board.fullmove_number - 1) * 2 + (0 if root_board.turn == chess.WHITE else 1)
+        
+        key = zobrist_hash(root_board)
+        if ply < self.book_depth and key in self.book_evals:
+            best_move = None
+            # for Black we want *lowest* score; for White the *highest*
+            best_score = +math.inf if color=='black' else -math.inf
+
+            # iterate all book moves for this position
+            for entry in self.book.find_all(root_board):
+                root_board.push(entry.move)
+                child_key = zobrist_hash(root_board)
+                root_board.pop()
+
+                score = self.book_evals.get(child_key, 0)
+                if color == 'black':
+                    if score < best_score:
+                        best_score, best_move = score, entry.move
+                else:
+                    if score > best_score:
+                        best_score, best_move = score, entry.move
+
+            if best_move:
+                # map UCI → your Move class (same as below)
+                src, dst = best_move.from_square, best_move.to_square
+                sr, sf = divmod(src, 8)
+                dr, df = divmod(dst, 8)
+                initial = Square(7 - sr, sf)
+                final   = Square(7 - dr, df)
+                mv = Move(initial, final)
+                mv.initial = initial
+                mv.final   = final
+                piece = board.squares[initial.row][initial.col].piece
+                return (piece, mv)
+        
+        # Main Search
 
         # reset overall stats
         core_search.nodes_evaluated = 0
