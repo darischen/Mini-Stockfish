@@ -72,12 +72,6 @@ class ChessAI:
             data = json.load(f)
         self.book_evals = {int(k): v for k, v in data.items()}
         print(f"[DEBUG] loaded book.json: {len(self.book_evals)} entries")
-        
-        keys = set(int(k) for k in json.load(open("book/book.json")))
-        b = chess.Board()      # initial
-        print("initial in book?", zobrist_hash(b) in keys)
-        b.push_san("e4")       # after 1.e4
-        print("after e4 in book?", zobrist_hash(b) in keys)
 
         # how many plies deep your opening book should go
         self.book_depth = 10
@@ -124,7 +118,6 @@ class ChessAI:
 
         key = zobrist_hash(root_board)
         print("  fen:", root_board.fen())
-        print("  castling rights:", root_board.castling_rights)
         print("  in_book?", key in self.book_evals)
         
         print(f"[DEBUG] ply={ply}, root_key={key}, in_book={ key in self.book_evals }")
