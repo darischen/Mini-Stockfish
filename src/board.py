@@ -667,4 +667,4 @@ class Board:
             fen_rows.append(fen_row)
         fen_piece_placement = "/".join(fen_rows)
         turn = self.turn if hasattr(self, "turn") else "w"
-        return f"{fen_piece_placement} {turn} - - 0 1"
+        return f"{fen_piece_placement} {turn} KQkq - 0 1"

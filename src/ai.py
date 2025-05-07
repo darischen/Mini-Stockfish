@@ -68,12 +68,16 @@ class ChessAI:
         core_search.set_use_nnue(self.use_dnn)
         core_search.init_nnue("nnue/hidden64best1.057e-2_int8.pt")
         
-        with open("src/book/book.json") as f:
-            # keys are stored as strings in JSON
-            self.book_evals = {int(k): v for k, v in json.load(f).items()}
-
-        # — open the PolyGlot bin for the moves —
-        self.book = open_reader("src/book/book.bin")
+        with open("book/book.json") as f:
+            data = json.load(f)
+        self.book_evals = {int(k): v for k, v in data.items()}
+        print(f"[DEBUG] loaded book.json: {len(self.book_evals)} entries")
+        
+        keys = set(int(k) for k in json.load(open("book/book.json")))
+        b = chess.Board()      # initial
+        print("initial in book?", zobrist_hash(b) in keys)
+        b.push_san("e4")       # after 1.e4
+        print("after e4 in book?", zobrist_hash(b) in keys)
 
         # how many plies deep your opening book should go
         self.book_depth = 10
@@ -115,30 +119,35 @@ class ChessAI:
         # Book Moves
         root_board = chess.Board(board.get_fen())
         root_board.turn = chess.WHITE if color=='white' else chess.BLACK
-        ply = (root_board.fullmove_number - 1) * 2 + (0 if root_board.turn == chess.WHITE else 1)
-        
-        key = zobrist_hash(root_board)
-        if ply < self.book_depth and key in self.book_evals:
-            best_move = None
-            # for Black we want *lowest* score; for White the *highest*
-            best_score = +math.inf if color=='black' else -math.inf
+        ply = (root_board.fullmove_number - 1) * 2 \
+              + (0 if root_board.turn == chess.WHITE else 1)
 
-            # iterate all book moves for this position
-            for entry in self.book.find_all(root_board):
-                root_board.push(entry.move)
+        key = zobrist_hash(root_board)
+        print("  fen:", root_board.fen())
+        print("  castling rights:", root_board.castling_rights)
+        print("  in_book?", key in self.book_evals)
+        
+        print(f"[DEBUG] ply={ply}, root_key={key}, in_book={ key in self.book_evals }")
+        if ply < self.book_depth and key in self.book_evals:
+            best_move, best_score = None, (math.inf if color=='black' else -math.inf)
+            # try every legal move, pick the child whose hash is in book_evals
+            for move in root_board.legal_moves:
+                root_board.push(move)
                 child_key = zobrist_hash(root_board)
                 root_board.pop()
 
-                score = self.book_evals.get(child_key, 0)
-                if color == 'black':
-                    if score < best_score:
-                        best_score, best_move = score, entry.move
-                else:
-                    if score > best_score:
-                        best_score, best_move = score, entry.move
+                # only consider it if we actually precomputed it
+                if child_key in self.book_evals:
+                    score = self.book_evals[child_key]
+                    if color == 'black':
+                        if score < best_score:
+                            best_score, best_move = score, move
+                    else:
+                        if score > best_score:
+                            best_score, best_move = score, move
 
-            if best_move:
-                # map UCI → your Move class (same as below)
+            if best_move is not None:
+                # convert chess.Move → your Move/Square classes
                 src, dst = best_move.from_square, best_move.to_square
                 sr, sf = divmod(src, 8)
                 dr, df = divmod(dst, 8)
