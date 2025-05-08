@@ -37,7 +37,6 @@ def is_valid_eval(eval_str):
         return False
 
 # --- Dataset with Precomputed HalfKP Indices ---
-
 NUM_NONKING = 10
 TABLE_SIZE = 64 * NUM_NONKING
 
@@ -82,7 +81,8 @@ class ChessDatasetHalfKP(Dataset):
         self.max1 = max(len(i) for i in idx1_list)
         self.idx0 = [i + [0]*(self.max0-len(i)) for i in idx0_list]
         self.idx1 = [i + [0]*(self.max1-len(i)) for i in idx1_list]
-    def __len__(self): return len(self.targets)
+    def __len__(self):
+        return len(self.targets)
     def __getitem__(self, idx):
         return (
             torch.tensor(self.idx0[idx], dtype=torch.long),
@@ -91,17 +91,21 @@ class ChessDatasetHalfKP(Dataset):
         )
 
 # --- HalfKP NNUE with Batched Lookup ---
-
 HIDDEN_SIZE = 256
 MLP_HIDDEN = 32
 
 class HalfKP_NNUE(nn.Module):
-    def __init__(self):
+    def __init__(self, max0=0, max1=0):
         super().__init__()
+        # store padding lengths as buffers for export
+        self.register_buffer('max0', torch.tensor(max0, dtype=torch.long))
+        self.register_buffer('max1', torch.tensor(max1, dtype=torch.long))
+        # weight table and MLP
         self.w1 = nn.Parameter(torch.randn(2, TABLE_SIZE, HIDDEN_SIZE) * 0.01)
-        self.fc2 = nn.Linear(2*HIDDEN_SIZE, MLP_HIDDEN)
+        self.fc2 = nn.Linear(2 * HIDDEN_SIZE, MLP_HIDDEN)
         self.fc3 = nn.Linear(MLP_HIDDEN, MLP_HIDDEN)
         self.fc4 = nn.Linear(MLP_HIDDEN, 1)
+
     def forward(self, idx0_batch, idx1_batch):
         oh0 = F.one_hot(idx0_batch, num_classes=self.w1.size(1)).float()
         oh1 = F.one_hot(idx1_batch, num_classes=self.w1.size(1)).float()
@@ -109,31 +113,32 @@ class HalfKP_NNUE(nn.Module):
         emb1 = torch.matmul(oh1, self.w1[1])
         sum0 = emb0.sum(dim=1)
         sum1 = emb1.sum(dim=1)
-        h = torch.cat([torch.clamp(sum0,0), torch.clamp(sum1,0)], dim=1)
+        h = torch.cat([torch.clamp(sum0, 0), torch.clamp(sum1, 0)], dim=1)
         h = F.relu(self.fc2(h))
         h = F.relu(self.fc3(h))
         return self.fc4(h).squeeze(-1)
 
 # --- Training & Export Utilities ---
-
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-import os
-
-# Training function remains unchanged
+# Training function
 
 def train_model(csv_file, epochs=10, batch_size=4096, lr=5e-4, l2=1e-7):
     ds = ChessDatasetHalfKP(csv_file)
+    # instantiate model with padding lengths
+    model = HalfKP_NNUE(max0=ds.max0, max1=ds.max1).to(DEVICE)
+
     n = len(ds)
-    tr, va = int(0.5*n), int(0.25*n)
-    ds_tr, ds_va, ds_te = random_split(ds, [tr, va, n-tr-va])
-    loader = DataLoader(ds_tr, batch_size=batch_size, shuffle=True, num_workers=8)
-    val_loader = DataLoader(ds_va, batch_size=batch_size, num_workers=8)
-    test_loader = DataLoader(ds_te, batch_size=batch_size, num_workers=8)
-    model = HalfKP_NNUE().to(DEVICE)
+    tr, va = int(0.5 * n), int(0.25 * n)
+    ds_tr, ds_va, ds_te = random_split(ds, [tr, va, n - tr - va])
+    loader = DataLoader(ds_tr, batch_size=batch_size, shuffle=True, num_workers=0)
+    val_loader = DataLoader(ds_va, batch_size=batch_size, num_workers=0)
+    test_loader = DataLoader(ds_te, batch_size=batch_size, num_workers=0)
+
     opt = optim.Adam(model.parameters(), lr=lr, weight_decay=l2)
     loss_fn = nn.SmoothL1Loss()
-    for e in range(1, epochs+1):
+
+    for e in range(1, epochs + 1):
         model.train()
         tl = 0.0
         for x0, x1, y in tqdm(loader, desc=f"Epoch {e}"):
@@ -145,29 +150,45 @@ def train_model(csv_file, epochs=10, batch_size=4096, lr=5e-4, l2=1e-7):
             opt.step()
             tl += loss.item()
         print(f"Train Loss {tl/len(loader):.4e}")
+
         model.eval()
-        vl = sum(loss_fn(model(x0.to(DEVICE), x1.to(DEVICE)), y.to(DEVICE)).item()
-                 for x0, x1, y in val_loader)
+        vl = sum(
+            loss_fn(model(x0.to(DEVICE), x1.to(DEVICE)), y.to(DEVICE)).item()
+            for x0, x1, y in val_loader
+        )
         print(f"Val Loss {vl/len(val_loader):.4e}")
+
     model.eval()
-    tloss = sum(loss_fn(model(x0.to(DEVICE), x1.to(DEVICE)), y.to(DEVICE)).item()
-                for x0, x1, y in test_loader)
+    tloss = sum(
+        loss_fn(model(x0.to(DEVICE), x1.to(DEVICE)), y.to(DEVICE)).item()
+        for x0, x1, y in test_loader
+    )
     print(f"Test Loss {tloss/len(test_loader):.4e}")
+
+    # save state including buffers
     torch.save(model.state_dict(), 'halfkp_best.pth')
     return model
 
-# Export utility now only uses passed max0,max1
+# Export utility
 
-def export_torchscript(model, max0, max1):
-    print(f"[export] called with max0={max0}, max1={max1}")
-    # trace raw two-input model
+def export_torchscript(checkpoint_path, output_path):
+    state = torch.load(checkpoint_path, map_location=DEVICE)
+    model = HalfKP_NNUE().to(DEVICE)
+    model.load_state_dict(state)
+    model.eval()
+
+    # read buffers
+    max0 = int(getattr(model, 'max0').item())
+    max1 = int(getattr(model, 'max1').item())
+    print(f"[export] using max0={max0}, max1={max1}")
+
+    # trace two-input
     dummy0 = torch.zeros(1, max0, dtype=torch.long, device=DEVICE)
     dummy1 = torch.zeros(1, max1, dtype=torch.long, device=DEVICE)
     traced_halfkp = torch.jit.trace(model, (dummy0, dummy1))
     print("[export] raw HalfKP traced")
 
-    # wrap into single-input
-    class SingleInputWrapper(torch.nn.Module):
+    class SingleInputWrapper(nn.Module):
         def __init__(self, halfkp_module, split_idx):
             super().__init__()
             self.halfkp = halfkp_module
@@ -176,35 +197,27 @@ def export_torchscript(model, max0, max1):
             idx0 = x[:, :self.split]
             idx1 = x[:, self.split:]
             return self.halfkp(idx0, idx1)
+
     wrapper = SingleInputWrapper(traced_halfkp, max0)
     print("[export] wrapper created")
 
-    # trace & save single-input
-    dummy_concat = torch.zeros(1, max0 + max1, dtype=torch.long, device=DEVICE)
-    traced_wrapper = torch.jit.trace(wrapper, dummy_concat)
-    torch.jit.save(traced_wrapper, "halfkp.pt")
-    print("[export] Saved single-input TorchScript as halfkp.pt")
+    dummy_cat = torch.zeros(1, max0 + max1, dtype=torch.long, device=DEVICE)
+    traced_wrap = torch.jit.trace(wrapper, dummy_cat)
+    torch.jit.save(traced_wrap, output_path)
+    print(f"[export] Saved single-input TorchScript as {output_path}")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="HalfKP NNUE training and export")
     parser.add_argument('--mode', choices=['train','export'], default='train')
     parser.add_argument('--data', default='./data/combined_chessData.csv')
-    parser.add_argument('--max0', type=int, help='padding length idx0 for export')
-    parser.add_argument('--max1', type=int, help='padding length idx1 for export')
+    parser.add_argument('--checkpoint', default='halfkp_best.pth')
+    parser.add_argument('--output', default='halfkp_single_input.pt')
     args = parser.parse_args()
-    print(f"[main] mode={args.mode}, data={args.data}, max0={args.max0}, max1={args.max1}")
-    ds = ChessDatasetHalfKP('./data/combined_chessData.csv')
-    print("max0 =", ds.max0)
-    print("max1 =", ds.max1)
 
     if args.mode == 'train':
-        train_model(args.data, epochs=25)
+        model = train_model(args.data, epochs=10)
+        print(f"Training complete, checkpoint saved to halfkp_best.pth")
     else:
-        if args.max0 is None or args.max1 is None:
-            raise ValueError("Export mode requires --max0 and --max1 flags")
-        print("[main] Loading model for export")
-        model = HalfKP_NNUE().to(DEVICE)
-        model.load_state_dict(torch.load('halfkp_best.pth', map_location=DEVICE))
-        model.eval()
-        export_torchscript(model, args.max0, args.max1)
-        print("[main] export complete")
+        print(f"Loading checkpoint from {args.checkpoint}")
+        export_torchscript(args.checkpoint, args.output)
+        print(f"Export complete, TorchScript saved to {args.output}")
