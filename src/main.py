@@ -135,9 +135,10 @@ class Main:
                         if game.next_player == 'black':
                             ai_move = self.ai.choose_move(board, 'black')
                             if ai_move:
-                                piece, move = ai_move
-                                board.move(piece, move)
-                                print(f"AI (black) moves: {move}")
+                                _, mv = ai_move
+                                piece = board.squares[mv.initial.row][mv.initial.col].piece
+                                board.move(piece, mv)
+                                print(f"AI (black) moves: {mv}")
                                 # Optionally, play sound if needed, update en passant, etc.
                                 board.set_true_en_passant(piece)
                                 game.next_turn()

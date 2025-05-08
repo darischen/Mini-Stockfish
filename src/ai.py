@@ -18,7 +18,6 @@ from tqdm import tqdm
 from chess import SquareSet
 from chess.polyglot import open_reader, zobrist_hash
 import json
-from chess.syzygy import Tablebase
 from core_search import minimax
 from core_search import set_use_nnue
 import core_search
@@ -27,8 +26,6 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
-TB = Tablebase()
-TB.add_directory("syzygy/")
 
 class TranspositionTable:
     def __init__(self):
@@ -81,11 +78,11 @@ class ChessAI:
         self.book_depth = 10
         
         # Endgame tablebase is stored in endgame/tablebase.json
-        with open("book/tablebase.json") as f:
+        with open("endgame/tablebase.json") as f:
             eg = json.load(f)
         # keys must be ints to match zobrist_hash(root_board)
         self.endgame = {int(k): v for k, v in eg.items()}
-        print(f"[DEBUG] loaded endgames.json: {len(self.endgame)} entries")
+        print(f"[DEBUG] loaded tablebase.json: {len(self.endgame)} entries")
         
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU
@@ -105,8 +102,6 @@ class ChessAI:
         mv = Move(initial, final)
         mv.initial = initial
         mv.final   = final
-        # if you need to know which piece moved:
-        mv.piece = board.piece_at(src)  
         return mv
     
     def choose_move(self, board, color: str):
@@ -121,7 +116,8 @@ class ChessAI:
             root_board.push(uci)
             if root_board.is_checkmate():
                 mv = self._uci_to_move(board, uci)
-                return mv.piece, mv
+                piece = board.squares[mv.initial.row][mv.initial.col].piece
+                return piece, mv
             root_board.pop()
         
         # ——— Endgame book shortcut for ≤5 pieces ———
@@ -134,13 +130,13 @@ class ChessAI:
                 info = self.endgame[key]
                 # choose which move‐list to consult
                 if info["WDL"] == "Win":
-                    candidates = set(info["WinningMoves"].split(","))
+                    candidates = set(filter(None, info["WinningMoves"].split(",")))
                     want_min = True    # fastest mate
                 elif info["WDL"] == "Draw":
-                    candidates = set(info["DrawingMoves"].split(","))
+                    candidates = set(filter(None, info["DrawingMoves"].split(",")))
                     want_min = True    # fastest route to draw
                 else:  # "Loss"
-                    candidates = set(info["LosingMoves"].split(","))
+                    candidates = set(filter(None, info["LosingMoves"].split(",")))
                     want_min = False   # delay mate
 
                 best_move = None
@@ -161,7 +157,8 @@ class ChessAI:
 
                 if best_move is not None:
                     mv = self._uci_to_move(root_board, best_move)
-                    return mv.piece, mv
+                    piece = board.squares[mv.initial.row][mv.initial.col].piece
+                    return piece, mv
                     
         # Book Moves
         root_board = chess.Board(board.get_fen())
@@ -194,7 +191,8 @@ class ChessAI:
 
             if best_move is not None:
                 mv = self._uci_to_move(root_board, best_move)
-                return mv.piece, mv
+                piece = board.squares[mv.initial.row][mv.initial.col].piece
+                return piece, mv
         
         # Main Search
 
@@ -265,7 +263,8 @@ class ChessAI:
 
         # map UCI back to your Move/Square classes
         mv = self._uci_to_move(board, best_move)
-        return mv.piece, mv
+        piece = board.squares[mv.initial.row][mv.initial.col].piece
+        return piece, mv
 
     def _evaluate_root(self, root_fen, uci, depth, maximize, ai_color):
         """Evaluate one root move via Cython minimax."""
@@ -643,7 +642,6 @@ class ChessAI:
         max_phase = sum(phase_weights[p] * 2 for p in phase_weights)  # both sides
 
         # --- 3) PSTs for middle-game and endgame (64‐length lists) ---
-        #   (you can tweak these values or replace with more complete tables)
         mg_pst = {
             chess.PAWN: [
                  0,   0,   0,   0,   0,   0,   0,   0,
