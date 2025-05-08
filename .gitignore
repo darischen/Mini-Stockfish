@@ -2,3 +2,4 @@ chessData.csv
 random_evals.csv
 tactic_evals.csv
 combined_chessData.csv
+/src/endgame/dtm/
