@@ -71,6 +71,7 @@ class ChessAI:
         core_search.set_use_nnue(self.use_dnn)
         core_search.init_nnue("nnue/hidden64best1.057e-2_int8.pt")
         
+        # Book moves are stored in book/book.json
         with open("book/book.json") as f:
             data = json.load(f)
         self.book_evals = {int(k): v for k, v in data.items()}
@@ -78,6 +79,13 @@ class ChessAI:
 
         # how many plies deep your opening book should go
         self.book_depth = 10
+        
+        # Endgame tablebase is stored in endgame/tablebase.json
+        with open("book/tablebase.json") as f:
+            eg = json.load(f)
+        # keys must be ints to match zobrist_hash(root_board)
+        self.endgame = {int(k): v for k, v in eg.items()}
+        print(f"[DEBUG] loaded endgames.json: {len(self.endgame)} entries")
         
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU
@@ -112,55 +120,48 @@ class ChessAI:
         for uci in root_board.legal_moves:
             root_board.push(uci)
             if root_board.is_checkmate():
-                # immediate mate found: map and return it
-                src, dst = uci.from_square, uci.to_square
-                sr, sf = divmod(src, 8)
-                dr, df = divmod(dst, 8)
-                initial = Square(7 - sr, sf)
-                final   = Square(7 - dr, df)
-                mv = Move(initial, final)
-                mv.initial = initial
-                mv.final   = final
-                piece = board.squares[initial.row][initial.col].piece
-                return (piece, mv)
+                mv = self._uci_to_move(board, uci)
+                return mv.piece, mv
             root_board.pop()
         
-        # ——— Syzygy 5-piece shortcut ———
+        # ——— Endgame book shortcut for ≤5 pieces ———
         root_board = chess.Board(board.get_fen())
         root_board.turn = chess.WHITE if color=='white' else chess.BLACK
         total_pieces = len(root_board.piece_map())
         if total_pieces <= 5:
-            # pick the fastest win (or draw if no win) via tablebase
-            best_move = None
-            maximize  = (color == 'white')
-            best_score = -math.inf if maximize else math.inf
+            key = zobrist_hash(root_board)
+            if key in self.endgame:
+                info = self.endgame[key]
+                # choose which move‐list to consult
+                if info["WDL"] == "Win":
+                    candidates = set(info["WinningMoves"].split(","))
+                    want_min = True    # fastest mate
+                elif info["WDL"] == "Draw":
+                    candidates = set(info["DrawingMoves"].split(","))
+                    want_min = True    # fastest route to draw
+                else:  # "Loss"
+                    candidates = set(info["LosingMoves"].split(","))
+                    want_min = False   # delay mate
 
-            for uci in root_board.legal_moves:
-                root_board.push(uci)
-                wdl = TB.probe_wdl(root_board)      # +1 / 0 / –1
-                sign = 1 if root_board.turn == chess.WHITE else -1
-                wdl_white = wdl * sign
-                dtz = TB.probe_dtz(root_board) or 0 # plies to reset, or 0 if absent
-                root_board.pop()
+                best_move = None
+                best_val  = math.inf if want_min else -math.inf
+                for uci in root_board.legal_moves:
+                    uci_str = uci.uci()
+                    if uci_str not in candidates:
+                        continue
+                    # lookup child‐position’s DTM
+                    root_board.push(uci)
+                    child_key = zobrist_hash(root_board)
+                    root_board.pop()
+                    if child_key not in self.endgame:
+                        continue
+                    dtm = abs(int(self.endgame[child_key]["DTM"]))
+                    if (want_min and dtm < best_val) or (not want_min and dtm > best_val):
+                        best_val, best_move = dtm, uci
 
-                # score: wins first (faster = bigger), then draws, then losses
-                if wdl_white == 0:
-                    score = 0
-                else:
-                    score = wdl_white * (100_000 - dtz)
-
-                if maximize:
-                    if score > best_score:
-                        best_score, best_move = score, uci
-                else:
-                    if score < best_score:
-                        best_score, best_move = score, uci
-
-            if best_move is not None:
-                # convert to your Move/Square, then extract the piece from the original board
-                mv = self._uci_to_move(root_board, best_move)
-                piece = board.squares[mv.initial.row][mv.initial.col].piece
-                return piece, mv
+                if best_move is not None:
+                    mv = self._uci_to_move(root_board, best_move)
+                    return mv.piece, mv
                     
         # Book Moves
         root_board = chess.Board(board.get_fen())
@@ -192,17 +193,8 @@ class ChessAI:
                             best_score, best_move = score, move
 
             if best_move is not None:
-                # convert chess.Move → your Move/Square classes
-                src, dst = best_move.from_square, best_move.to_square
-                sr, sf = divmod(src, 8)
-                dr, df = divmod(dst, 8)
-                initial = Square(7 - sr, sf)
-                final   = Square(7 - dr, df)
-                mv = Move(initial, final)
-                mv.initial = initial
-                mv.final   = final
-                piece = board.squares[initial.row][initial.col].piece
-                return (piece, mv)
+                mv = self._uci_to_move(root_board, best_move)
+                return mv.piece, mv
         
         # Main Search
 
@@ -272,16 +264,8 @@ class ChessAI:
             return None
 
         # map UCI back to your Move/Square classes
-        src, dst = best_move.from_square, best_move.to_square
-        sr, sf = divmod(src, 8)
-        dr, df = divmod(dst, 8)
-        initial = Square(7 - sr, sf)
-        final   = Square(7 - dr, df)
-        mv = Move(initial, final)
-        mv.initial = initial  
-        mv.final = final
-        piece = board.squares[initial.row][initial.col].piece
-        return (piece, mv)
+        mv = self._uci_to_move(board, best_move)
+        return mv.piece, mv
 
     def _evaluate_root(self, root_fen, uci, depth, maximize, ai_color):
         """Evaluate one root move via Cython minimax."""
@@ -471,18 +455,19 @@ class ChessAI:
     def _quiescence(self, board: chess.Board, acc: Accumulator,
                     alpha: float, beta: float, ai_color: str):
 
-        # ——— Syzygy leaf eval for ≤5 pieces ———
-        tb_board = chess.Board(board.get_fen())
-        tb_board.turn = board.turn
-        if len(tb_board.piece_map()) <= 5:
-            wdl = TB.probe_wdl(tb_board)
-            sign = 1 if board.turn == chess.WHITE else -1
-            wdl_white = wdl * sign
-            dtz = TB.probe_dtz(tb_board) or 0
-            if wdl_white == 0:
-                return 0
-            else:
-                return wdl_white * (100000 - dtz)
+        # ——— Endgame leaf eval for ≤5 pieces via JSON ———
+        if len(board.piece_map()) <= 5:
+            key = zobrist_hash(board)
+            if key in self.endgame:
+                info = self.endgame[key]
+                wdl = info["WDL"]
+                dtm = abs(int(info["DTM"]))
+                if wdl == "Win":
+                    return 100000 - dtm
+                elif wdl == "Loss":
+                    return -100000 + dtm
+                else:  # Draw
+                    return 0
             
         
         key = zobrist_hash(board)
