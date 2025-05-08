@@ -27,7 +27,8 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
-TB = Tablebase("/syzygy/")
+TB = Tablebase()
+TB.add_directory("syzygy/")
 
 class TranspositionTable:
     def __init__(self):
@@ -87,6 +88,19 @@ class ChessAI:
         else:
             self.model = None
     
+    def _uci_to_move(self, board: chess.Board, uci_move: chess.Move):
+        src, dst = uci_move.from_square, uci_move.to_square
+        sr, sf = divmod(src, 8)
+        dr, df = divmod(dst, 8)
+        initial = Square(7 - sr, sf)
+        final   = Square(7 - dr, df)
+        mv = Move(initial, final)
+        mv.initial = initial
+        mv.final   = final
+        # if you need to know which piece moved:
+        mv.piece = board.piece_at(src)  
+        return mv
+    
     def choose_move(self, board, color: str):
         """
         Iterative deepening with per-depth tqdm, parallel root evaluation using Cython minimax,
@@ -99,7 +113,6 @@ class ChessAI:
             root_board.push(uci)
             if root_board.is_checkmate():
                 # immediate mate found: map and return it
-                # (copied from your bottom‐of‐method mapping code)
                 src, dst = uci.from_square, uci.to_square
                 sr, sf = divmod(src, 8)
                 dr, df = divmod(dst, 8)
@@ -113,26 +126,28 @@ class ChessAI:
             root_board.pop()
         
         # ——— Syzygy 5-piece shortcut ———
-        total_pieces = len(board.piece_map())
+        root_board = chess.Board(board.get_fen())
+        root_board.turn = chess.WHITE if color=='white' else chess.BLACK
+        total_pieces = len(root_board.piece_map())
         if total_pieces <= 5:
             # pick the fastest win (or draw if no win) via tablebase
             best_move = None
             maximize  = (color == 'white')
             best_score = -math.inf if maximize else math.inf
 
-            for uci in board.legal_moves:
-                board.push(uci)
-                wdl = TB.probe_wdl(board)      # +1 / 0 / –1
-                dtz = TB.probe_dtz(board) or 0 # plies to reset, or 0 if absent
-                board.pop()
+            for uci in root_board.legal_moves:
+                root_board.push(uci)
+                wdl = TB.probe_wdl(root_board)      # +1 / 0 / –1
+                sign = 1 if root_board.turn == chess.WHITE else -1
+                wdl_white = wdl * sign
+                dtz = TB.probe_dtz(root_board) or 0 # plies to reset, or 0 if absent
+                root_board.pop()
 
                 # score: wins first (faster = bigger), then draws, then losses
-                if wdl > 0:
-                    score = 100000 - dtz
-                elif wdl == 0:
+                if wdl_white == 0:
                     score = 0
                 else:
-                    score = -100000 + dtz
+                    score = wdl_white * (100_000 - dtz)
 
                 if maximize:
                     if score > best_score:
@@ -142,9 +157,11 @@ class ChessAI:
                         best_score, best_move = score, uci
 
             if best_move is not None:
-                # map UCI to your Move/Square and return:
-                return self._uci_to_move(board, best_move)
-        
+                # convert to your Move/Square, then extract the piece from the original board
+                mv = self._uci_to_move(root_board, best_move)
+                piece = board.squares[mv.initial.row][mv.initial.col].piece
+                return piece, mv
+                    
         # Book Moves
         root_board = chess.Board(board.get_fen())
         root_board.turn = chess.WHITE if color=='white' else chess.BLACK
@@ -455,15 +472,17 @@ class ChessAI:
                     alpha: float, beta: float, ai_color: str):
 
         # ——— Syzygy leaf eval for ≤5 pieces ———
-        if len(board.piece_map()) <= 5:
-            wdl = TB.probe_wdl(board)
-            dtz = TB.probe_dtz(board) or 0
-            if wdl > 0:
-                return 100000 - dtz
-            elif wdl < 0:
-                return -100000 + dtz
-            else:
+        tb_board = chess.Board(board.get_fen())
+        tb_board.turn = board.turn
+        if len(tb_board.piece_map()) <= 5:
+            wdl = TB.probe_wdl(tb_board)
+            sign = 1 if board.turn == chess.WHITE else -1
+            wdl_white = wdl * sign
+            dtz = TB.probe_dtz(tb_board) or 0
+            if wdl_white == 0:
                 return 0
+            else:
+                return wdl_white * (100000 - dtz)
             
         
         key = zobrist_hash(board)
