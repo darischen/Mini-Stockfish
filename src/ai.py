@@ -18,6 +18,7 @@ from tqdm import tqdm
 from chess import SquareSet
 from chess.polyglot import open_reader, zobrist_hash
 import json
+from chess.syzygy import Tablebase
 from core_search import minimax
 from core_search import set_use_nnue
 import core_search
@@ -26,6 +27,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
+TB = Tablebase("/syzygy/")
 
 class TranspositionTable:
     def __init__(self):
@@ -109,6 +111,39 @@ class ChessAI:
                 piece = board.squares[initial.row][initial.col].piece
                 return (piece, mv)
             root_board.pop()
+        
+        # ——— Syzygy 5-piece shortcut ———
+        total_pieces = len(board.piece_map())
+        if total_pieces <= 5:
+            # pick the fastest win (or draw if no win) via tablebase
+            best_move = None
+            maximize  = (color == 'white')
+            best_score = -math.inf if maximize else math.inf
+
+            for uci in board.legal_moves:
+                board.push(uci)
+                wdl = TB.probe_wdl(board)      # +1 / 0 / –1
+                dtz = TB.probe_dtz(board) or 0 # plies to reset, or 0 if absent
+                board.pop()
+
+                # score: wins first (faster = bigger), then draws, then losses
+                if wdl > 0:
+                    score = 100000 - dtz
+                elif wdl == 0:
+                    score = 0
+                else:
+                    score = -100000 + dtz
+
+                if maximize:
+                    if score > best_score:
+                        best_score, best_move = score, uci
+                else:
+                    if score < best_score:
+                        best_score, best_move = score, uci
+
+            if best_move is not None:
+                # map UCI to your Move/Square and return:
+                return self._uci_to_move(board, best_move)
         
         # Book Moves
         root_board = chess.Board(board.get_fen())
@@ -419,6 +454,18 @@ class ChessAI:
     def _quiescence(self, board: chess.Board, acc: Accumulator,
                     alpha: float, beta: float, ai_color: str):
 
+        # ——— Syzygy leaf eval for ≤5 pieces ———
+        if len(board.piece_map()) <= 5:
+            wdl = TB.probe_wdl(board)
+            dtz = TB.probe_dtz(board) or 0
+            if wdl > 0:
+                return 100000 - dtz
+            elif wdl < 0:
+                return -100000 + dtz
+            else:
+                return 0
+            
+        
         key = zobrist_hash(board)
         if (cached := self.tt.get(key, 0)) is not None:
             return cached
