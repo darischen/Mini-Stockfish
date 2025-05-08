@@ -1,6 +1,6 @@
 # ai.py
 import math
-import os
+import os, threading
 import time
 import torch  # Ensure PyTorch is installed if you plan to use a DNN
 import torch.nn as nn
@@ -11,13 +11,14 @@ from nnue.nnue_train import NNUEModel
 from move import Move  # Move class for interoperability with the game engine
 from square import Square
 from accumulator import Accumulator  # Accumulator for incremental feature updates
-import threading
 from chess.polyglot import zobrist_hash
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from chess import SquareSet
-from chess.polyglot import open_reader, zobrist_hash
 import json
+from chess.syzygy import Tablebase
+from chess.gaviota import PythonTablebase
+from lz4.frame import decompress
 from core_search import minimax
 from core_search import set_use_nnue
 import core_search
@@ -26,6 +27,9 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
+TB = Tablebase()
+TB.add_directory("endgame/syzygy/")
+TB.add_directory("endgame/DTM/")
 
 class TranspositionTable:
     def __init__(self):
@@ -77,13 +81,6 @@ class ChessAI:
         # how many plies deep your opening book should go
         self.book_depth = 10
         
-        # Endgame tablebase is stored in endgame/tablebase.json
-        with open("endgame/tablebase.json") as f:
-            eg = json.load(f)
-        # keys must be ints to match zobrist_hash(root_board)
-        self.endgame = {int(k): v for k, v in eg.items()}
-        print(f"[DEBUG] loaded tablebase.json: {len(self.endgame)} entries")
-        
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU
             self.model = torch.jit.load(model_path, map_location="cpu")
@@ -120,45 +117,52 @@ class ChessAI:
                 return piece, mv
             root_board.pop()
         
-        # ——— Endgame book shortcut for ≤5 pieces ———
+        # ——— Endgame tablebase shortcut for ≤5 pieces ———
         root_board = chess.Board(board.get_fen())
-        root_board.turn = chess.WHITE if color=='white' else chess.BLACK
+        root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
         total_pieces = len(root_board.piece_map())
         if total_pieces <= 5:
-            key = zobrist_hash(root_board)
-            if key in self.endgame:
-                info = self.endgame[key]
-                # choose which move‐list to consult
-                if info["WDL"] == "Win":
-                    candidates = set(filter(None, info["WinningMoves"].split(",")))
-                    want_min = True    # fastest mate
-                elif info["WDL"] == "Draw":
-                    candidates = set(filter(None, info["DrawingMoves"].split(",")))
-                    want_min = True    # fastest route to draw
-                else:  # "Loss"
-                    candidates = set(filter(None, info["LosingMoves"].split(",")))
-                    want_min = False   # delay mate
+            is_white = (color == 'white')
+            win_moves, draw_moves, loss_moves = [], [], []
 
-                best_move = None
-                best_val  = math.inf if want_min else -math.inf
-                for uci in root_board.legal_moves:
-                    uci_str = uci.uci()
-                    if uci_str not in candidates:
-                        continue
-                    # lookup child‐position’s DTM
-                    root_board.push(uci)
-                    child_key = zobrist_hash(root_board)
-                    root_board.pop()
-                    if child_key not in self.endgame:
-                        continue
-                    dtm = abs(int(self.endgame[child_key]["DTM"]))
-                    if (want_min and dtm < best_val) or (not want_min and dtm > best_val):
-                        best_val, best_move = dtm, uci
+            for uci in root_board.legal_moves:
+                root_board.push(uci)
 
-                if best_move is not None:
-                    mv = self._uci_to_move(root_board, best_move)
-                    piece = board.squares[mv.initial.row][mv.initial.col].piece
-                    return piece, mv
+                # +1 / 0 / -1 = WDL from White’s POV
+                wdl = TB.probe_wdl(root_board)
+                outcome = wdl if is_white else -wdl
+
+                if outcome ==  1:
+                    # winning: use DTM
+                    dtm = TB.probe_dtm(root_board)
+                    win_moves.append((dtm, uci))
+
+                elif outcome ==  0:
+                    # drawn: use DTZ
+                    dtz = TB.probe_dtz(root_board)
+                    draw_moves.append((dtz if dtz is not None else float('inf'), uci))
+
+                else:  # outcome == -1
+                    # losing: use DTM (slowest loss)
+                    dtm = TB.probe_dtm(root_board)
+                    loss_moves.append((dtm, uci))
+
+                root_board.pop()
+
+            # pick fastest win, else quickest draw, else slowest loss
+            if   win_moves:
+                _, best_uci = min(win_moves, key=lambda x: x[0])
+            elif draw_moves:
+                _, best_uci = min(draw_moves, key=lambda x: x[0])
+            elif loss_moves:
+                _, best_uci = max(loss_moves, key=lambda x: x[0])
+            else:
+                best_uci = None
+
+            if best_uci is not None:
+                mv = self._uci_to_move(board, best_uci)
+                piece = board.squares[mv.initial.row][mv.initial.col].piece
+                return piece, mv
                     
         # Book Moves
         root_board = chess.Board(board.get_fen())
@@ -452,22 +456,7 @@ class ChessAI:
             return self._evaluate_bb(board, ai_color)
     
     def _quiescence(self, board: chess.Board, acc: Accumulator,
-                    alpha: float, beta: float, ai_color: str):
-
-        # ——— Endgame leaf eval for ≤5 pieces via JSON ———
-        if len(board.piece_map()) <= 5:
-            key = zobrist_hash(board)
-            if key in self.endgame:
-                info = self.endgame[key]
-                wdl = info["WDL"]
-                dtm = abs(int(info["DTM"]))
-                if wdl == "Win":
-                    return 100000 - dtm
-                elif wdl == "Loss":
-                    return -100000 + dtm
-                else:  # Draw
-                    return 0
-            
+                    alpha: float, beta: float, ai_color: str):            
         
         key = zobrist_hash(board)
         if (cached := self.tt.get(key, 0)) is not None:
