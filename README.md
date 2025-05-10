@@ -35,7 +35,7 @@
   - [x] evaluation function
     - [x] material value
     - [x] positional value
-  - Book of opening moves
+  - [x] Book of opening moves
   - [x] MVV-LVA (Least Valuable Victim - Most Valuable Attacker)
   - Syzygy Endgame Tablebase
   - [x] multithreading
