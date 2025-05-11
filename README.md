@@ -37,7 +37,7 @@
     - [x] positional value
   - [x] Book of opening moves
   - [x] MVV-LVA (Least Valuable Victim - Most Valuable Attacker)
-  - Syzygy Endgame Tablebase
+  - Syzygy Endgame Tablebase (Gaviota has DTM)
   - [x] multithreading
   - Deep Neural Network
     - [x] Dataset of Stockfish Evaluations (16 million positions)
