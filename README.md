@@ -55,5 +55,6 @@
 ## How to run
 - Clone, fork or download the project
 - run 'cd Mini-Stockfish\src'
-- run 'pip install pygame>=2.0.0'
+- ~~run 'pip install pygame>=2.0.0'~~
+- requirements.txt coming soon
 - run 'python main.py'
