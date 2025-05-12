@@ -55,6 +55,7 @@
 ## How to run
 - Clone, fork or download the project
 - run 'cd Mini-Stockfish\src'
+- run pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 - ~~run 'pip install pygame>=2.0.0'~~
 - requirements.txt coming soon
 - run 'python main.py'
