@@ -8,9 +8,6 @@ rooks and bishops (without magic bitboard optimizations) and to compute
 pseudo-attacks for knights and kings. This module serves as a starting point;
 for a full-speed engine, consider a more optimized (and low-level) solution.
 """
-
-import math
-
 # -- Constants and Utility Functions --
 
 NUM_SQUARES = 64  # 8 x 8 chessboard

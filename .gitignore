@@ -4,3 +4,4 @@ tactic_evals.csv
 combined_chessData.csv
 /src/endgame/dtm/
 /src/endgame/syzygy/
+**/__pycache__/
