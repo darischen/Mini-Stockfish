@@ -1,6 +1,5 @@
 # accumulator.py
 import torch
-import numpy as np
 import chess
 from nnue.nnue_train import fen_to_features
 

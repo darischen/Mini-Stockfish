@@ -3,11 +3,8 @@ import math
 import os, threading
 import time
 import torch  # Ensure PyTorch is installed if you plan to use a DNN
-import torch.nn as nn
 import chess  # Use python-chess for fast bitboard-backed move generation
-import numpy as np
 import bitboard  # Our bitboard module (square_bb, popcount, attacks, etc.)
-from nnue.nnue_train import NNUEModel
 from move import Move  # Move class for interoperability with the game engine
 from square import Square
 from accumulator import Accumulator  # Accumulator for incremental feature updates
@@ -18,9 +15,7 @@ from chess import SquareSet
 import json
 from chess.syzygy import Tablebase
 from chess.gaviota import PythonTablebase
-from lz4.frame import decompress
 from core_search import minimax
-from core_search import set_use_nnue
 import core_search
 
 os.environ["OMP_NUM_THREADS"] = "1"

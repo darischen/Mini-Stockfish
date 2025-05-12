@@ -6,7 +6,6 @@ from game import Game
 from move import Move
 from square import Square
 from piece import *
-os.add_dll_directory(r"C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/torch/lib")
 from ai import ChessAI
 
 class Main:
