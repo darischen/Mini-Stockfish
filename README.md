@@ -55,6 +55,7 @@
 ## How to run
 - Clone, fork or download the project
 - run 'cd Mini-Stockfish\src'
+- Download python 3.10.x
 - run pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 - run 'pip install -r requirements.txt'
 - run 'python main.py'
