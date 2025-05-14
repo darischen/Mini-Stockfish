@@ -26,7 +26,19 @@ syzygy_tb = SyzygyTablebase()
 syzygy_tb.add_directory("endgame/syzygy/")
 
 gaviota_tb = GaviotaTablebase()
-gaviota_tb.add_directory("endgame/gaviota/")
+gaviota_tb.add_directory("endgame/gaviota/3/")
+gaviota_tb.add_directory("endgame/gaviota/4/")
+gaviota_tb.add_directory("endgame/gaviota/5/")
+
+from chess import KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN
+piece_map = {
+    PAWN:   'P',
+    KNIGHT: 'N',
+    BISHOP: 'B',
+    ROOK:   'R',
+    QUEEN:  'Q',
+    KING:   'K',
+}
 
 class TranspositionTable:
     def __init__(self):
@@ -76,7 +88,7 @@ class ChessAI:
         print(f"[DEBUG] loaded book.json: {len(self.book_evals)} entries")
 
         # how many plies deep your opening book should go
-        self.book_depth = 10
+        self.book_depth = 20
         
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU
@@ -115,40 +127,29 @@ class ChessAI:
             root_board.pop()
         
         # ——— Endgame tablebase shortcut for ≤5 pieces ———
-        root_board = chess.Board(board.get_fen())
-        root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
-        total_pieces = len(root_board.piece_map())
-        if total_pieces <= 5:
-            is_white = (color == 'white')
+        if len(root_board.piece_map()) <= 5:
             win_moves, draw_moves, loss_moves = [], [], []
 
             for uci in root_board.legal_moves:
                 root_board.push(uci)
 
-                # +1 / 0 / -1 = WDL from White’s POV
-                wdl = TB.probe_wdl(root_board)
-                outcome = wdl if is_white else -wdl
-
-                if outcome ==  1:
-                    # winning: use DTM
-                    dtm = TB.probe_dtm(root_board)
+                # 1) Depth‐to‐mate from Gaviota
+                dtm = gaviota_tb.probe_dtm(root_board)
+                # 2) Win/Draw/Loss from Syzygy
+                raw = syzygy_tb.probe_wdl(root_board)
+                wdl = -raw
+                if wdl == 2:          # win for side to move
                     win_moves.append((dtm, uci))
-
-                elif outcome ==  0:
-                    # drawn: use DTZ
-                    dtz = TB.probe_dtz(root_board)
-                    draw_moves.append((dtz if dtz is not None else float('inf'), uci))
-
-                else:  # outcome == -1
-                    # losing: use DTM (slowest loss)
-                    dtm = TB.probe_dtm(root_board)
+                elif wdl == -2:                 # loss
                     loss_moves.append((dtm, uci))
-
+                else:                           # draw or cursed win/loss
+                    dtz = syzygy_tb.probe_dtz(root_board) or float('inf')
+                    draw_moves.append((dtz, uci))
                 root_board.pop()
 
             # pick fastest win, else quickest draw, else slowest loss
             if   win_moves:
-                _, best_uci = min(win_moves, key=lambda x: x[0])
+                _, best_uci = max(win_moves, key=lambda x: x[0])
             elif draw_moves:
                 _, best_uci = min(draw_moves, key=lambda x: x[0])
             elif loss_moves:
