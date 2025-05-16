@@ -421,7 +421,7 @@ class ChessAI:
             
             # Hanging Pieces
             if victim and not bb.is_attacked_by(not bb.turn, move.to_square):
-                score += 5000
+                score += 10000
                 
             # Promotion bonus
             if move.promotion:
@@ -513,15 +513,15 @@ class ChessAI:
         them = not us
 
         # — hanging‑piece penalty
-        pen = 200
+        pen = 1000
         for sq in chess.SQUARES:
             pc = board.piece_at(sq)
             if pc and pc.color==us:
                 if board.is_attacked_by(them, sq) and not board.is_attacked_by(us, sq):
-                    s -= pen
+                    s -= pen if board.turn==us else -pen
 
         # — bonus for unprotected enemy captures
-        bonus = 150
+        bonus = 300
         for m in board.legal_moves:
             if board.is_capture(m):
                 vic = board.piece_at(m.to_square)
@@ -544,7 +544,7 @@ class ChessAI:
         # — promotion bonus
         for m in board.legal_moves:
             if m.promotion:
-                s += (200 if board.turn==us else -200)
+                s += (500 if board.turn==us else -500)
 
         # — queen safety & mobility
         qa, qs, qm = 500, 75, 20
