@@ -446,12 +446,12 @@ class ChessAI:
                    ai_color: str) -> float:
         """Compute blended NNUE/static eval, then apply all handcrafted bonuses/penalties."""
         if self.model:
-            # NNUE returns a centipawn score from White’s POV; flip sign for Black to move.
-            val = self.model(acc.state).item()
-            return val if ai_color == 'white' else -val
+           base = self.model(acc.state).item()
         else:
-            # static evaluator already returns flipped score based on ai_color
-            return self._evaluate_bb(board, ai_color)
+           base = self._evaluate_bb(board, ai_color)
+        
+        adj  = base + self.bonus(board, base, ai_color)
+        return adj if ai_color=='white' else -adj
     
     def _quiescence(self, board: chess.Board, acc: Accumulator,
                     alpha: float, beta: float, ai_color: str):            
