@@ -24,9 +24,9 @@ from cpython.buffer cimport (
 #  2) import your C++ inference API
 cdef extern from "nnue_inference.h":
     ctypedef void* NNUEHandle
-    NNUEHandle nnue_create(const char* model_path)
-    void        nnue_destroy(NNUEHandle h)
-    double      nnue_eval(NNUEHandle h, const float* features, int length)
+    NNUEHandle nnue_create(const char* model_path) nogil
+    void        nnue_destroy(NNUEHandle h) nogil
+    double      nnue_eval(NNUEHandle h, const float* features, int length) nogil
 
 #  3) module‐level handle
 cdef NNUEHandle _nnue = NULL
@@ -50,32 +50,37 @@ def init_nnue(model_path=None):
     if _nnue == NULL:
         raise RuntimeError(f"Could not load NNUE model from {model_path!r}")
 
+cdef double _nnue_eval_view(float[:] buf) nogil:
+    """
+    Under nogil: call directly into your C++ API,
+    passing the address of the first element.
+    """
+    cdef int length = buf.shape[0]
+    return nnue_eval(_nnue, &buf[0], length)
+
 cpdef double nnue_eval_py(object feat_buf):
     """
     Accept any object supporting the buffer protocol (e.g. numpy float32[771]).
     Calls into the native library under nogil.
     """
-    cdef Py_buffer view
-    cdef Py_ssize_t ptr, buf_count
+    cdef float[:] view
+    cdef Py_buffer viewinfo
 
+    # Torch‐tensor fast path: pull contiguous CPU numpy underlying buffer
     if hasattr(feat_buf, "data_ptr") and hasattr(feat_buf, "numel"):
-        feat_buf = feat_buf.contiguous().cpu()
-        ptr       = feat_buf.data_ptr()     # Python int -> intptr_t
-        buf_count = feat_buf.numel()        # Python int -> Py_ssize_t
-        return nnue_eval(_nnue,
-                         <float*>ptr,
-                         <int>buf_count)
+        # Convert to CPU‐backed contiguous numpy array
+        feat_buf = feat_buf.contiguous().cpu().numpy()
 
-    # generic buffer‐protocol fallback
-    if PyObject_GetBuffer(feat_buf, &view, PyBUF_CONTIG_RO | PyBUF_FORMAT) != 0:
+    # Generic buffer protocol fallback into a memoryview
+    if PyObject_GetBuffer(feat_buf, &viewinfo, PyBUF_CONTIG_RO | PyBUF_FORMAT) != 0:
         raise ValueError("object does not support float32 buffer protocol")
     try:
-        buf_count = view.len // sizeof(float)
-        return nnue_eval(_nnue,
-                         <float*>view.buf,
-                         <int>buf_count)
+        # Cast raw buffer to a Cython float[:] view
+        view = <float[:viewinfo.len // sizeof(float)]> viewinfo.buf
+        # Now call the pure‐C nogil entrypoint
+        return _nnue_eval_view(view)
     finally:
-        PyBuffer_Release(&view)
+        PyBuffer_Release(&viewinfo)
 
 
 # ——————————————————————————————————————————————————————————————————————

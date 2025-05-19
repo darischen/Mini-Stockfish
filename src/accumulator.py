@@ -1,16 +1,16 @@
-# accumulator.py
-import torch
+# accumulator_py.py
+
+import numpy as np
 import chess
 from nnue.nnue_train import fen_to_features
 
 class Accumulator:
     """
-    Incrementally maintains a 771‑dim feature vector for a python‑chess.Board,
-    updating only the entries that change on each push/pop rather than recomputing
-    the full vector every time.
+    Incrementally maintains a 771-dim NumPy feature vector for a python-chess.Board,
+    updating only the entries that change on each push/pop.
     """
 
-    # map python‑chess piece_type → channel 0–5
+    # map python-chess piece_type → channel 0–5
     _piece_base = {
         chess.PAWN:   0,
         chess.KNIGHT: 1,
@@ -20,107 +20,92 @@ class Accumulator:
         chess.KING:   5,
     }
 
-    # adjacency offsets for king‑safety features
+    # adjacency offsets for king-safety features
     _king_offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
-    
-    _phase_weights = {
-        chess.PAWN:   0,
-        chess.KNIGHT: 1,
-        chess.BISHOP: 1,
-        chess.ROOK:   2,
-        chess.QUEEN:  4,
-        chess.KING:   0,
-    }
-    
-    _max_phase = sum(w * 2 for w in _phase_weights.values())
 
     def __init__(self):
-        self.state = None  # torch.Tensor of shape [1,771]
-        self.board = None  # the python‑chess.Board we’re tracking
+        self.state = None    # numpy.ndarray shape (771,), dtype float32
+        self.board = None    # python-chess.Board we’re tracking
 
-    def init(self, board: chess.Board):
+    def init(self, board: chess.Board) -> np.ndarray:
         """
         Initialize the accumulator from scratch.
-        :param board: a python‑chess.Board at the root of your search
-        :return: a [1×771] torch.Tensor ready to feed into your NNUEModel
+        :param board: a python-chess.Board at the root of your search
+        :return: a 1×771 NumPy array
         """
-        # full‑vector fallback via fen_to_features
-        arr = fen_to_features(board.fen())           # numpy array shape (771,)
-        self.state = torch.from_numpy(arr).unsqueeze(0)  # [1,771]
-        self.board = board.copy()                    # keep our own copy
+        # full-vector fallback via fen_to_features (returns np.float32[771])
+        arr = fen_to_features(board.fen())  
+        self.state = arr.copy()            # keep our own copy
+        self.board = board.copy()
         return self.state
 
-    def update(self, move: chess.Move, captured: chess.Piece = None):
+    def update(self, move: chess.Move, captured: chess.Piece = None) -> np.ndarray:
         """
         Apply a move incrementally to the internal feature vector.
-        Assumes you've already done `self.board.push(move)`.
-        :param move: the chess.Move just applied to self.board
-        :param captured: the Piece that was on move.to_square before the push (or None)
-        :return: updated [1×771] tensor
+        Assumes you've already done `board.push(move)`.
         """
         assert self.state is not None and self.board is not None, \
             "Call init() before update()"
 
-        # attacker is now on to_square
+        # 1) push to our copy
         self.board.push(move)
+
+        # 2) attacker channel index
         atk = self.board.piece_at(move.to_square)
         color_offset = 0 if atk.color == chess.WHITE else 6
-        base_idx = self._piece_base[atk.piece_type]
-        ch = base_idx + color_offset
+        ch = self._piece_base[atk.piece_type] + color_offset
 
-        # clear old one‑hot at from_square
-        frm = move.from_square * 12 + ch
-        to  = move.to_square  * 12 + ch
-        self.state[0, frm] = 0.0
-        self.state[0, to]  = 1.0
+        # 3) clear old one-hot at from_square; set at to_square
+        frm_idx = move.from_square * 12 + ch
+        to_idx  = move.to_square   * 12 + ch
+        self.state[frm_idx] = 0.0
+        self.state[to_idx]  = 1.0
 
-        # clear victim’s one‑hot if this was a capture
+        # 4) clear victim’s one-hot if this was a capture
         if captured:
-            cap_ch = self._piece_base[captured.piece_type] + \
-                     (0 if captured.color == chess.WHITE else 6)
+            cap_ch  = self._piece_base[captured.piece_type] + \
+                      (0 if captured.color == chess.WHITE else 6)
             cap_idx = move.to_square * 12 + cap_ch
-            self.state[0, cap_idx] = 0.0
+            self.state[cap_idx] = 0.0
 
-        # recompute just the extra 3 features: king‑safety & mobility
-        extras = self._compute_extras()
-        # indices 768,769,770
-        self.state[0, 768:] = extras
-
+        # 5) recompute only the 3 extra features
+        self.state[768:771] = self._compute_extras()
         return self.state
 
-    def rollback(self, move: chess.Move, captured: chess.Piece = None):
+    def rollback(self, move: chess.Move, captured: chess.Piece = None) -> np.ndarray:
         """
-        Undo the incremental update. Call *after* you do `self.board.pop()`.
-        Mirrors `update` but swaps from/to and re‑inserts the captured piece.
+        Undo the incremental update. Call *after* you do `board.pop()`.
         """
-        # swap attacker back
+        assert self.state is not None and self.board is not None, \
+            "Call init() before rollback()"
+
+        # 1) pop on our copy
         self.board.pop()
+
+        # 2) attacker goes back from to -> from
         atk = self.board.piece_at(move.from_square)
         color_offset = 0 if atk.color == chess.WHITE else 6
-        base_idx = self._piece_base[atk.piece_type]
-        ch = base_idx + color_offset
+        ch = self._piece_base[atk.piece_type] + color_offset
 
-        frm = move.from_square * 12 + ch
-        to  = move.to_square  * 12 + ch
-        self.state[0, frm] = 1.0
-        self.state[0, to]  = 0.0
+        frm_idx = move.from_square * 12 + ch
+        to_idx  = move.to_square   * 12 + ch
+        self.state[frm_idx] = 1.0
+        self.state[to_idx]  = 0.0
 
-        # restore victim one‑hot if needed
+        # 3) restore victim if needed
         if captured:
-            cap_ch = self._piece_base[captured.piece_type] + \
-                     (0 if captured.color == chess.WHITE else 6)
+            cap_ch  = self._piece_base[captured.piece_type] + \
+                      (0 if captured.color == chess.WHITE else 6)
             cap_idx = move.to_square * 12 + cap_ch
-            self.state[0, cap_idx] = 1.0
+            self.state[cap_idx] = 1.0
 
-        # recompute extras
-        extras = self._compute_extras()
-        self.state[0, 768:] = extras
-
+        # 4) recompute extras again
+        self.state[768:771] = self._compute_extras()
         return self.state
 
-    def _compute_extras(self):
+    def _compute_extras(self) -> np.ndarray:
         """
-        Recompute the 3 extra features on the current self.board:
+        Compute the 3 extra features on the current self.board:
           [white_king_safety, black_king_safety, mobility]
         """
         bb = self.board
@@ -133,7 +118,7 @@ class Accumulator:
             for off in self._king_offsets:
                 nb = sq + off
                 if 0 <= nb < 64:
-                    # avoid file‑wrap
+                    # avoid file-wrap
                     if abs((nb % 8) - (sq % 8)) > 1:
                         continue
                     p = bb.piece_at(nb)
@@ -143,17 +128,6 @@ class Accumulator:
 
         white_ks = king_safety(chess.WHITE)
         black_ks = king_safety(chess.BLACK)
-        # mobility = number of legal moves
-        mob = float(len(list(bb.legal_moves)))
+        mob      = float(len(list(bb.legal_moves)))
 
-        return torch.tensor([white_ks, black_ks, mob], dtype=torch.float32)
-
-    def game_phase(self) -> float:
-        """
-        Compute the endgame fraction (0 = opening/middlegame, 1 = endgame) based on piece counts.
-        """
-        phase = 0
-        for pc in self.board.piece_map().values():
-            phase += self._phase_weights.get(pc.piece_type, 0)
-        # clamp into [0,1]
-        return min(max(phase / self._max_phase, 0.0), 1.0)
+        return np.array([white_ks, black_ks, mob], dtype=np.float32)

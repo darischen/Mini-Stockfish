@@ -40,6 +40,10 @@ piece_map = {
     KING:   'K',
 }
 
+EXACT      = 0
+LOWERBOUND = 1
+UPPERBOUND = 2
+
 class TranspositionTable:
     def __init__(self):
         self.lock = threading.Lock()
