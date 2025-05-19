@@ -14,7 +14,7 @@ class Main:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Chess AI")
         self.game = Game()
-        self.ai = ChessAI(depth=3, use_dnn=True)
+        self.ai = ChessAI(depth=5, use_dnn=True)
 
     def mainloop(self):
         game = self.game
@@ -93,7 +93,6 @@ class Main:
                         if board.valid_move(dragger.piece, move):
                             captured = board.squares[released_row][released_col].has_piece()
                             board.move(dragger.piece, move)
-                            # print(f"{dragger.piece} moved to {released_row}, {released_col}")
                             
                             board.set_true_en_passant(dragger.piece)
                             
@@ -136,10 +135,17 @@ class Main:
                             if ai_move:
                                 _, mv = ai_move
                                 piece = board.squares[mv.initial.row][mv.initial.col].piece
+                                captured = board.squares[mv.final.row][mv.final.col].has_piece()
                                 board.move(piece, mv)
                                 print(f"AI (black) moves: {mv}")
                                 # Optionally, play sound if needed, update en passant, etc.
                                 board.set_true_en_passant(piece)
+                                game.play_sound(captured)
+                                game.show_bg(screen)
+                                game.show_last_move(screen)
+                                game.show_pieces(screen)
+                                game.show_check(screen)
+                                game.show_hover(screen)
                                 game.next_turn()
                             else:
                                 print("AI found no legal moves for black.")
