@@ -4,6 +4,72 @@
 # distutils: include_dirs = nnue
 
 import os
+from libc.string cimport memset
+from libc.stdint cimport uint64_t
+from libc.stdlib cimport malloc, free
+from chess.polyglot import zobrist_hash
+cdef bint USE_NNUE = False
+
+# ———————————————————————————Transposition Table———————————————————————————————————————————
+cdef uint64_t zobrist_random[769]
+cdef uint64_t zob_piece[12*64]
+cdef uint64_t zob_side
+cdef uint64_t zob_castle[4]
+cdef uint64_t zob_ep[8]
+
+def _init_zobrist_random():
+    import random
+    random.seed(0xC0FFEE)
+    global zob_side
+
+    # 1) Pieces (12 piece‐types * 64 squares)
+    for i in range(12*64):
+        zob_piece[i] = <uint64_t>random.getrandbits(64)
+
+    # 2) Side to move
+    zob_side = <uint64_t>random.getrandbits(64)
+
+    # 3) Castling rights (K, Q, k, q)
+    for i in range(4):
+        zob_castle[i] = <uint64_t>random.getrandbits(64)
+
+    # 4) En-passant file (a–h)
+    for i in range(8):
+        zob_ep[i] = <uint64_t>random.getrandbits(64)
+
+# then, at module init
+_init_zobrist_random()
+
+cdef enum EntryFlag:
+    EXACT = 0
+    LOWERBOUND = 1
+    UPPERBOUND = 2
+
+cdef struct TTEntry:
+    uint64_t key
+    int           depth
+    double        value
+    unsigned char flag
+
+cdef TTEntry *tt_entries = NULL
+cdef int       tt_size, tt_mask
+
+cpdef init_tt(int size_pow2 = 1<<20):
+    """
+    Call once at module init (or from Python) to allocate the TT.
+    """
+    global tt_entries, tt_size, tt_mask
+    tt_size = size_pow2
+    tt_mask = size_pow2 - 1
+    if tt_entries != NULL:
+        free(tt_entries)
+    tt_entries = <TTEntry*> malloc(tt_size * sizeof(TTEntry))
+    # zero out everything
+    memset(tt_entries, 0, tt_size * sizeof(TTEntry))
+
+cdef inline int piece_index(int piece_type, bint is_white):
+    return (piece_type-1)*2 + (0 if is_white else 1)
+# ——————————————————————————————————————————————————————————————————————
 
 cpdef set_use_nnue(bint flag):
      """
@@ -30,6 +96,39 @@ cdef extern from "nnue_inference.h":
 
 #  3) module‐level handle
 cdef NNUEHandle _nnue = NULL
+
+# —————————————————————————Probe/Store Helper————————————————————————————————
+cdef inline double tt_probe(uint64_t key,
+                            int required_depth,
+                            double alpha,
+                            double beta,
+                            char *hit) nogil:
+    cdef int idx = <int>(key & tt_mask)
+    cdef TTEntry e = tt_entries[idx]
+    hit[0] = 0
+    if e.key != key or e.depth < required_depth:
+        return 0
+    if e.flag == EXACT:
+        hit[0] = 1; return e.value
+    if e.flag == LOWERBOUND and e.value >= beta:
+        hit[0] = 1; return e.value
+    if e.flag == UPPERBOUND and e.value <= alpha:
+        hit[0] = 1; return e.value
+    return 0
+
+cdef inline void tt_store(uint64_t key,
+                           int depth,
+                           double value,
+                           unsigned char flag) except * nogil:
+    cdef int idx = <int>(key & tt_mask)
+    cdef TTEntry *e = &tt_entries[idx]
+    # only replace if deeper, or same-depth EXACT overrides
+    if e.depth < depth or (e.depth == depth and flag == EXACT and e.flag != EXACT):
+        e.key   = key
+        e.depth = depth
+        e.value = value
+        e.flag  = flag
+# ——————————————————————————————————————————————————————————————————————
 
 def init_nnue(model_path=None):
     """
@@ -91,9 +190,20 @@ from libc.math cimport INFINITY
 
 cdef double MATE_SCORE = 100000.0
 
-# Python‐level counters
-nodes_evaluated = 0
-branches_pruned = 0
+# Python‐level counter variables
+cdef public int nodes_evaluated = 0
+cdef public int branches_pruned = 0
+
+cpdef int get_nodes_evaluated():
+    return nodes_evaluated
+
+cpdef int get_branches_pruned():
+    return branches_pruned
+
+cpdef void reset_counters():
+    global nodes_evaluated, branches_pruned
+    nodes_evaluated = 0
+    branches_pruned = 0
 
 cdef class SearchResult:
     cdef public double value
@@ -138,102 +248,254 @@ cdef double static_eval(object board, object acc, str ai_color):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double quiesce(object board, object acc,
-                    double alpha, double beta,
-                    str ai_color):
-    # leaf: run the NNUE network on acc.state
+cdef double quiesce(object board,
+                    object acc,
+                    double alpha,
+                    double beta,
+                    str ai_color,
+                    uint64_t key):
+    """
+    Quiescence search with TT + incremental Zobrist hashing.
+    `key` is the 64-bit hash for `board` before any moves here.
+    """
+    cdef char hit
+    cdef double val
+    cdef object mover
+
+    # 0) probe TT
+    val = tt_probe(key, 0, alpha, beta, &hit)
+    if hit:
+        return val
+
+    # 1) stand-pat
     if USE_NNUE:
-        return nnue_eval_py(acc.state)
+        val = nnue_eval_py(acc.state)
     else:
-        return static_eval(board, acc, ai_color)
+        val = static_eval(board, acc, ai_color)
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cpdef double minimax(object board, object acc,
-                     int depth,
-                     double alpha, double beta,
-                     bint maximizing,
-                     str ai_color):
-    global nodes_evaluated, branches_pruned
-    cdef double value, child
+    # 2) alpha/beta check on stand-pat
+    if val >= beta:
+        tt_store(key, 0, val, LOWERBOUND)
+        return beta
+    if val > alpha:
+        alpha = val
+
+    # 3) only consider captures
     cdef object mv, captured
-
-    nodes_evaluated += 1
-    if board.is_game_over():
-        if board.is_checkmate():
-            if maximizing:
-                return -MATE_SCORE + depth
-            # otherwise it's your opponent to move who is mated → best win
-            else:
-                return  MATE_SCORE - depth
-        else:
-            return 0.0
-
-    if depth == 0:
-        return quiesce(board, acc, alpha, beta, ai_color)
-
-    value = -INFINITY if maximizing else INFINITY
-
+    cdef uint64_t next_key, cap_hash
+    cdef double score
+    cdef int from_pi, to_pi
     for mv in board.legal_moves:
+        if not board.is_capture(mv):
+            continue
+
+        # who’s on from_square?
+        mover = board.piece_at(mv.from_square)
+        # who’s captured on to_square?
         captured = board.piece_at(mv.to_square)
+
+        # incremental hash:
+        #  a) remove mover from from_square
+        from_pi = piece_index(mover.piece_type, mover.color)
+        to_pi   = piece_index(mv.promotion if mv.promotion else mover.piece_type,
+                                    mover.color)
+        next_key = key ^ zobrist_random[from_pi * 64 + mv.from_square]
+        # if there is a capture, remove the captured piece
+        if captured is not None:
+            cap_hash = zobrist_random[piece_index(captured.piece_type, captured.color) * 64 + mv.to_square]
+        else:
+            cap_hash = 0
+        next_key ^= cap_hash
+        # add mover at to_square (handle promotions by using to_pi)
+        next_key ^= zobrist_random[to_pi * 64 + mv.to_square]
+        # flip the side‐to‐move bit
+        next_key ^= zobrist_random[768]
+        
+
+        # do the capture
         board.push(mv)
         acc.update(mv, captured)
 
-        child = minimax(board, acc,
-                        depth-1,
-                        alpha, beta,
-                        not maximizing,
-                        ai_color)
+        # recurse with flipped colors and updated key
+        score = -quiesce(board, acc, -beta, -alpha, ai_color, next_key)
 
-        acc.rollback(mv, captured)
         board.pop()
+        acc.rollback(mv, captured)
 
-        if maximizing:
-            if child > value:
-                value = child
-            if value > alpha:
-                alpha = value
+        # 4) cutoff?
+        if score >= beta:
+            tt_store(key, 0, score, LOWERBOUND)
+            return beta
+        if score > alpha:
+            alpha = score
+
+    # 5) store exact and return
+    tt_store(key, 0, alpha, EXACT)
+    return alpha
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef double minimax(object board,
+                     object acc,
+                     int depth,
+                     double alpha,
+                     double beta,
+                     str ai_color,
+                     uint64_t key,
+                     int required_depth):
+    """
+    Negamax with alpha-beta, TT, and incremental Zobrist hashing.
+    - `key` is the current zobrist hash for `board`.
+    """
+    global nodes_evaluated, branches_pruned
+    cdef double value, child, cached
+    cdef object mv, captured, mover
+    cdef uint64_t next_key, cap_hash
+    cdef char hit
+    cdef int from_pi, to_pi
+
+    # Count nodes
+    nodes_evaluated += 1
+
+    # 1) TT probe
+    cached = tt_probe(key, required_depth, alpha, beta, &hit)
+    if hit:
+        return cached
+
+    # 2) Terminal:
+    if board.is_game_over():
+        if board.is_checkmate():
+            # if side‐to‐move is mated, return a mate score
+            return -MATE_SCORE + depth
         else:
-            if child < value:
-                value = child
-            if value < beta:
-                beta = value
+            return 0.0
+
+    # 3) Leaf → quiescence
+    if depth == 0:
+        child = quiesce(board, acc, alpha, beta, ai_color, key)
+        tt_store(key, 0, child, EXACT)
+        return child
+
+    # 4) Negamax loop
+    value = -INFINITY
+    for mv in board.legal_moves:
+        # skip non-captures if you want deeper quiescence, etc.
+        # (here we do full moves)
+        mover    = board.piece_at(mv.from_square)
+        captured = board.piece_at(mv.to_square)
+
+        # incremental Zobrist:
+        #   remove mover @ from, remove captured @ to, add mover @ to
+        from_pi = piece_index(mover.piece_type, mover.color)
+        to_pi   = piece_index(mv.promotion if mv.promotion else mover.piece_type,
+                                    mover.color)
+        next_key = key ^ zobrist_random[from_pi * 64 + mv.from_square]
+        # if there is a capture, remove the captured piece
+        if captured is not None:
+            cap_hash = zobrist_random[piece_index(captured.piece_type, captured.color) * 64 + mv.to_square]
+        else:
+            cap_hash = 0
+        next_key ^= cap_hash
+        # add mover at to_square (handle promotions by using to_pi)
+        next_key ^= zobrist_random[to_pi * 64 + mv.to_square]
+        # flip the side‐to‐move bit
+        next_key ^= zobrist_random[768]
+
+        board.push(mv)
+        acc.update(mv, captured)
+
+        # negamax recursive call with swapped alpha/beta
+        child = -minimax(board, acc,
+                         depth-1,
+                         -beta, -alpha,
+                         ai_color,
+                         next_key,
+                         required_depth)
+
+        board.pop()
+        acc.rollback(mv, captured)
+
+        if child > value:
+            value = child
+        if value > alpha:
+            alpha = value
 
         if alpha >= beta:
+            # cutoff
             branches_pruned += 1
-            break
+            tt_store(key, depth, value, LOWERBOUND)
+            return value
 
+    # 5) store exact and return
+    tt_store(key, depth, value, EXACT)
     return value
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef SearchResult search_root(str fen, int depth, bint maximize, str ai_color):
-    """
-    Top‐level search entrypoint exposed to Python.
-    """
-    cdef object root = Board(fen)
-    root.turn = True if ai_color == "white" else False
-    cdef object acc = Accumulator()
+cpdef SearchResult search_root(str fen,
+                              int depth,
+                              bint maximize,
+                              str ai_color):
+    # — declarations first —
+    cdef object root, acc
+
+    cdef double  bestv, v
+    cdef object  bestmove
+    cdef object  mv, mover, captured
+    cdef int     from_pi, to_pi
+    cdef uint64_t child_key
+
+    # — now the code —
+    root = Board(fen)
+    root.turn = (ai_color == "white")
+
+    acc = Accumulator()
     acc.init(root)
 
-    cdef double bestv = -INFINITY if maximize else INFINITY
-    cdef object bestmove = None, uci, captured, v
+    root_key = <uint64_t> zobrist_hash(root)
 
-    for uci in root.legal_moves:
-        captured = root.piece_at(uci.to_square)
-        root.push(uci)
-        acc.update(uci, captured)
+    bestv    = -INFINITY if maximize else INFINITY
+    bestmove = None
 
+    for mv in root.legal_moves:
+        # pull pieces out of root
+        mover    = root.piece_at(mv.from_square)
+        captured = root.piece_at(mv.to_square)
+
+        # compute child_key exactly as in minimax/quiesce
+        from_pi   = piece_index(mover.piece_type, mover.color)
+        to_pi     = piece_index(mv.promotion if mv.promotion else mover.piece_type,
+                                mover.color)
+        child_key = (root_key
+                     ^ zobrist_random[from_pi * 64 + mv.from_square]
+                     ^ (captured and zobrist_random[
+                            piece_index(captured.piece_type, captured.color) * 64
+                            + mv.to_square])
+                     ^ zobrist_random[to_pi   * 64 + mv.to_square]
+                     ^ zobrist_random[768]  # flip side-to-move
+                    )
+
+        # make the move
+        root.push(mv)
+        acc.update(mv, captured)
+
+        # call your negamax
         v = minimax(root, acc,
                     depth-1,
                     -INFINITY, INFINITY,
-                    not maximize,
-                    ai_color)
+                    ai_color,
+                    child_key,
+                    depth)
 
-        acc.rollback(uci, captured)
+        # undo
         root.pop()
+        acc.rollback(mv, captured)
 
+        # track best
         if (maximize and v > bestv) or ((not maximize) and v < bestv):
-            bestv, bestmove = v, uci
+            bestv, bestmove = v, mv
 
     return SearchResult(bestv, bestmove)
+
+# Allocate a 4M-entry table by default
+init_tt(1<<22)

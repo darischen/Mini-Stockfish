@@ -30,6 +30,12 @@ gaviota_tb.add_directory("endgame/gaviota/3/")
 gaviota_tb.add_directory("endgame/gaviota/4/")
 gaviota_tb.add_directory("endgame/gaviota/5/")
 
+# print("start")
+# print(core_search.get_nodes_evaluated(), core_search.get_branches_pruned())
+
+# core_search.nodes_evaluated += 7
+# print(core_search.get_nodes_evaluated(), core_search.get_branches_pruned())
+
 from chess import KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN
 piece_map = {
     PAWN:   'P',
@@ -45,29 +51,56 @@ LOWERBOUND = 1
 UPPERBOUND = 2
 
 class TranspositionTable:
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.table = {}  # key -> {'depth': int, 'value': float}
+    def __init__(self, size_pow2=1<<22):
+        # must be a power of two
+        self.size = size_pow2
+        self.mask = size_pow2 - 1
+        # preallocate entries
+        # each slot holds either None or a dict with keys
+        #   key, depth, value, move, flag
+        self.entries = [None] * size_pow2
+        
+    def _index(self, key):
+        return key & self.mask
 
-    def get(self, key, depth):
-        with self.lock:
-            entry = self.table.get(key)
-            if entry and entry['depth'] >= depth:
-                return entry['value']
+    def get(self, key, depth, alpha, beta):
+        idx = self._index(key)
+        e = self.entries[idx]
+        if e is None or e['key'] != key or e['depth'] < depth:
             return None
+        # exact hit
+        if e['flag'] == EXACT:
+            return e['value']
+        # lower-bound: proven ≥ value
+        if e['flag'] == LOWERBOUND and e['value'] >= beta:
+            return e['value']
+        # upper-bound: proven ≤ value
+        if e['flag'] == UPPERBOUND and e['value'] <= alpha:
+            return e['value']
+        return None
+
 
     def get_move(self, key):
-       with self.lock:
-           entry = self.table.get(key)
-           return entry['move'] if entry else None
+        idx = self._index(key)
+        e = self.entries[idx]
+        return e['move'] if e and e['key']==key else None
+
     
-    def store(self, key, depth, value, move):
-        with self.lock:
-           self.table[key] = {
-               'depth': depth,
-               'value': value,
-               'move':  move
-           }
+    def store(self, key, depth, value, move, flag):
+        idx = self._index(key)
+        e = self.entries[idx]
+        # only replace if slot empty or deeper or same-depth exact beats any
+        if (e is None or
+            depth > e['depth'] or
+            (depth == e['depth'] and flag == EXACT and e['flag'] != EXACT)):
+            self.entries[idx] = {
+                'key':   key,
+                'depth': depth,
+                'value': value,
+                'move':  move,
+                'flag':  flag
+            }
+
             
 class ChessAI:
     PIECE_VALUES = (0, 100, 300, 310, 400, 900, 20000)
@@ -78,7 +111,7 @@ class ChessAI:
         :param use_dnn: Whether to use a deep neural network (NNUE) for evaluation.
         :param model_path: Path to the pretrained model.
         """
-        self.tt = TranspositionTable()
+        self.tt = TranspositionTable(size_pow2=(1<<22))
         self.stats_lock = threading.Lock()
         self.depth = depth
         self.use_dnn = use_dnn
@@ -203,8 +236,10 @@ class ChessAI:
         # Main Search
 
         # reset overall stats
-        core_search.nodes_evaluated = 0
-        core_search.branches_pruned = 0
+        # core_search.nodes_evaluated = 0
+        # core_search.branches_pruned = 0
+        
+        core_search.reset_counters()
         
         core_search.set_use_nnue(self.use_dnn)
 
@@ -217,12 +252,13 @@ class ChessAI:
 
         # iterate depths 1..self.depth
         for depth in range(1, self.depth + 1):
+            core_search.reset_counters()
             bar = tqdm(desc=f"Depth {depth}", total=None)
             current_best = None
             current_eval = -math.inf if maximize else math.inf
 
             # snapshot of nodes before this depth
-            nodes_before = core_search.nodes_evaluated
+            nodes_before = core_search.get_nodes_evaluated()
 
             # launch parallel root evaluations
             root_board = chess.Board(root_fen)
@@ -240,13 +276,13 @@ class ChessAI:
                 for fut in as_completed(futures):
                     val, uci = fut.result()
                     # update progress by number of nodes this branch consumed
-                    nodes_after = core_search.nodes_evaluated
+                    nodes_after = core_search.get_nodes_evaluated()
                     delta = nodes_after - nodes_before
                     nodes_before = nodes_after
                     bar.update(delta)
                     bar.set_postfix({
-                        'nodes': core_search.nodes_evaluated,
-                        'pruned': core_search.branches_pruned
+                        'nodes': nodes_after,
+                        'pruned': core_search.get_branches_pruned()
                     })
 
                     if maximize:
@@ -261,7 +297,7 @@ class ChessAI:
             print(f"Depth {depth} → best={best_move} eval={best_eval:.4f}")
 
         elapsed = time.time() - total_start
-        print(f"AI search complete. Nodes: {core_search.nodes_evaluated}, Pruned: {core_search.branches_pruned}, Time: {elapsed:.2f}s")
+        print(f"AI search complete. Nodes: {core_search.get_nodes_evaluated()}, Pruned: {core_search.get_branches_pruned()}, Time: {elapsed:.2f}s")
         print(f"Best eval for {color}: {best_eval:.4f}")
 
         if best_move is None:
@@ -281,126 +317,14 @@ class ChessAI:
         captured = board.piece_at(uci.to_square)
         board.push(uci); acc.update(uci, captured)
 
-        val = minimax(
-            board, acc,
-            depth - 1,
-            -math.inf, math.inf,
-            not maximize,
-            ai_color
-        )
+        root_key = zobrist_hash(board)
+        val = minimax(board, acc,
+                depth - 1,
+                -math.inf, math.inf,
+                ai_color,
+                root_key,
+                depth)
         return val, uci
-
-    
-    def _search_move(self, root_fen, uci, depth, maximizing, ai_color, progress_bar):
-        # Each thread gets its own board and accumulator
-        board = chess.Board(root_fen)
-        board.turn = chess.BLACK
-        acc = Accumulator()
-        acc.init(board)
-
-        captured = board.piece_at(uci.to_square)
-        board.push(uci)
-        acc.update(uci, captured)
-        val = self._minimax(
-            board, acc,
-            depth - 1,
-            -math.inf, math.inf,
-            not maximizing,
-            ai_color,
-            progress_bar
-        )
-        return val, uci
-
-    def _minimax(self,
-                 board: chess.Board,
-                 acc: Accumulator,
-                 depth: int,
-                 alpha: float,
-                 beta: float,
-                 maximizing_player: bool,
-                 ai_color: str,
-                 progress_bar: tqdm):
-        """
-        Alpha‐beta + TT + accumulator + per‐node progress updates.
-        """
-        R = 2 
-        # stats + bar update
-        with self.stats_lock:
-            self.nodes_evaluated += 1
-            progress_bar.update(1)
-            progress_bar.set_postfix({
-                "nodes":  self.nodes_evaluated,
-                "pruned": self.branches_pruned
-            })
-
-        key = zobrist_hash(board)
-        if (cached := self.tt.get(key, depth)) is not None:
-            return cached
-
-        # leaf
-        if depth == 0 or board.is_game_over():
-            val = self._quiescence(board, acc, alpha, beta, ai_color)
-            self.tt.store(key, depth, val, None)
-            return val
-
-        if depth >= R + 1 and not board.is_check() and alpha > -math.inf and beta < math.inf:
-            # do a “pass” (flip turn) without updating acc
-            board.turn = not board.turn
-            score = -self._minimax(
-                board, acc, depth - R - 1,
-                -beta, -beta + 1,
-                not maximizing_player, ai_color, progress_bar
-            )
-            board.turn = not board.turn
-            if score >= beta:
-                return beta
-
-        if maximizing_player:
-            value = -math.inf
-            best_move = None
-            for mv in self._order_moves(board, True):
-                cap = board.piece_at(mv.to_square)
-                board.push(mv); acc.update(mv, cap)
-                child = self._minimax(board, acc, depth - 1, alpha, beta, False, ai_color, progress_bar)
-                acc.rollback(mv, cap); board.pop()
-
-                if child > value:
-                    value     = child
-                    best_move = mv
-                
-                value = max(value, child)
-                alpha = max(alpha, child)
-                if beta <= alpha:
-                    with self.stats_lock:
-                        self.branches_pruned += 1
-                        progress_bar.set_postfix(pruned=self.branches_pruned)
-                    break
-
-            self.tt.store(key, depth, value, best_move)
-            return value
-
-        else:
-            value = math.inf
-            best_move = None
-            for mv in self._order_moves(board, False):
-                cap = board.piece_at(mv.to_square)
-                board.push(mv); acc.update(mv, cap)
-                child = self._minimax(board, acc, depth - 1, alpha, beta, True, ai_color, progress_bar)
-                acc.rollback(mv, cap); board.pop()
-                
-                if child < value:
-                    value   = child
-                    best_move = mv
-
-                value = min(value, child)
-                beta = min(beta, child)
-                if beta <= alpha:
-                    with self.stats_lock:
-                        self.branches_pruned += 1
-                        progress_bar.set_postfix(pruned=self.branches_pruned)
-                    break
-            self.tt.store(key, depth, value)
-            return value
 
     def _order_moves(self, bb: chess.Board, maximize: bool):
         hash_move = self.tt.get_move(zobrist_hash(bb))
@@ -461,12 +385,13 @@ class ChessAI:
                     alpha: float, beta: float, ai_color: str):            
         
         key = zobrist_hash(board)
-        if (cached := self.tt.get(key, 0)) is not None:
+        if (cached := self.tt.get(key, 0, alpha, beta)) is not None:
             return cached
         
         # 1) Stand‑pat
         stand_pat = self._stand_pat(acc, board, ai_color)
         if stand_pat >= beta:
+            self.tt.store(key, 0, stand_pat, None, LOWERBOUND)
             return beta
         if alpha < stand_pat:
             alpha = stand_pat
@@ -505,6 +430,7 @@ class ChessAI:
             if score > alpha:
                 alpha = score
 
+        self.tt.store(key, 0, alpha, None, EXACT)
         return alpha
 
     def bonus(self,
