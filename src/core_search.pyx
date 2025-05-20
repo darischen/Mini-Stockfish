@@ -180,9 +180,8 @@ cpdef double nnue_eval_py(object feat_buf):
         return _nnue_eval_view(view)
     finally:
         PyBuffer_Release(&viewinfo)
-
-
 # ——————————————————————————————————————————————————————————————————————
+
 import cython
 from chess import Board, Move
 from accumulator import Accumulator
@@ -285,7 +284,7 @@ cdef double quiesce(object board,
     cdef uint64_t next_key, cap_hash
     cdef double score
     cdef int from_pi, to_pi
-    for mv in board.legal_moves:
+    for mv in order_moves(board, True, None):
         if not board.is_capture(mv):
             continue
 
@@ -430,6 +429,44 @@ cpdef double minimax(object board,
     tt_store(key, depth, value, EXACT)
     return value
 
+cdef list order_moves(object board, bint maximize, object tt):
+    cdef object move, victim, attacker, hash_move
+    cdef dict piece_vals = {'P':100, 'N':300, 'B':310, 'R':400, 'Q':900, 'K':20000}
+    cdef int score
+    cdef list scored = []
+
+    hash_move = tt.get_move(zobrist_hash(board)) if tt is not None else None
+
+    cdef int pawn_attack_mask = 0
+    for psq in board.pieces(1, not board.turn):
+        pawn_attack_mask |= board.attacks_mask(psq)
+
+    for move in board.legal_moves:
+        victim = board.piece_at(move.to_square)
+        attacker = board.piece_at(move.from_square)
+
+        v_val = piece_vals.get(victim.symbol().upper(), 0) if victim else 0
+        a_val = piece_vals.get(attacker.symbol().upper(), 0) if attacker else 0
+        score = 1000 * v_val - a_val
+
+        if victim and not board.is_attacked_by(not board.turn, move.to_square):
+            score += 10000
+
+        if move.promotion:
+            promo_letter = 'PNBRQK'[move.promotion].upper()
+            score += piece_vals.get(promo_letter, 0)
+
+        if (pawn_attack_mask >> move.to_square) & 1:
+            score -= a_val
+
+        if hash_move is not None and move == hash_move:
+            score += 10000
+
+        scored.append((move, score))
+
+    scored.sort(key=lambda x: x[1], reverse=bool(maximize))
+    return [m for m, _ in scored]
+    
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef SearchResult search_root(str fen,
