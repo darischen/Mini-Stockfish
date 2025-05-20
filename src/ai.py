@@ -234,10 +234,6 @@ class ChessAI:
                 return piece, mv
         
         # Main Search
-
-        # reset overall stats
-        # core_search.nodes_evaluated = 0
-        # core_search.branches_pruned = 0
         
         core_search.reset_counters()
         
@@ -247,6 +243,10 @@ class ChessAI:
         maximize = (color == 'white')
         best_move = None
         best_eval = -math.inf if maximize else math.inf
+        
+        max_workers = os.cpu_count() or 1
+        executor = ThreadPoolExecutor(max_workers=max_workers)
+        executor.submit(lambda: None).result()
 
         total_start = time.time()
 
@@ -254,8 +254,6 @@ class ChessAI:
         for depth in range(1, self.depth + 1):
             core_search.reset_counters()
             bar = tqdm(desc=f"Depth {depth}", total=None)
-            current_best = None
-            current_eval = -math.inf if maximize else math.inf
 
             # snapshot of nodes before this depth
             nodes_before = core_search.get_nodes_evaluated()
@@ -264,33 +262,36 @@ class ChessAI:
             root_board = chess.Board(root_fen)
             root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
             moves = list(root_board.legal_moves)
-            with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
-                futures = [executor.submit(
+            futures = [
+                executor.submit(
                     self._evaluate_root,
                     root_fen,
                     uci,
                     depth,
                     maximize,
                     color
-                ) for uci in moves]
-                for fut in as_completed(futures):
-                    val, uci = fut.result()
-                    # update progress by number of nodes this branch consumed
-                    nodes_after = core_search.get_nodes_evaluated()
-                    delta = nodes_after - nodes_before
-                    nodes_before = nodes_after
-                    bar.update(delta)
-                    bar.set_postfix({
-                        'nodes': nodes_after,
-                        'pruned': core_search.get_branches_pruned()
-                    })
+                ) for uci in moves
+            ]
+            current_best = None
+            current_eval = -math.inf if maximize else math.inf
+            for fut in as_completed(futures):
+                val, uci = fut.result()
+                # update progress by number of nodes this branch consumed
+                nodes_after = core_search.get_nodes_evaluated()
+                delta = nodes_after - nodes_before
+                nodes_before = nodes_after
+                bar.update(delta)
+                bar.set_postfix({
+                    'nodes': nodes_after,
+                    'pruned': core_search.get_branches_pruned()
+                })
 
-                    if maximize:
-                        if val > current_eval:
-                            current_eval, current_best = val, uci
-                    else:
-                        if val < current_eval:
-                            current_eval, current_best = val, uci
+                if maximize:
+                    if val > current_eval:
+                        current_eval, current_best = val, uci
+                else:
+                    if val < current_eval:
+                        current_eval, current_best = val, uci
 
             bar.close()
             best_move, best_eval = current_best, current_eval
@@ -299,6 +300,7 @@ class ChessAI:
         elapsed = time.time() - total_start
         print(f"AI search complete. Nodes: {core_search.get_nodes_evaluated()}, Pruned: {core_search.get_branches_pruned()}, Time: {elapsed:.2f}s")
         print(f"Best eval for {color}: {best_eval:.4f}")
+        executor.shutdown()
 
         if best_move is None:
             return None

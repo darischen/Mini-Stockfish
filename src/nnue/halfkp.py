@@ -3,8 +3,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, random_split, DataLoader
+import torch.optim as optim
 import chess
 import argparse
+from tqdm import tqdm
+
 
 # --- Helper: Forced Mate Evaluation Parser ---
 
@@ -154,25 +157,76 @@ class HalfKP_NNUE(nn.Module):
 # Training & Export Utilities (unchanged, except adapt to new forward_reset)
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def train_model(csv_file, epochs=10, batch_size=4096, lr=5e-4, l2=1e-7):
+def train_model(csv_file,
+                epochs: int = 10,
+                batch_size: int = 4096,
+                lr: float = 5e-4,
+                l2: float = 1e-7):
+    # --- prepare dataset and splits (50% train, 25% val, 25% test) ---
     ds = ChessDatasetHalfKP(csv_file)
-    model = HalfKP_NNUE().to(DEVICE)
     n = len(ds)
-    tr, va = int(0.5*n), int(0.25*n)
-    ds_tr, ds_va, ds_te = random_split(ds, [tr, va, n-tr-va])
-    loader = DataLoader(ds_tr, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(ds_va, batch_size=batch_size)
-    opt = optim.Adam(model.parameters(), lr=lr, weight_decay=l2)
+    n_train = int(0.50 * n)
+    n_val   = int(0.25 * n)
+    n_test  = n - n_train - n_val
+    ds_tr, ds_va, ds_te = random_split(ds, [n_train, n_val, n_test])
+
+    train_loader = DataLoader(ds_tr, batch_size=batch_size, shuffle=True)
+    val_loader   = DataLoader(ds_va, batch_size=batch_size)
+    test_loader  = DataLoader(ds_te, batch_size=batch_size)
+
+    # --- model, optimizer, loss ---
+    model   = HalfKP_NNUE().to(DEVICE)
+    opt     = optim.Adam(model.parameters(), lr=lr, weight_decay=l2)
     loss_fn = nn.SmoothL1Loss()
 
-    for e in range(1, epochs+1):
+    for epoch in range(1, epochs + 1):
+        # ——— training ———
         model.train()
-        for x0, x1, y in loader:
+        train_bar = tqdm(train_loader,
+                         desc=f"Epoch {epoch}/{epochs} [Train]",
+                         unit="batch")
+        for x0, x1, y in train_bar:
             x0, x1, y = x0.to(DEVICE), x1.to(DEVICE), y.to(DEVICE)
             pred = model.forward_reset(x0, x1)
             loss = loss_fn(pred, y)
-            opt.zero_grad(); loss.backward(); opt.step()
-        # validation and testing omitted for brevity
+
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+
+            train_bar.set_postfix({"loss": f"{loss.item():.4f}"})
+
+        # ——— validation ———
+        model.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            val_bar = tqdm(val_loader,
+                           desc=f"Epoch {epoch}/{epochs} [Val]  ",
+                           unit="batch")
+            for x0, x1, y in val_bar:
+                x0, x1, y = x0.to(DEVICE), x1.to(DEVICE), y.to(DEVICE)
+                pred = model.forward_reset(x0, x1)
+                batch_loss = loss_fn(pred, y).item()
+                val_loss += batch_loss * y.size(0)
+                val_bar.set_postfix({"val_loss": f"{batch_loss:.4f}"})
+        val_loss /= len(ds_va)
+        print(f"→ Epoch {epoch}: Validation Loss = {val_loss:.4f}\n")
+
+    # ——— final testing ———
+    model.eval()
+    test_loss = 0.0
+    with torch.no_grad():
+        test_bar = tqdm(test_loader, desc="Test                ", unit="batch")
+        for x0, x1, y in test_bar:
+            x0, x1, y = x0.to(DEVICE), x1.to(DEVICE), y.to(DEVICE)
+            pred = model.forward_reset(x0, x1)
+            batch_loss = loss_fn(pred, y).item()
+            test_loss += batch_loss * y.size(0)
+            test_bar.set_postfix({"test_loss": f"{batch_loss:.4f}"})
+    test_loss /= len(ds_te)
+    print(f"→ Final Test Loss = {test_loss:.4f}")
+
+    # Save the trained weights
     torch.save(model.state_dict(), 'halfkp_accum.pth')
     return model
 
