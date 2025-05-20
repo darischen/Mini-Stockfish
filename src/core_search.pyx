@@ -257,6 +257,12 @@ cdef double quiesce(object board,
     Quiescence search with TT + incremental Zobrist hashing.
     `key` is the 64-bit hash for `board` before any moves here.
     """
+    if board.is_game_over():
+        if board.is_checkmate():
+            return beta  if beta < 0 else -MATE_SCORE
+        else:
+            return 0.0
+
     cdef char hit
     cdef double val
     cdef object mover
@@ -437,7 +443,7 @@ cdef list order_moves(object board, bint maximize, object tt):
 
     hash_move = tt.get_move(zobrist_hash(board)) if tt is not None else None
 
-    cdef int pawn_attack_mask = 0
+    cdef uint64_t pawn_attack_mask = 0
     for psq in board.pieces(1, not board.turn):
         pawn_attack_mask |= board.attacks_mask(psq)
 
