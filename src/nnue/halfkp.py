@@ -158,11 +158,10 @@ class HalfKP_NNUE(nn.Module):
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def train_model(csv_file,
-                epochs: int = 10,
+                epochs: int = 50,
                 batch_size: int = 4096,
                 lr: float = 5e-4,
                 l2: float = 1e-7):
-    # --- prepare dataset and splits (50% train, 25% val, 25% test) ---
     ds = ChessDatasetHalfKP(csv_file)
     n = len(ds)
     n_train = int(0.50 * n)
@@ -174,10 +173,12 @@ def train_model(csv_file,
     val_loader   = DataLoader(ds_va, batch_size=batch_size)
     test_loader  = DataLoader(ds_te, batch_size=batch_size)
 
-    # --- model, optimizer, loss ---
     model   = HalfKP_NNUE().to(DEVICE)
     opt     = optim.Adam(model.parameters(), lr=lr, weight_decay=l2)
     loss_fn = nn.SmoothL1Loss()
+
+    best_val_loss = float('inf')                # <-- track best validation loss
+    best_model_path = 'halfkp_best.pth'   # <-- file to save best model
 
     for epoch in range(1, epochs + 1):
         # ——— training ———
@@ -200,34 +201,32 @@ def train_model(csv_file,
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
-            val_bar = tqdm(val_loader,
-                           desc=f"Epoch {epoch}/{epochs} [Val]  ",
-                           unit="batch")
-            for x0, x1, y in val_bar:
+            for x0, x1, y in val_loader:
                 x0, x1, y = x0.to(DEVICE), x1.to(DEVICE), y.to(DEVICE)
                 pred = model.forward_reset(x0, x1)
                 batch_loss = loss_fn(pred, y).item()
                 val_loss += batch_loss * y.size(0)
-                val_bar.set_postfix({"val_loss": f"{batch_loss:.4f}"})
         val_loss /= len(ds_va)
-        print(f"→ Epoch {epoch}: Validation Loss = {val_loss:.4f}\n")
+        print(f"→ Epoch {epoch}: Validation Loss = {val_loss:.4f}")
+
+        # <-- save best model if improved
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            torch.save(model.state_dict(), best_model_path)
+            print(f"*** Saved best model to {best_model_path} (Epoch {epoch}) ***")
 
     # ——— final testing ———
     model.eval()
     test_loss = 0.0
     with torch.no_grad():
-        test_bar = tqdm(test_loader, desc="Test                ", unit="batch")
-        for x0, x1, y in test_bar:
+        for x0, x1, y in test_loader:
             x0, x1, y = x0.to(DEVICE), x1.to(DEVICE), y.to(DEVICE)
             pred = model.forward_reset(x0, x1)
             batch_loss = loss_fn(pred, y).item()
             test_loss += batch_loss * y.size(0)
-            test_bar.set_postfix({"test_loss": f"{batch_loss:.4f}"})
     test_loss /= len(ds_te)
     print(f"→ Final Test Loss = {test_loss:.4f}")
 
-    # Save the trained weights
-    torch.save(model.state_dict(), 'halfkp_accum.pth')
     return model
 
 if __name__ == '__main__':
