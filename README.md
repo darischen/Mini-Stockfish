@@ -37,20 +37,12 @@
     - [x] positional value
   - [x] Book of opening moves
   - [x] MVV-LVA (Least Valuable Victim - Most Valuable Attacker)
-  - Syzygy Endgame Tablebase (Gaviota has DTM)
+  - [x] Syzygy Endgame Tablebase (Gaviota has DTM)
+  - [ ] Static Exchange Evaluation
   - [x] multithreading
-  - Deep Neural Network
-    - [x] Dataset of Stockfish Evaluations (16 million positions)
-    - Dual Network System
-      - Simple material evaluation to decide whether to use large or small network
-      - [x] Small network for fast evaluation of positions (NNUE)
-      - Large network for deep evaluation of positions (CNN)
-    - CNN: each channel is a bitboard
-    - [x] DNN for predicting the score of a position
-      - [x] DNN for predicting the best move
-      - [x] Find large dataset of positions
-      - Early pruning
-      - Q-Learning or Actor-Critic - ?
+  - [x] Dataset of Stockfish Evaluations (16 million positions)
+  - [x] Small network for fast evaluation of positions (NNUE)
+  - [x] DNN for predicting the score of a position
 
 ## How to run
 - Clone, fork or download the project

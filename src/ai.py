@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from chess import SquareSet
 import json
+import chess
 from chess.syzygy import Tablebase as SyzygyTablebase
 from chess.gaviota import PythonTablebase as GaviotaTablebase
 from core_search import minimax
@@ -30,12 +31,6 @@ gaviota_tb.add_directory("endgame/gaviota/3/")
 gaviota_tb.add_directory("endgame/gaviota/4/")
 gaviota_tb.add_directory("endgame/gaviota/5/")
 
-# print("start")
-# print(core_search.get_nodes_evaluated(), core_search.get_branches_pruned())
-
-# core_search.nodes_evaluated += 7
-# print(core_search.get_nodes_evaluated(), core_search.get_branches_pruned())
-
 from chess import KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN
 piece_map = {
     PAWN:   'P',
@@ -46,61 +41,42 @@ piece_map = {
     KING:   'K',
 }
 
+_SEE_VALUES = {
+    chess.PAWN:   100,
+    chess.KNIGHT: 300,
+    chess.BISHOP: 310,
+    chess.ROOK:   400,
+    chess.QUEEN:  900,
+    chess.KING:   20000,
+}
+
 EXACT      = 0
 LOWERBOUND = 1
 UPPERBOUND = 2
 
-class TranspositionTable:
-    def __init__(self, size_pow2=1<<22):
-        # must be a power of two
-        self.size = size_pow2
-        self.mask = size_pow2 - 1
-        # preallocate entries
-        # each slot holds either None or a dict with keys
-        #   key, depth, value, move, flag
-        self.entries = [None] * size_pow2
-        
-    def _index(self, key):
-        return key & self.mask
+def see(board: chess.Board, move: chess.Move) -> int:
+    """Simple static-exchange evaluator: net material gain for move."""
+    def _swap(bd, sq, side):
+        attackers = list(bd.attackers(side, sq))
+        if not attackers:
+            return []
+        fr = min(attackers, key=lambda s: _SEE_VALUES[bd.piece_at(s).piece_type])
+        val = _SEE_VALUES[bd.piece_at(fr).piece_type]
+        bd.push(chess.Move(fr, sq))
+        rest = _swap(bd, sq, not side)
+        bd.pop()
+        return [val] + rest
 
-    def get(self, key, depth, alpha, beta):
-        idx = self._index(key)
-        e = self.entries[idx]
-        if e is None or e['key'] != key or e['depth'] < depth:
-            return None
-        # exact hit
-        if e['flag'] == EXACT:
-            return e['value']
-        # lower-bound: proven ≥ value
-        if e['flag'] == LOWERBOUND and e['value'] >= beta:
-            return e['value']
-        # upper-bound: proven ≤ value
-        if e['flag'] == UPPERBOUND and e['value'] <= alpha:
-            return e['value']
-        return None
-
-
-    def get_move(self, key):
-        idx = self._index(key)
-        e = self.entries[idx]
-        return e['move'] if e and e['key']==key else None
-
-    
-    def store(self, key, depth, value, move, flag):
-        idx = self._index(key)
-        e = self.entries[idx]
-        # only replace if slot empty or deeper or same-depth exact beats any
-        if (e is None or
-            depth > e['depth'] or
-            (depth == e['depth'] and flag == EXACT and e['flag'] != EXACT)):
-            self.entries[idx] = {
-                'key':   key,
-                'depth': depth,
-                'value': value,
-                'move':  move,
-                'flag':  flag
-            }
-
+    b = board.copy(stack=False)
+    if not b.is_capture(move):
+        return -99999
+    victim = b.piece_at(move.to_square).piece_type
+    b.push(move)
+    gains = [_SEE_VALUES[victim]] + _swap(b, move.to_square, board.turn)
+    for i in range(1, len(gains)):
+        gains[i] = gains[i] - gains[i-1]
+    # maximize root side: even indices are root’s turn
+    return max(min(gains[::2]), gains[-1])
             
 class ChessAI:
     PIECE_VALUES = (0, 100, 300, 310, 400, 900, 20000)
@@ -111,7 +87,6 @@ class ChessAI:
         :param use_dnn: Whether to use a deep neural network (NNUE) for evaluation.
         :param model_path: Path to the pretrained model.
         """
-        self.tt = TranspositionTable(size_pow2=(1<<22))
         self.stats_lock = threading.Lock()
         self.depth = depth
         self.use_dnn = use_dnn
@@ -163,6 +138,35 @@ class ChessAI:
                 return piece, mv
             root_board.pop()
         
+        # ——— SPECIAL-CASE: hanging piece ———
+        root_board = chess.Board(board.get_fen())
+        root_board.turn = chess.WHITE if color=='white' else chess.BLACK
+        side = root_board.turn
+        opp  = not side
+
+        undefended_caps = []
+        for m in root_board.legal_moves:
+            if not root_board.is_capture(m):
+                continue
+            dst = m.to_square
+            # was the captured piece EVER defended?
+            # victim_color == opp, so check opp’s attackers on dst
+            defenders = list(root_board.attackers(opp, dst))
+            if not defenders:
+                # OK: truly undefended
+                undefended_caps.append(m)
+
+        if undefended_caps:
+            # pick the highest‐value victim
+            values = self.PIECE_VALUES
+            best = max(
+                undefended_caps,
+                key=lambda m: values[root_board.piece_at(m.to_square).piece_type]
+            )
+            mv    = self._uci_to_move(board, best)
+            piece = board.squares[mv.initial.row][mv.initial.col].piece
+            return piece, mv
+            
         # ——— Endgame tablebase shortcut for ≤5 pieces ———
         if len(root_board.piece_map()) <= 5:
             win_moves, draw_moves, loss_moves = [], [], []
@@ -327,48 +331,6 @@ class ChessAI:
                 root_key,
                 depth)
         return val, uci
-
-    def _order_moves(self, bb: chess.Board, maximize: bool):
-        hash_move = self.tt.get_move(zobrist_hash(bb))
-
-        # MVV-LVA: Victim value * 1000 - attacker value
-        piece_vals = {'P':100,'N':300,'B':310,'R':400,'Q':900,'K':20000}
-        scored = []
-        
-        opponent = not bb.turn
-        pawn_attack_mask = 0
-        for psq in bb.pieces(chess.PAWN, opponent):
-            pawn_attack_mask |= bb.attacks_mask(psq)
-        
-        for move in bb.legal_moves:
-            victim = bb.piece_at(move.to_square)
-            attacker = bb.piece_at(move.from_square)
-            
-            # MVV-LVA
-            v_val = piece_vals.get(victim.symbol().upper(),0) if victim else 0
-            a_val = piece_vals.get(attacker.symbol().upper(),0)
-            score = 1000*v_val - a_val
-            
-            # Hanging Pieces
-            if victim and not bb.is_attacked_by(not bb.turn, move.to_square):
-                score += 10000
-                
-            # Promotion bonus
-            if move.promotion:
-                promo_letter = chess.PIECE_SYMBOLS[move.promotion].upper()
-                score += piece_vals[promo_letter]
-            
-            # Pawn attack Penalty  
-            if (pawn_attack_mask >> move.to_square) & 1:
-                score -= a_val
-            
-            # Bonus for precalculated moves
-            if hash_move is not None and move == hash_move:
-                score += 10000
-            
-            scored.append((move, score))
-        scored.sort(key=lambda x: x[1], reverse=maximize)
-        return [m for (m,_) in scored]
     
     def _stand_pat(self,
                    acc: Accumulator,
@@ -382,58 +344,6 @@ class ChessAI:
         
         adj  = base + self.bonus(board, base, ai_color)
         return adj if ai_color=='white' else -adj
-    
-    def _quiescence(self, board: chess.Board, acc: Accumulator,
-                    alpha: float, beta: float, ai_color: str):            
-        
-        key = zobrist_hash(board)
-        if (cached := self.tt.get(key, 0, alpha, beta)) is not None:
-            return cached
-        
-        # 1) Stand‑pat
-        stand_pat = self._stand_pat(acc, board, ai_color)
-        if stand_pat >= beta:
-            self.tt.store(key, 0, stand_pat, None, LOWERBOUND)
-            return beta
-        if alpha < stand_pat:
-            alpha = stand_pat
-
-        # 2) Hoist locals
-        pv = ChessAI.PIECE_VALUES
-        is_capture = board.is_capture
-        legal_moves = board.legal_moves
-        piece_at    = board.piece_at
-        quiesce     = self._quiescence  # for recursive call
-
-        # 3) Only captures, SEE via piece_type lookup
-        for mv in legal_moves:
-            if not is_capture(mv):
-                continue
-
-            vic = piece_at(mv.to_square)
-            atk = piece_at(mv.from_square)
-            gain = (pv[vic.piece_type] if vic else 0) \
-                 - (pv[atk.piece_type] if atk else 0)
-
-            # 4) Delta prune
-            if stand_pat + gain < alpha:
-                continue
-
-            # 5) Recurse
-            board.push(mv)
-            acc.update(mv, vic)
-            score = -quiesce(board, acc, -beta, -alpha, ai_color)
-            acc.rollback(mv, vic)
-            board.pop()
-
-            # 6) Cut or raise
-            if score >= beta:
-                return beta
-            if score > alpha:
-                alpha = score
-
-        self.tt.store(key, 0, alpha, None, EXACT)
-        return alpha
 
     def bonus(self,
                                      board: chess.Board,
