@@ -11,10 +11,34 @@ from chess.polyglot import zobrist_hash
 cdef bint USE_NNUE = False
 
 import chess
-import bitboard
+from chess import Board, Move
 from libc.math cimport INFINITY
 
 cdef int[7] PIECE_VAL = [0, 100, 300, 310, 400, 900, 20000]
+
+cpdef int see(object board, object mv):
+    cdef object vic, att
+    cdef int v_pt, a_pt
+
+    # only consider captures
+    if not board.is_capture(mv):
+        return -100000
+
+    vic = board.piece_at(mv.to_square)
+    if vic is None:
+        # weird edge‐case: nothing to capture
+        return -100000
+
+    att = board.piece_at(mv.from_square)
+    if att is None:
+        # also weird: no attacker
+        return -100000
+
+    v_pt = vic.piece_type
+    a_pt = att.piece_type
+
+    # positive if we net gain, negative if we net lose
+    return PIECE_VAL[v_pt] - PIECE_VAL[a_pt]
 
 # ———————————————————————————Transposition Table———————————————————————————————————————————
 cdef uint64_t zobrist_random[769]
@@ -42,9 +66,6 @@ def _init_zobrist_random():
     # 4) En-passant file (a–h)
     for i in range(8):
         zob_ep[i] = <uint64_t>random.getrandbits(64)
-
-# then, at module init
-_init_zobrist_random()
 
 cdef enum EntryFlag:
     EXACT = 0
@@ -125,7 +146,7 @@ cdef inline double tt_probe(uint64_t key,
 cdef inline void tt_store(uint64_t key,
                            int depth,
                            double value,
-                           unsigned char flag) except * nogil:
+                           unsigned char flag) nogil:
     cdef int idx = <int>(key & tt_mask)
     cdef TTEntry *e = &tt_entries[idx]
     # only replace if deeper, or same-depth EXACT overrides
@@ -383,6 +404,11 @@ cpdef double minimax(object board,
     # 4) Negamax loop
     value = -INFINITY
     for mv in order_moves(board, (board.turn == (ai_color == "white")), None):
+        if board.is_capture(mv):
+            see_val = see(board, mv)
+            if see_val < 0:
+                branches_pruned += 1
+                continue
         # skip non-captures if you want deeper quiescence, etc.
         # (here we do full moves)
         mover    = board.piece_at(mv.from_square)
@@ -434,166 +460,116 @@ cpdef double minimax(object board,
     tt_store(key, depth, value, EXACT)
     return value
 
-cdef list order_moves(object board, bint maximize, object tt):
+cdef list order_moves(object board,
+                      bint maximize,
+                      object tt_history):
     cdef int us = board.turn
     cdef int them = not us
-    cdef object mv, victim, attacker, hash_move
-    cdef int score, v_val, a_val
-    cdef bint queen_under_threat = False
-    cdef bint queen_currently_threatened = False
-    cdef int threat_sq = -1
-    cdef bint queen_is_white = (us == chess.WHITE)
-    cdef bint leaves_hanging
+    global branches_pruned, nodes_evaluated
 
-    # Precompute opponent attacks bitboard
-    cdef uint64_t opp_attacks = 0
+    # — precompute attack/defend masks and pawn‐attack mask —
+    cdef uint64_t opp_attacks = 0, our_defends = 0, pawn_attack_mask = 0
     for sq, pc in board.piece_map().items():
         if pc.color != us:
             opp_attacks |= board.attacks_mask(sq)
+            if pc.piece_type == chess.PAWN:
+                pawn_attack_mask |= board.attacks_mask(sq)
+        else:
+            our_defends |= board.attacks_mask(sq)
+    cdef uint64_t undefended = opp_attacks & ~our_defends
 
-    # Pawn attack mask by opponent pawns
-    cdef uint64_t pawn_attack_mask = 0
-    for psq in board.pieces(chess.PAWN, them):
-        pawn_attack_mask |= board.attacks_mask(psq)
-
-    # Locate our queen and initial attack/defend masks
-    cdef int qsq = -1
+    # — find queen square and any threat to it —
+    cdef int qsq = -1, threat_sq = -1
     for qs in board.pieces(chess.QUEEN, us):
         qsq = qs
         break
-
-    for src in board.attackers(them, qsq):
-        threat_sq = src
-        break
-
-    if qsq >= 0:
-        attacked = board.is_attacked_by(them, qsq)
-
-        # Only count a defender if it is also a QUEEN (true queen-for-queen)
-        queen_defended = False
-        for src in board.attackers(us, qsq):
-            pc = board.piece_at(src)
-            if pc and pc.piece_type == chess.QUEEN:
-                queen_defended = True
-                break
-
-        queen_under_threat = attacked and not queen_defended
-
-    cdef uint64_t q_att_mask = 0, q_def_mask = 0
     if qsq >= 0:
         for src in board.attackers(them, qsq):
-            q_att_mask |= (1 << src)
-        for src in board.attackers(us, qsq):
-            q_def_mask |= (1 << src)
+            threat_sq = src
+            break
 
-    queen_currently_threatened = False
-    if qsq >= 0 and (q_att_mask != 0 and q_def_mask == 0):
-        queen_currently_threatened = True
-
-    # TT history bonus move
-    hash_move = tt.get_move(zobrist_hash(board)) if tt is not None else None
+    # — history‐move bonus from TT —
+    cdef object hist = None
+    if tt_history is not None:
+        hist = tt_history.get_move(zobrist_hash(board))
 
     cdef list scored = []
+    cdef object mv
+    cdef int from_sq, to_sq, v_val, a_val, score
     for mv in board.legal_moves:
-        leaves_hanging = False
+        from_sq = mv.from_square
+        to_sq   = mv.to_square
 
-        board.push(mv)
-        for sq, pc in board.piece_map().items():
-            if pc.color == us:
-                if board.is_attacked_by(them, sq) and not board.is_attacked_by(us, sq):
-                    leaves_hanging = True
-                    break
-        qsq = next(iter(board.pieces(chess.QUEEN, us)), -1)
-        if qsq != -1 and board.is_attacked_by(them, qsq):
-            leaves_hanging = True
-        board.pop()
-        if leaves_hanging:
-            continue
+        if board.is_check():
+            if board.is_into_check(mv):
+                branches_pruned += 1
+                continue
+        else:
+            # prune moves that leave a piece hanging
+            if (1 << from_sq) & undefended:
+                branches_pruned += 1
+                continue
+            if board.is_into_check(mv):
+                branches_pruned += 1
+                continue
 
-        # Victim and attacker values
-        victim = board.piece_at(mv.to_square)
-        attacker = board.piece_at(mv.from_square)
-        v_val = PIECE_VAL[victim.piece_type] if victim else 0
+        # attacker value:
+        attacker = board.piece_at(from_sq)
         a_val = PIECE_VAL[attacker.piece_type] if attacker else 0
+
+        # victim value:
+        if board.is_capture(mv):
+            if board.is_en_passant(mv):
+                # en-passant victim sits on the pawn’s capture square offset
+                ep_sq = mv.to_square + (8 if us else -8)
+                victim = board.piece_at(ep_sq)
+            else:
+                victim = board.piece_at(to_sq)
+            v_val = PIECE_VAL[victim.piece_type] if victim else 0
+        else:
+            v_val = 0
+
+        # MVV/LVA core
         score = 2000 * v_val - a_val
 
-        # Promotion bonus
-        if mv.promotion:
+        # promotion bonus
+        if mv.promotion is not None:
             score += PIECE_VAL[mv.promotion]
 
-        # Moved into pawn-attack penalty
-        if (pawn_attack_mask >> mv.to_square) & 1:
-            score -= 10000 * a_val
+        # pawn-attack penalty
+        if (pawn_attack_mask >> to_sq) & 1:
+            score -= 10 * a_val
 
-        # TT/book history bonus
-        if mv == hash_move:
+        # history bonus
+        if mv == hist:
             score += 1000
 
-        # Queen safety
-        if qsq >= 0:
-            board.push(mv)
-            
-            attacker_color = not queen_is_white
-            defender_color = queen_is_white
-
-            if mv.from_square == qsq:
-                newqsq = mv.to_square
-            else:
-                newqsq = qsq
-            # if attacked and no defender of any kind
-            if board.is_attacked_by(attacker_color, newqsq) and not board.is_attacked_by(defender_color, newqsq):
-                #score -= 50000
-                board.pop()
-                continue
-            board.pop()
-
-        if qsq >= 0 and queen_under_threat:
-            if mv.from_square == qsq:
-                # Queen is moving → is it moving to safety?
-                if not (opp_attacks >> mv.to_square) & 1:
-                    score += 10000  # Safe escape
-            if mv.to_square == threat_sq:
-                score += 10000
-            if mv.to_square == qsq:
-                # Intervening to defend queen square
-                score += 6000
-            if board.piece_at(qsq) and board.attacks_mask(mv.to_square) & (1 << qsq):
-                # Move attacks piece threatening queen
-                score += 6000
-            if victim and victim.piece_type == chess.QUEEN and mv.to_square == qsq:
-                score += 9000
-
-        # Penalize ignoring queen threat
-        if not (
-                mv.from_square == qsq or
-                mv.to_square == threat_sq or
-                (victim and victim.piece_type == chess.QUEEN and mv.to_square == qsq)
-            ):
-                score -= 50000
-
-        # Capture checking piece bonus
+        # check-giving bonus
         if board.gives_check(mv):
             score += 1000
 
-        # Don't hang a piece
-        if (opp_attacks >> mv.to_square) & 1:
-            #score -= 50000
-            continue
-
-        # Capture hanging piece bonus
-        if victim and not ((opp_attacks >> mv.to_square) & 1):
+        # capture-hanging‐piece bonus
+        if board.is_capture(mv) and not ((opp_attacks >> to_sq) & 1):
             score += 10000
+
+        # queen-safety adjustments (if queen currently undefended)
+        if qsq >= 0 and ((opp_attacks >> qsq) & 1) and not ((our_defends >> qsq) & 1):
+            # moving the queen to safety?
+            if from_sq == qsq and not ((opp_attacks >> to_sq) & 1):
+                score += 10000
+            # capturing the threat?
+            if to_sq == threat_sq:
+                score += 10000
+            # interposing on queen square?
+            if to_sq == qsq:
+                score += 6000
 
         scored.append((mv, score))
 
-    cdef int PRUNE_CUTOFF = 0
-    cdef list filtered = []
-    for mv, score in scored:
-        if score > PRUNE_CUTOFF:
-            filtered.append((mv, score))
-    # Sort moves by score
-    filtered.sort(key=lambda x: x[1], reverse=bool(maximize))
-    return [m for m, _ in filtered]
+    # sort & return
+    scored.sort(key=lambda x: x[1], reverse=maximize)
+    return [m for m, _ in scored]
 
 # Allocate a 4M-entry table by default
+_init_zobrist_random()
 init_tt(1<<22)

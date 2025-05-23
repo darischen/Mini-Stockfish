@@ -2,10 +2,10 @@
 import torch
 from torch import nn
 # if your training code lived in nnue.nnue_train, import the same model class
-from nnue.nnue_train import NNUEModel
+from nnue_train import NNUEModel
 
 # 1) Load your FP32 TorchScript model
-fp32 = torch.jit.load("64_1.106e-2.pt", map_location="cpu").eval()
+fp32 = torch.jit.load("64indepth.pt", map_location="cpu").eval()
 
 # 2) Apply dynamic quantization to every Linear layer
 quantized = torch.quantization.quantize_dynamic(
@@ -19,5 +19,5 @@ quantized = torch.jit.freeze(quantized)
 quantized = torch.jit.optimize_for_inference(quantized)
 
 # 4) Save out your new INT8 model
-torch.jit.save(quantized, "64_1.106e-2_int8.pt")
+torch.jit.save(quantized, "64indepth_int8.pt")
 print("Saved quantized model")

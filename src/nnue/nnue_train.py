@@ -42,64 +42,178 @@ def parse_evaluation(eval_str, mate_base=10000):
         return float(s)
 
 # --- Step 1: Enhanced Feature Extraction and Accumulator Simulation ---
-def enhanced_fen_to_features(fen):
+def enhanced_fen_to_features(fen: str) -> np.ndarray:
     """
     Convert a FEN string into an enriched feature vector.
-    
-    This function first computes the standard 768-dimensional one-hot encoded vector
-    (64 squares x 12 piece types) and then appends three extra features:
-      - White king safety (count of adjacent friendly pawns)
-      - Black king safety (same for black)
-      - Mobility: total number of legal moves
-    Final output dimension: 768 + 3 = 771.
+
+    Base:
+      - 64 squares × 12 piece‐types one-hot = 768 features
+
+    Extras (19 total):
+      1–2) White/Black king safety (adjacent friendly pawns)
+      3)   Total mobility (number of legal moves)
+      4–5) White/Black queen safety (attackers – defenders)
+      6–7) Doubled pawns for White/Black
+      8–9) Isolated pawns for White/Black
+     10–11) Passed pawns for White/Black
+     12–13) Hanging pieces for White/Black
+     14–15) Pinned pieces for White/Black
+     16–17) Knight forks for White/Black
+     18–19) Trade balance for White/Black (sum of victim_value – attacker_value over legal captures)
+    → final dimension = 768 + 19 = 787
     """
     board = chess.Board(fen)
-    base_features = np.zeros(64 * 12, dtype=np.float32)
-    piece_to_index = {
-         chess.PAWN: 0,
-         chess.KNIGHT: 1,
-         chess.BISHOP: 2,
-         chess.ROOK: 3,
-         chess.QUEEN: 4,
-         chess.KING: 5,
-    }
-    
-    for square in chess.SQUARES:
-        piece = board.piece_at(square)
-        if piece is not None:
-            idx = piece_to_index[piece.piece_type]
-            if not piece.color:  # chess.BLACK is False, chess.WHITE is True
-                idx += 6
-            base_features[square * 12 + idx] = 1.0
 
-    # Extra Feature 1: King Safety for a given color (count adjacent friendly pawns)
-    def king_safety(color):
+    # — Base one-hot 768-vector —
+    base = np.zeros(64 * 12, dtype=np.float32)
+    piece_to_idx = {
+        chess.PAWN:   0,
+        chess.KNIGHT: 1,
+        chess.BISHOP: 2,
+        chess.ROOK:   3,
+        chess.QUEEN:  4,
+        chess.KING:   5,
+    }
+    for sq in chess.SQUARES:
+        p = board.piece_at(sq)
+        if p:
+            idx = piece_to_idx[p.piece_type] + (0 if p.color else 6)
+            base[sq * 12 + idx] = 1.0
+
+    # — Helper feature functions —
+    def king_safety(color: bool) -> float:
         king_sq = board.king(color)
         if king_sq is None:
             return 0.0
-        safety = 0.0
-        offsets = [-9, -8, -7, -1, 1, 7, 8, 9]
-        for offset in offsets:
-            neighbor = king_sq + offset
-            if neighbor < 0 or neighbor >= 64:
-                continue
-            # Check file difference to avoid wrap-around (difference must be at most 1)
-            if abs((neighbor % 8) - (king_sq % 8)) > 1:
-                continue
-            n_piece = board.piece_at(neighbor)
-            if n_piece is not None and n_piece.color == color and n_piece.piece_type == chess.PAWN:
-                safety += 1.0
-        return safety
+        offsets = (-9, -8, -7, -1, 1, 7, 8, 9)
+        safe = 0
+        for o in offsets:
+            n = king_sq + o
+            if 0 <= n < 64 and abs((n % 8) - (king_sq % 8)) <= 1:
+                npiece = board.piece_at(n)
+                if npiece and npiece.color == color and npiece.piece_type == chess.PAWN:
+                    safe += 1
+        return float(safe)
 
-    white_king_safety = king_safety(chess.WHITE)
-    black_king_safety = king_safety(chess.BLACK)
+    def queen_safety(color: bool) -> float:
+        qs = list(board.pieces(chess.QUEEN, color))
+        if not qs:
+            return 0.0
+        qsq = qs[0]
+        attackers = board.attackers(not color, qsq)
+        defenders = board.attackers(color, qsq)
+        return float(len(attackers) - len(defenders))
 
-    # Extra Feature 2: Mobility as total number of legal moves.
+    def count_doubled_pawns(color: bool) -> float:
+        files = [sq % 8 for sq in board.pieces(chess.PAWN, color)]
+        return float(sum(files.count(f) - 1 for f in set(files) if files.count(f) > 1))
+
+    def count_isolated_pawns(color: bool) -> float:
+        files = [sq % 8 for sq in board.pieces(chess.PAWN, color)]
+        isolated = 0
+        for f in files:
+            if not any(
+                files.count(adj) 
+                for adj in (f - 1, f + 1) 
+                if 0 <= adj <= 7
+            ):
+                isolated += 1
+        return float(isolated)
+
+    def count_passed_pawns(color: bool) -> float:
+        own = board.pieces(chess.PAWN, color)
+        enemy = board.pieces(chess.PAWN, not color)
+        passed = 0
+        for sq in own:
+            f, r = sq % 8, sq // 8
+            blockers = [
+                e for e in enemy
+                if abs((e % 8) - f) <= 1 and
+                   ((e // 8) > r if color else (e // 8) < r)
+            ]
+            if not blockers:
+                passed += 1
+        return float(passed)
+
+    def count_hanging(color: bool) -> float:
+        hang = 0
+        for sq in chess.SQUARES:
+            p = board.piece_at(sq)
+            if p and p.color == color:
+                if board.is_attacked_by(not color, sq) and not board.is_attacked_by(color, sq):
+                    hang += 1
+        return float(hang)
+
+    def count_pinned(color: bool) -> float:
+        return float(sum(board.is_pinned(color, sq) for sq in chess.SQUARES))
+
+    def count_knight_forks(color: bool) -> float:
+        forks = 0
+        for sq in board.pieces(chess.KNIGHT, color):
+            targets = [
+                t for t in board.attacks(sq)
+                if board.piece_at(t) and board.piece_at(t).color != color
+            ]
+            if len(targets) >= 2:
+                forks += 1
+        return float(forks)
+
+    # piece‐values for trade balance
+    piece_value = {
+        chess.PAWN:   1,
+        chess.KNIGHT: 3,
+        chess.BISHOP: 3,
+        chess.ROOK:   5,
+        chess.QUEEN:  9,
+        chess.KING:   0
+    }
+
+    def trade_balance(color: bool) -> float:
+        # simulate legal moves for `color`
+        bcopy = board.copy()
+        bcopy.turn = color
+        bal = 0.0
+        for m in bcopy.legal_moves:
+            if bcopy.is_capture(m):
+                victim = board.piece_at(m.to_square)
+                attacker = board.piece_at(m.from_square)
+                if victim and attacker:
+                    bal += piece_value[victim.piece_type] - piece_value[attacker.piece_type]
+        return bal
+
+    # — Compute all extras —
+    w_ks   = king_safety(True)
+    b_ks   = king_safety(False)
     mobility = float(len(list(board.legal_moves)))
+    w_qs   = queen_safety(True)
+    b_qs   = queen_safety(False)
+    w_dbl  = count_doubled_pawns(True)
+    b_dbl  = count_doubled_pawns(False)
+    w_iso  = count_isolated_pawns(True)
+    b_iso  = count_isolated_pawns(False)
+    w_pas  = count_passed_pawns(True)
+    b_pas  = count_passed_pawns(False)
+    w_hang = count_hanging(True)
+    b_hang = count_hanging(False)
+    w_pin  = count_pinned(True)
+    b_pin  = count_pinned(False)
+    w_fork = count_knight_forks(True)
+    b_fork = count_knight_forks(False)
+    w_trade = trade_balance(True)
+    b_trade = trade_balance(False)
 
-    extra_features = np.array([white_king_safety, black_king_safety, mobility], dtype=np.float32)
-    full_features = np.concatenate((base_features, extra_features))
-    return full_features
+    extra = np.array([
+        w_ks, b_ks, mobility,
+        w_qs, b_qs,
+        w_dbl, b_dbl, w_iso, b_iso,
+        w_pas, b_pas,
+        w_hang, b_hang,
+        w_pin, b_pin,
+        w_fork, b_fork,
+        w_trade, b_trade
+    ], dtype=np.float32)
+
+    return np.concatenate((base, extra))
 
 # For backward compatibility, redefine fen_to_features to use the enhanced version.
 def fen_to_features(fen):
@@ -129,7 +243,7 @@ class Accumulator:
 
 # --- Step 2: Define the NNUE Model (keeping the same depth and values) ---
 class NNUEModel(nn.Module):
-    def __init__(self, input_size=771, hidden_size=64):
+    def __init__(self, input_size=787, hidden_size=64):
         """
         A simple feedforward NNUE-like model.
         :param input_size: Size of the input feature vector (now 771 due to extra features)
@@ -247,7 +361,7 @@ def train_model(csv_file, num_epochs=10, batch_size=4096, learning_rate=5e-4, l2
         # Save best model (optional)
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), "64502525.pth")
+            torch.save(model.state_dict(), "64indepth.pth")
         
         # Demonstrate accumulator update (optional)
         first_fen = full_dataset.data.iloc[0]['FEN']
@@ -256,7 +370,7 @@ def train_model(csv_file, num_epochs=10, batch_size=4096, learning_rate=5e-4, l2
     print("Training complete.")
     
     # Load best model for testing (if saved)
-    model.load_state_dict(torch.load("64502525.pth"))
+    model.load_state_dict(torch.load("64indepth.pth"))
     model.eval()
     
     # Evaluate on the test set
@@ -287,4 +401,4 @@ if __name__ == "__main__":
     combined_df.to_csv(combined_csv_path, index=False)
     
     csv_file = combined_csv_path  # Adjust path as needed.
-    train_model(csv_file, num_epochs=50)
+    train_model(csv_file, num_epochs=10)

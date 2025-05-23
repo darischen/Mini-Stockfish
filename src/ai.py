@@ -41,42 +41,9 @@ piece_map = {
     KING:   'K',
 }
 
-_SEE_VALUES = {
-    chess.PAWN:   100,
-    chess.KNIGHT: 300,
-    chess.BISHOP: 310,
-    chess.ROOK:   400,
-    chess.QUEEN:  900,
-    chess.KING:   20000,
-}
-
 EXACT      = 0
 LOWERBOUND = 1
 UPPERBOUND = 2
-
-def see(board: chess.Board, move: chess.Move) -> int:
-    """Simple static-exchange evaluator: net material gain for move."""
-    def _swap(bd, sq, side):
-        attackers = list(bd.attackers(side, sq))
-        if not attackers:
-            return []
-        fr = min(attackers, key=lambda s: _SEE_VALUES[bd.piece_at(s).piece_type])
-        val = _SEE_VALUES[bd.piece_at(fr).piece_type]
-        bd.push(chess.Move(fr, sq))
-        rest = _swap(bd, sq, not side)
-        bd.pop()
-        return [val] + rest
-
-    b = board.copy(stack=False)
-    if not b.is_capture(move):
-        return -99999
-    victim = b.piece_at(move.to_square).piece_type
-    b.push(move)
-    gains = [_SEE_VALUES[victim]] + _swap(b, move.to_square, board.turn)
-    for i in range(1, len(gains)):
-        gains[i] = gains[i] - gains[i-1]
-    # maximize root side: even indices are root’s turn
-    return max(min(gains[::2]), gains[-1])
             
 class ChessAI:
     PIECE_VALUES = (0, 100, 300, 310, 400, 900, 20000)
@@ -91,7 +58,7 @@ class ChessAI:
         self.depth = depth
         self.use_dnn = use_dnn
         core_search.set_use_nnue(self.use_dnn)
-        core_search.init_nnue("nnue/hidden64best1.057e-2_int8.pt")
+        core_search.init_nnue("nnue/64indepth_int8.pt") # "nnue/hidden64best1.057e-2_int8.pt"
         
         # Book moves are stored in book/book.json
         with open("book/book.json") as f:
@@ -137,35 +104,6 @@ class ChessAI:
                 piece = board.squares[mv.initial.row][mv.initial.col].piece
                 return piece, mv
             root_board.pop()
-        
-        # ——— SPECIAL-CASE: hanging piece ———
-        root_board = chess.Board(board.get_fen())
-        root_board.turn = chess.WHITE if color=='white' else chess.BLACK
-        side = root_board.turn
-        opp  = not side
-
-        undefended_caps = []
-        for m in root_board.legal_moves:
-            if not root_board.is_capture(m):
-                continue
-            dst = m.to_square
-            # was the captured piece EVER defended?
-            # victim_color == opp, so check opp’s attackers on dst
-            defenders = list(root_board.attackers(opp, dst))
-            if not defenders:
-                # OK: truly undefended
-                undefended_caps.append(m)
-
-        if undefended_caps:
-            # pick the highest‐value victim
-            values = self.PIECE_VALUES
-            best = max(
-                undefended_caps,
-                key=lambda m: values[root_board.piece_at(m.to_square).piece_type]
-            )
-            mv    = self._uci_to_move(board, best)
-            piece = board.squares[mv.initial.row][mv.initial.col].piece
-            return piece, mv
             
         # ——— Endgame tablebase shortcut for ≤5 pieces ———
         if len(root_board.piece_map()) <= 5:
