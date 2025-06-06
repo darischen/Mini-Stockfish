@@ -22,7 +22,7 @@
   - [x] Threefold repetition
   - [x] Fifty-move rule
   - [x] Insufficient material
-- AI Opponent to play against
+- [x] AI Opponent to play against
   - [x] Bitboard representation
   - [x] Minimax algorithm
   - [x] alpha-beta pruning
