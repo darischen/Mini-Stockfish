@@ -29,6 +29,7 @@
   - [x] piece square tables
     - [x] Interpolation (midgame and endgame)
   - [x] transposition table
+  - [x] Iterative deepening
   - [x] accumulator
   - [x] quiescence search
   - [x] move ordering
