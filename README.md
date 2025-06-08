@@ -39,11 +39,10 @@
   - [x] Book of opening moves
   - [x] MVV-LVA (Least Valuable Victim - Most Valuable Attacker)
   - [x] Syzygy Endgame Tablebase (Gaviota has DTM)
-  - [ ] Static Exchange Evaluation
+  - [x] Static Exchange Evaluation
   - [x] multithreading
   - [x] Dataset of Stockfish Evaluations (16 million positions)
   - [x] Small network for fast evaluation of positions (NNUE)
-  - [x] DNN for predicting the score of a position
 
 ## How to run
 - Clone, fork or download the project
