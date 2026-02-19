@@ -1,49 +1,34 @@
 # Mini Stockfish
 
-## Based off this tutorial
-[Coding Spot's (AlejoG10) YouTube Tutorial](https://www.youtube.com/watch?v=OpL0Gcfn4B4)
+A chess engine implementation with neural network evaluation, built in Python.
 
+## Features
 
-[AlejoG10's GitHub Repository](https://github.com/AlejoG10/python-chess-ai-yt)
+### AI Engine
+- Neural network position evaluation (NNUE)
+- Deep neural network for score prediction
+- Minimax algorithm with alpha-beta pruning
+- Iterative deepening
+- Quiescence search
+- Transposition tables
+- Move ordering (MVV-LVA)
+- Opening book integration
+- Syzygy endgame tablebase support
+- Multithreading support
+- Trained on dataset of 16 million Stockfish-evaluated positions
 
-## Current improvements on the code base
-- Fixed various bugs with checkmate and check detection and limiting movements of other pieces.
-- Fixed erroneous checkmate detection
-- Added check detection
-- Added checkmate detection
-- Added stalemate detection
-- Added Threefold repetition detection
-- Added sounds for check, checkmate, piece movement and capture, castling, promoting, and invalid moves'
-- The king is highlighted in red when in check
+### Game Rules
+- Complete move validation
+- Check and checkmate detection
+- Stalemate detection
+- Draw detection (threefold repetition, fifty-move rule, insufficient material)
+- Sound effects for all game events
+- Visual check indicator
 
-## Future improvements
-- [x] Notifying the player when a king is in check
-- [x] Draw detection
-  - [x] Threefold repetition
-  - [x] Fifty-move rule
-  - [x] Insufficient material
-- [x] AI Opponent to play against
-  - [x] Bitboard representation
-  - [x] Minimax algorithm
-  - [x] alpha-beta pruning
-  - [x] piece square tables
-    - [x] Interpolation (midgame and endgame)
-  - [x] transposition table
-  - [x] Iterative deepening
-  - [x] accumulator
-  - [x] quiescence search
-  - [x] move ordering
-  - [x] evaluation function
-    - [x] material value
-    - [x] positional value
-  - [x] Book of opening moves
-  - [x] MVV-LVA (Least Valuable Victim - Most Valuable Attacker)
-  - [x] Syzygy Endgame Tablebase (Gaviota has DTM)
-  - [ ] Static Exchange Evaluation
-  - [x] multithreading
-  - [x] Dataset of Stockfish Evaluations (16 million positions)
-  - [x] Small network for fast evaluation of positions (NNUE)
-  - [x] DNN for predicting the score of a position
+## Technical Implementation
+- Bitboard representation
+- Piece-square tables with midgame/endgame interpolation
+- Custom evaluation function combining material and positional values
 
 ## How to run
 - Clone, fork or download the project
@@ -52,3 +37,6 @@
 - run pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 - run 'pip install -r requirements.txt'
 - run 'python main.py'
+
+## Development Notes
+Initial code structure based on [tutorial](https://www.youtube.com/watch?v=OpL0Gcfn4B4), extensively modified and enhanced with AI engine, neural networks, and complete rule validation.
