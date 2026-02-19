@@ -125,6 +125,7 @@ class Main:
                      # reset game
                     if event.key == pygame.K_r:
                         game.reset()
+                        self.ai.reset()  # Reset AI state (out_of_book flag)
                         game = self.game
                         board = self.game.board
                         dragger = self.game.dragger

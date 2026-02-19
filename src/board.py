@@ -666,5 +666,40 @@ class Board:
                 fen_row += str(empty_count)
             fen_rows.append(fen_row)
         fen_piece_placement = "/".join(fen_rows)
-        turn = self.turn if hasattr(self, "turn") else "w"
-        return f"{fen_piece_placement} {turn} KQkq - 0 1"
+        # FEN expects 'w' or 'b', not 'white' or 'black'
+        turn_char = "w"
+        if hasattr(self, "turn"):
+            turn_char = "w" if self.turn == "white" else "b"
+
+        # Build castling rights based on king/rook positions and movement
+        castling = ""
+        # White kingside: king on e1, rook on h1, neither moved
+        wk = self.squares[7][4]  # e1
+        wrh = self.squares[7][7]  # h1
+        wra = self.squares[7][0]  # a1
+        bk = self.squares[0][4]  # e8
+        brh = self.squares[0][7]  # h8
+        bra = self.squares[0][0]  # a8
+
+        if (wk.has_piece() and isinstance(wk.piece, King) and wk.piece.color == 'white'
+            and not wk.piece.moved):
+            if (wrh.has_piece() and isinstance(wrh.piece, Rook) and wrh.piece.color == 'white'
+                and not wrh.piece.moved):
+                castling += "K"
+            if (wra.has_piece() and isinstance(wra.piece, Rook) and wra.piece.color == 'white'
+                and not wra.piece.moved):
+                castling += "Q"
+
+        if (bk.has_piece() and isinstance(bk.piece, King) and bk.piece.color == 'black'
+            and not bk.piece.moved):
+            if (brh.has_piece() and isinstance(brh.piece, Rook) and brh.piece.color == 'black'
+                and not brh.piece.moved):
+                castling += "k"
+            if (bra.has_piece() and isinstance(bra.piece, Rook) and bra.piece.color == 'black'
+                and not bra.piece.moved):
+                castling += "q"
+
+        if not castling:
+            castling = "-"
+
+        return f"{fen_piece_placement} {turn_char} {castling} - 0 1"

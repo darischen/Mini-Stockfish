@@ -80,7 +80,11 @@ class ChessAI:
             torch.set_num_threads(os.cpu_count() or 1)
         else:
             self.model = None
-    
+
+    def reset(self):
+        """Reset AI state for a new game."""
+        self.out_of_book = False
+
     def _uci_to_move(self, board: chess.Board, uci_move: chess.Move):
         src, dst = uci_move.from_square, uci_move.to_square
         sr, sf = divmod(src, 8)
