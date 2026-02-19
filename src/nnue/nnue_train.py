@@ -9,18 +9,18 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from tqdm import tqdm  # For progress bars
 
 # --- Helper: Forced Mate Evaluation Parser ---
-def parse_evaluation(eval_str, mate_base=10000):
+def parse_evaluation(eval_str, mate_base=3000):
     """
     Parses the evaluation string from the dataset.
     - If the string starts with '#' it is interpreted as a forced mate.
       For example, "#+3" (mate in 3 moves for the side to move) is converted to mate_base - 3.
     - Otherwise, it casts the string to a float.
-    
+
     For mate scores:
       * Mate in N moves becomes: mate_base - N
       * Mate against (indicated by a '-' sign after '#') becomes: -(mate_base - N)
-      
-    Adjust mate_base to set the scale of mate evaluations.
+
+    mate_base=3000 ensures mate scores don't dominate training (capped from 10000).
     """
     s = eval_str.strip()
     if s.startswith("#"):
@@ -288,7 +288,7 @@ class ChessDataset(Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         fen = row['FEN']
-        scale = 10000.0  # Use scale for normalization (adjust if needed)
+        scale = 400.0  # Better scale for centipawn evaluations
         target = parse_evaluation(row['Evaluation']) / scale
         features = enhanced_fen_to_features(fen)  # Use enhanced features (771-dim)
         features_tensor = torch.from_numpy(features)

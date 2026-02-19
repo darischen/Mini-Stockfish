@@ -68,7 +68,10 @@ class ChessAI:
 
         # how many plies deep your opening book should go
         self.book_depth = 20
-        
+
+        # Track when we leave the opening book to avoid repeated lookups
+        self.out_of_book = False
+
         if self.use_dnn and model_path and os.path.isfile(model_path):
             # Load the compiled TorchScript model on CPU
             self.model = torch.jit.load(model_path, map_location="cpu")
@@ -88,7 +91,73 @@ class ChessAI:
         mv.initial = initial
         mv.final   = final
         return mv
-    
+
+    def _is_blunder(self, board: chess.Board, move: chess.Move) -> bool:
+        """
+        Check if a move is a blunder by putting a valuable piece on an attacked square
+        without adequate defense. Returns True if the move is likely a blunder.
+        """
+        piece = board.piece_at(move.from_square)
+        if not piece:
+            return False
+
+        # Get piece value
+        piece_values = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3,
+                        chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
+        our_value = piece_values.get(piece.piece_type, 0)
+
+        # Only check for valuable pieces (knight and above)
+        if our_value < 3:
+            return False
+
+        us = piece.color
+        them = not us
+
+        # Check if destination is attacked by enemy
+        if not board.is_attacked_by(them, move.to_square):
+            return False  # Safe destination
+
+        # Check if we have adequate defense
+        # IMPORTANT: Exclude the moving piece itself from defenders - it can't defend its destination
+        defenders = len([sq for sq in board.attackers(us, move.to_square)
+                         if sq != move.from_square])
+        attackers = len(list(board.attackers(them, move.to_square)))
+
+        # If a capture, check if we win material
+        victim = board.piece_at(move.to_square)
+        if victim:
+            victim_value = piece_values.get(victim.piece_type, 0)
+            # If we capture something of equal or greater value, might be ok
+            if victim_value >= our_value:
+                return False
+            # Even if victim is less valuable, consider if we're defended
+            if defenders > 0 and victim_value >= our_value - 2:
+                return False
+
+        # Queen moving to attacked square with fewer defenders than attackers = blunder
+        if piece.piece_type == chess.QUEEN:
+            if attackers > defenders:
+                return True
+
+        # Hanging piece (attacked, not defended)
+        if defenders == 0:
+            return True
+
+        # Piece moving to square where lowest attacker < our value
+        # Simple check: if attacked by pawn and we're not a pawn, bad
+        pawn_attackers = [sq for sq in board.attackers(them, move.to_square)
+                         if board.piece_at(sq) and board.piece_at(sq).piece_type == chess.PAWN]
+        if pawn_attackers and our_value > 1:
+            return True
+
+        return False
+
+    def _filter_blunders(self, board: chess.Board, moves: list) -> list:
+        """Filter out obvious blunder moves, keeping at least one move."""
+        safe_moves = [m for m in moves if not self._is_blunder(board, m)]
+        # Always keep at least some moves to avoid returning nothing
+        return safe_moves if safe_moves else moves
+
     def choose_move(self, board, color: str):
         """
         Iterative deepening with per-depth tqdm, parallel root evaluation using Cython minimax,
@@ -141,40 +210,45 @@ class ChessAI:
                 piece = board.squares[mv.initial.row][mv.initial.col].piece
                 return piece, mv
                     
-        # Book Moves
-        root_board = chess.Board(board.get_fen())
-        root_board.turn = chess.WHITE if color=='white' else chess.BLACK
-        ply = (root_board.fullmove_number - 1) * 2 \
-              + (0 if root_board.turn == chess.WHITE else 1)
+        # Book Moves - skip if we've already left the book
+        if not self.out_of_book:
+            root_board = chess.Board(board.get_fen())
+            root_board.turn = chess.WHITE if color=='white' else chess.BLACK
+            ply = (root_board.fullmove_number - 1) * 2 \
+                  + (0 if root_board.turn == chess.WHITE else 1)
 
-        key = zobrist_hash(root_board)
-        print("  fen:", root_board.fen())
-        print("  in_book?", key in self.book_evals)
-        
-        print(f"[DEBUG] ply={ply}, root_key={key}, in_book={ key in self.book_evals }")
-        if ply < self.book_depth and key in self.book_evals:
-            best_move, best_score = None, (math.inf if color=='black' else -math.inf)
-            # try every legal move, pick the child whose hash is in book_evals
-            for move in root_board.legal_moves:
-                root_board.push(move)
-                child_key = zobrist_hash(root_board)
-                root_board.pop()
+            key = zobrist_hash(root_board)
+            print("  fen:", root_board.fen())
+            print("  in_book?", key in self.book_evals)
 
-                # only consider it if we actually precomputed it
-                if child_key in self.book_evals:
-                    score = self.book_evals[child_key]
-                    if color == 'black':
-                        if score < best_score:
-                            best_score, best_move = score, move
-                    else:
-                        if score > best_score:
-                            best_score, best_move = score, move
+            print(f"[DEBUG] ply={ply}, root_key={key}, in_book={ key in self.book_evals }")
+            if ply < self.book_depth and key in self.book_evals:
+                best_move, best_score = None, (math.inf if color=='black' else -math.inf)
+                # try every legal move, pick the child whose hash is in book_evals
+                for move in root_board.legal_moves:
+                    root_board.push(move)
+                    child_key = zobrist_hash(root_board)
+                    root_board.pop()
 
-            if best_move is not None:
-                mv = self._uci_to_move(root_board, best_move)
-                piece = board.squares[mv.initial.row][mv.initial.col].piece
-                return piece, mv
-        
+                    # only consider it if we actually precomputed it
+                    if child_key in self.book_evals:
+                        score = self.book_evals[child_key]
+                        if color == 'black':
+                            if score < best_score:
+                                best_score, best_move = score, move
+                        else:
+                            if score > best_score:
+                                best_score, best_move = score, move
+
+                if best_move is not None:
+                    mv = self._uci_to_move(root_board, best_move)
+                    piece = board.squares[mv.initial.row][mv.initial.col].piece
+                    return piece, mv
+
+            # No book move found - mark as out of book
+            self.out_of_book = True
+            print("[DEBUG] Left opening book")
+
         # Main Search
         
         core_search.reset_counters()
@@ -203,7 +277,9 @@ class ChessAI:
             # launch parallel root evaluations
             root_board = chess.Board(root_fen)
             root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
-            moves = list(root_board.legal_moves)
+            all_moves = list(root_board.legal_moves)
+            # Filter obvious blunders at root level
+            moves = self._filter_blunders(root_board, all_moves)
             futures = [
                 executor.submit(
                     self._evaluate_root,
@@ -216,6 +292,7 @@ class ChessAI:
             ]
             current_best = None
             current_eval = -math.inf if maximize else math.inf
+            first_move = True  # Track first move to ensure we always have a fallback
             for fut in as_completed(futures):
                 val, uci = fut.result()
                 # update progress by number of nodes this branch consumed
@@ -228,20 +305,27 @@ class ChessAI:
                     'pruned': core_search.get_branches_pruned()
                 })
 
-                if maximize:
+                # Always track the first move as fallback (handles inf eval case)
+                if first_move:
+                    current_best = uci
+                    current_eval = val
+                    first_move = False
+                elif maximize:
                     if val > current_eval:
                         current_eval, current_best = val, uci
-                else:
-                    if val < current_eval:
-                        current_eval, current_best = val, uci
+                elif val < current_eval:
+                    current_eval, current_best = val, uci
 
             bar.close()
             best_move, best_eval = current_best, current_eval
-            print(f"Depth {depth} → best={best_move} eval={best_eval:.4f}")
+            # Handle inf values in printing
+            eval_str = "inf" if math.isinf(best_eval) else f"{best_eval:.4f}"
+            print(f"Depth {depth} → best={best_move} eval={eval_str}")
 
         elapsed = time.time() - total_start
+        eval_str = "inf" if math.isinf(best_eval) else f"{best_eval:.4f}"
         print(f"AI search complete. Nodes: {core_search.get_nodes_evaluated()}, Pruned: {core_search.get_branches_pruned()}, Time: {elapsed:.2f}s")
-        print(f"Best eval for {color}: {best_eval:.4f}")
+        print(f"Best eval for {color}: {eval_str}")
         executor.shutdown()
 
         if best_move is None:

@@ -11,7 +11,11 @@ from tqdm import tqdm
 
 # --- Helper: Forced Mate Evaluation Parser ---
 
-def parse_evaluation(eval_str, mate_base=10000):
+def parse_evaluation(eval_str, mate_base=3000):
+    """
+    Parse evaluation string with capped mate scores.
+    mate_base=3000 ensures mate scores don't dominate training.
+    """
     s = str(eval_str).lstrip('\ufeff').strip()
     if s.startswith("#"):
         mate_part = s[1:].replace("+", "").strip()
@@ -69,7 +73,7 @@ def halfkp_indices_for_fen(fen):
     return idx0, idx1
 
 class ChessDatasetHalfKP(Dataset):
-    def __init__(self, csv_file, scale=10000.0):
+    def __init__(self, csv_file, scale=400.0):
         df = pd.read_csv(csv_file)
         df.columns = df.columns.str.strip()
         df['Evaluation'] = df['Evaluation'].astype(str).str.lstrip('\ufeff')
