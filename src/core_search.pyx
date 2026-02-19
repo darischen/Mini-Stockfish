@@ -235,12 +235,20 @@ cpdef void reset_counters():
 cdef double static_eval(object board, object acc, str ai_color):
     cdef dict pm = board.piece_map()
     cdef double score = 0.0
-    cdef bint piece_is_white, ai_is_white
-    cdef int pt, mob
-    cdef double val
+    cdef bint piece_is_white, ai_is_white, us, them
+    cdef int pt, mob, sq, file, rank, f, r, ep_file, ep_rank
+    cdef int king_sq, king_file, king_rank, effective_rank
+    cdef int pawns_on_file, bishop_count
+    cdef double val, shield
+    cdef list our_pawns, enemy_pawns
+    cdef bint is_passed, has_neighbor, has_our_pawn, has_enemy_pawn
 
     ai_is_white = (ai_color == "white")
-    for _, p in pm.items():
+    us = ai_is_white
+    them = not us
+
+    # --- Material ---
+    for sq, p in pm.items():
         piece_is_white = p.color
         pt = p.piece_type
         if pt == 1:
@@ -250,17 +258,156 @@ cdef double static_eval(object board, object acc, str ai_color):
         elif pt == 3:
             val = 310.0
         elif pt == 4:
-            val = 500.0
+            val = 400.0
         elif pt == 5:
             val = 900.0
         else:
             val = 20000.0
         score += val if piece_is_white == ai_is_white else -val
 
+    # --- Mobility ---
     mob = 0
     for _ in board.legal_moves:
         mob += 1
     score += mob * 10 if board.turn == ai_is_white else -mob * 10
+
+    # --- Bishop pair ---
+    bishop_count = 0
+    for sq, p in pm.items():
+        if p.piece_type == 3 and p.color == us:  # BISHOP = 3
+            bishop_count += 1
+    if bishop_count >= 2:
+        score += 50
+
+    # --- Passed pawns ---
+    cdef int[8] passed_bonus = [0, 10, 20, 40, 70, 120, 200, 0]
+    our_pawns = list(board.pieces(1, us))  # PAWN = 1
+    enemy_pawns = list(board.pieces(1, them))
+
+    for sq in our_pawns:
+        file = sq % 8
+        rank = sq // 8
+        is_passed = True
+        for ep in enemy_pawns:
+            ep_file = ep % 8
+            ep_rank = ep // 8
+            if abs(ep_file - file) <= 1:
+                if us and ep_rank > rank:
+                    is_passed = False
+                    break
+                elif not us and ep_rank < rank:
+                    is_passed = False
+                    break
+        if is_passed:
+            effective_rank = rank if us else 7 - rank
+            score += passed_bonus[effective_rank]
+
+    # --- Doubled pawns penalty ---
+    for f in range(8):
+        pawns_on_file = 0
+        for p in our_pawns:
+            if p % 8 == f:
+                pawns_on_file += 1
+        if pawns_on_file > 1:
+            score -= 20 * (pawns_on_file - 1)
+
+    # --- Isolated pawns penalty ---
+    for sq in our_pawns:
+        file = sq % 8
+        has_neighbor = False
+        for p in our_pawns:
+            if p != sq and abs(p % 8 - file) == 1:
+                has_neighbor = True
+                break
+        if not has_neighbor:
+            score -= 15
+
+    # --- Rook on open/semi-open file ---
+    for sq in board.pieces(4, us):  # ROOK = 4
+        file = sq % 8
+        has_our_pawn = False
+        has_enemy_pawn = False
+        for p in our_pawns:
+            if p % 8 == file:
+                has_our_pawn = True
+                break
+        for p in enemy_pawns:
+            if p % 8 == file:
+                has_enemy_pawn = True
+                break
+        if not has_our_pawn and not has_enemy_pawn:
+            score += 40  # Open file
+        elif not has_our_pawn:
+            score += 20  # Semi-open file
+
+    # --- Rook on 7th rank ---
+    for sq in board.pieces(4, us):  # ROOK = 4
+        rank = sq // 8
+        if (us and rank == 6) or (not us and rank == 1):
+            score += 50
+
+    # --- King safety (pawn shield) ---
+    king_sq_obj = board.king(us)
+    if king_sq_obj is not None:
+        king_sq = king_sq_obj
+        king_file = king_sq % 8
+        king_rank = king_sq // 8
+        shield = 0.0
+        for f in range(max(0, king_file - 1), min(8, king_file + 2)):
+            if us:
+                # White: check ranks above king
+                for r in [king_rank + 1, king_rank + 2]:
+                    if 0 <= r < 8:
+                        sq = r * 8 + f
+                        p = board.piece_at(sq)
+                        if p is not None and p.piece_type == 1 and p.color == us:
+                            shield += 15 if r == king_rank + 1 else 10
+                            break
+            else:
+                # Black: check ranks below king
+                for r in [king_rank - 1, king_rank - 2]:
+                    if 0 <= r < 8:
+                        sq = r * 8 + f
+                        p = board.piece_at(sq)
+                        if p is not None and p.piece_type == 1 and p.color == us:
+                            shield += 15 if r == king_rank - 1 else 10
+                            break
+        score += shield
+
+        # Penalty for open files near king
+        for f in range(max(0, king_file - 1), min(8, king_file + 2)):
+            has_our_pawn = False
+            has_enemy_pawn = False
+            for p in our_pawns:
+                if p % 8 == f:
+                    has_our_pawn = True
+                    break
+            for p in enemy_pawns:
+                if p % 8 == f:
+                    has_enemy_pawn = True
+                    break
+            if not has_our_pawn and not has_enemy_pawn:
+                score -= 25
+            elif not has_our_pawn:
+                score -= 15
+
+    # --- Center control ---
+    cdef list center = [28, 27, 36, 35]  # e4, d4, e5, d5
+    for sq in center:
+        if board.is_attacked_by(us, sq):
+            score += 10
+        p = board.piece_at(sq)
+        if p is not None and p.color == us:
+            if p.piece_type == 1:  # Pawn
+                score += 20
+            elif p.piece_type in [2, 3]:  # Knight, Bishop
+                score += 15
+
+    # --- Hanging piece penalty ---
+    for sq, p in pm.items():
+        if p.color == us:
+            if board.is_attacked_by(them, sq) and not board.is_attacked_by(us, sq):
+                score -= PIECE_VAL[p.piece_type] * 0.5
 
     return score
 

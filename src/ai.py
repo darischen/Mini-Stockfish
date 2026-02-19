@@ -270,6 +270,11 @@ class ChessAI:
 
         total_start = time.time()
 
+        # Track best non-inf result from previous depths
+        last_finite_move = None
+        last_finite_eval = None
+        last_finite_depth = 0
+
         # iterate depths 1..self.depth
         for depth in range(1, self.depth + 1):
             core_search.reset_counters()
@@ -322,9 +327,22 @@ class ChessAI:
 
             bar.close()
             best_move, best_eval = current_best, current_eval
+
+            # Save this depth's result if eval is finite
+            if not math.isinf(best_eval):
+                last_finite_move = best_move
+                last_finite_eval = best_eval
+                last_finite_depth = depth
+
             # Handle inf values in printing
             eval_str = "inf" if math.isinf(best_eval) else f"{best_eval:.4f}"
             print(f"Depth {depth} → best={best_move} eval={eval_str}")
+
+        # If final eval is inf, use the last finite result
+        if math.isinf(best_eval) and last_finite_move is not None:
+            print(f"Final eval is inf, using depth {last_finite_depth} result instead")
+            best_move = last_finite_move
+            best_eval = last_finite_eval
 
         elapsed = time.time() - total_start
         eval_str = "inf" if math.isinf(best_eval) else f"{best_eval:.4f}"
@@ -463,7 +481,145 @@ class ChessAI:
                 if net_threat > 0:
                     # PIECE_VALUES maps pawn→100, knight→300, …, queen→900
                     s -= W * net_threat * ChessAI.PIECE_VALUES[pc.piece_type]
-                
+
+        # ========== ADDITIONAL EVALUATION FEATURES ==========
+
+        # — Passed pawns (huge bonus, especially advanced ones)
+        passed_pawn_bonus = [0, 10, 20, 40, 70, 120, 200, 0]  # by rank (0-7)
+        our_pawns = list(board.pieces(chess.PAWN, us))
+        enemy_pawns = list(board.pieces(chess.PAWN, them))
+        for sq in our_pawns:
+            file = chess.square_file(sq)
+            rank = chess.square_rank(sq)
+            is_passed = True
+            # Check if any enemy pawn can block or capture
+            for ep in enemy_pawns:
+                ep_file = chess.square_file(ep)
+                ep_rank = chess.square_rank(ep)
+                if abs(ep_file - file) <= 1:  # Same or adjacent file
+                    if us == chess.WHITE and ep_rank > rank:
+                        is_passed = False
+                        break
+                    elif us == chess.BLACK and ep_rank < rank:
+                        is_passed = False
+                        break
+            if is_passed:
+                effective_rank = rank if us == chess.WHITE else 7 - rank
+                s += passed_pawn_bonus[effective_rank]
+                # Extra bonus if protected by another pawn
+                if board.is_attacked_by(us, sq):
+                    s += passed_pawn_bonus[effective_rank] // 2
+
+        # — King safety (pawn shield)
+        king_sq = board.king(us)
+        if king_sq is not None:
+            king_file = chess.square_file(king_sq)
+            king_rank = chess.square_rank(king_sq)
+            shield_bonus = 0
+            # Check pawns in front of king (3 files)
+            for f in range(max(0, king_file - 1), min(8, king_file + 2)):
+                if us == chess.WHITE:
+                    shield_ranks = [king_rank + 1, king_rank + 2]
+                else:
+                    shield_ranks = [king_rank - 1, king_rank - 2]
+                for r in shield_ranks:
+                    if 0 <= r < 8:
+                        sq = chess.square(f, r)
+                        pc = board.piece_at(sq)
+                        if pc and pc.piece_type == chess.PAWN and pc.color == us:
+                            shield_bonus += 15 if r == shield_ranks[0] else 10
+                            break
+            s += shield_bonus
+
+            # Penalty for open files near king
+            for f in range(max(0, king_file - 1), min(8, king_file + 2)):
+                has_our_pawn = any(chess.square_file(p) == f for p in our_pawns)
+                has_enemy_pawn = any(chess.square_file(p) == f for p in enemy_pawns)
+                if not has_our_pawn and not has_enemy_pawn:
+                    s -= 25  # Open file near king
+                elif not has_our_pawn:
+                    s -= 15  # Semi-open file
+
+        # — Rook on open/semi-open files
+        for sq in board.pieces(chess.ROOK, us):
+            file = chess.square_file(sq)
+            has_our_pawn = any(chess.square_file(p) == file for p in our_pawns)
+            has_enemy_pawn = any(chess.square_file(p) == file for p in enemy_pawns)
+            if not has_our_pawn and not has_enemy_pawn:
+                s += 40  # Open file
+            elif not has_our_pawn:
+                s += 20  # Semi-open file
+
+        # — Rook on 7th rank (2nd rank for black)
+        for sq in board.pieces(chess.ROOK, us):
+            rank = chess.square_rank(sq)
+            if (us == chess.WHITE and rank == 6) or (us == chess.BLACK and rank == 1):
+                s += 50
+                # Extra bonus if enemy king on back rank
+                enemy_king_sq = board.king(them)
+                if enemy_king_sq:
+                    enemy_king_rank = chess.square_rank(enemy_king_sq)
+                    if (us == chess.WHITE and enemy_king_rank == 7) or \
+                       (us == chess.BLACK and enemy_king_rank == 0):
+                        s += 30
+
+        # — Doubled pawns penalty
+        for f in range(8):
+            pawns_on_file = sum(1 for p in our_pawns if chess.square_file(p) == f)
+            if pawns_on_file > 1:
+                s -= 20 * (pawns_on_file - 1)
+
+        # — Isolated pawns penalty
+        for sq in our_pawns:
+            file = chess.square_file(sq)
+            has_neighbor = False
+            for p in our_pawns:
+                if p != sq and abs(chess.square_file(p) - file) == 1:
+                    has_neighbor = True
+                    break
+            if not has_neighbor:
+                s -= 15
+
+        # — Knight outposts (knight on rank 4-6, protected by pawn, can't be attacked by enemy pawn)
+        for sq in board.pieces(chess.KNIGHT, us):
+            rank = chess.square_rank(sq)
+            file = chess.square_file(sq)
+            effective_rank = rank if us == chess.WHITE else 7 - rank
+            if 3 <= effective_rank <= 5:  # Rank 4-6
+                # Protected by our pawn?
+                protected = False
+                for p in our_pawns:
+                    if board.attacks(p) and sq in board.attacks(p):
+                        protected = True
+                        break
+                if protected:
+                    # Can't be attacked by enemy pawn?
+                    can_be_attacked = False
+                    for ep in enemy_pawns:
+                        ep_file = chess.square_file(ep)
+                        ep_rank = chess.square_rank(ep)
+                        if abs(ep_file - file) == 1:
+                            if us == chess.WHITE and ep_rank > rank:
+                                can_be_attacked = True
+                                break
+                            elif us == chess.BLACK and ep_rank < rank:
+                                can_be_attacked = True
+                                break
+                    if not can_be_attacked:
+                        s += 30  # Strong outpost
+
+        # — Center control bonus
+        center_squares = [chess.E4, chess.D4, chess.E5, chess.D5]
+        for sq in center_squares:
+            if board.is_attacked_by(us, sq):
+                s += 10
+            pc = board.piece_at(sq)
+            if pc and pc.color == us:
+                if pc.piece_type == chess.PAWN:
+                    s += 20
+                elif pc.piece_type in (chess.KNIGHT, chess.BISHOP):
+                    s += 15
+
         return s
     
     def _evaluate_bb(self, board: chess.Board, ai_color: str):
