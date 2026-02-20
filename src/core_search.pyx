@@ -1,11 +1,11 @@
 # distutils: language = c++
 # distutils: libraries = nnue_inference
-# distutils: library_dirs = nnue/build
+# distutils: library_dirs = nnue/build nnue/build/Release
 # distutils: include_dirs = nnue
 
 import os
 from libc.string cimport memset
-from libc.stdint cimport uint64_t
+from libc.stdint cimport uint64_t, int64_t
 from libc.stdlib cimport malloc, free
 from chess.polyglot import zobrist_hash
 cdef bint USE_NNUE = False
@@ -120,6 +120,16 @@ cdef extern from "nnue_inference.h":
     void        nnue_destroy(NNUEHandle h) nogil
     double      nnue_eval(NNUEHandle h, const float* features, int length) nogil
 
+cdef extern from *:
+    """
+    extern "C" double nnue_eval_halfkp(void* h,
+                                       const int64_t* idx0, int len0,
+                                       const int64_t* idx1, int len1);
+    """
+    double nnue_eval_halfkp(NNUEHandle h,
+                             const int64_t* idx0, int len0,
+                             const int64_t* idx1, int len1) nogil
+
 #  3) module‐level handle
 cdef NNUEHandle _nnue = NULL
 
@@ -166,7 +176,7 @@ def init_nnue(model_path=None):
     if model_path is None:
         # __file__ here points to core_search.cp310-win_amd64.pyd
         base = os.path.dirname(__file__)
-        model_path = os.path.join(base, "nnue", "7.7e-3.pt")
+        model_path = os.path.join(base, "nnue", "halfkp_int8.pt")
 
     if not os.path.isfile(model_path):
         raise RuntimeError(f"NNUE model not found at {model_path!r}")
@@ -206,6 +216,22 @@ cpdef double nnue_eval_py(object feat_buf):
         return _nnue_eval_view(view)
     finally:
         PyBuffer_Release(&viewinfo)
+cdef double _nnue_eval_halfkp_view(int64_t[:] idx0, int64_t[:] idx1) nogil:
+    """
+    Under nogil: call directly into C++ HalfKP API.
+    """
+    cdef int len0 = idx0.shape[0]
+    cdef int len1 = idx1.shape[0]
+    return nnue_eval_halfkp(_nnue, &idx0[0], len0, &idx1[0], len1)
+
+cpdef double nnue_eval_halfkp_py(object idx0_arr, object idx1_arr):
+    """
+    Accept numpy int64 arrays for HalfKP evaluation.
+    """
+    cdef int64_t[:] view0 = idx0_arr
+    cdef int64_t[:] view1 = idx1_arr
+    return _nnue_eval_halfkp_view(view0, view1)
+
 # ——————————————————————————————————————————————————————————————————————
 
 import cython
@@ -440,7 +466,7 @@ cdef double quiesce(object board,
 
     # 1) stand-pat
     if USE_NNUE:
-        val = nnue_eval_py(acc.state)
+        val = nnue_eval_halfkp_py(acc.idx0, acc.idx1)
     else:
         val = static_eval(board, acc, ai_color)
 

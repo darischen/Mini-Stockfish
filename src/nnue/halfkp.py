@@ -167,6 +167,13 @@ class HalfKP_NNUE(nn.Module):
         # Sparse accumulator instance (not a parameter)
         self.accumulator = SparseAccumulator(HIDDEN_SIZE)
 
+    def forward(self, idx0_batch, idx1_batch):
+        """Traceable forward pass for TorchScript export (no mutable accumulator)."""
+        sum0 = self.emb0(idx0_batch).sum(dim=1)   # (batch, H)
+        sum1 = self.emb1(idx1_batch).sum(dim=1)
+        h = torch.cat([torch.clamp(sum0, min=0), torch.clamp(sum1, min=0)], dim=1)
+        return self._mlp(h)
+
     def forward_reset(self, idx0_batch, idx1_batch):
         # initial full reset
         h = self.accumulator.reset(idx0_batch, idx1_batch, self.emb0, self.emb1)

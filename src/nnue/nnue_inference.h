@@ -1,5 +1,6 @@
 // nnue_inference.h
 #pragma once
+#include <stdint.h>
 
 #ifdef _WIN32
   #ifdef NNUE_INFERENCE_EXPORTS
@@ -26,4 +27,14 @@ extern "C" {
      *  - Returns the network’s scalar output.
      */
     NNUE_API double nnue_eval(NNUEHandle h, const float* features, int length);
+
+    /**
+     * Evaluate the HalfKP NNUE network.
+     *  - `idx0` / `idx1` are int64 arrays of HalfKP indices for each king view.
+     *  - `len0` / `len1` are their respective lengths.
+     *  - Returns the network's scalar output.
+     */
+    NNUE_API double nnue_eval_halfkp(NNUEHandle h,
+                                      const int64_t* idx0, int len0,
+                                      const int64_t* idx1, int len1);
 }

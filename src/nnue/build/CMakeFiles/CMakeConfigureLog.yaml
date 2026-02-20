@@ -7,7 +7,7 @@ events:
       - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineSystem.cmake:205 (message)"
       - "CMakeLists.txt:4 (project)"
     message: |
-      The system is: Windows - 10.0.26100 - AMD64
+      The system is: Windows - 10.0.26200 - AMD64
   -
     kind: "message-v1"
     backtrace:
@@ -26,7 +26,7 @@ events:
       Microsoft (R) Build Engine version 16.11.2+f32259642 for .NET Framework
       Copyright (C) Microsoft Corporation. All rights reserved.
       
-      Build started 4/23/2025 9:25:58 PM.
+      Build started 2/19/2026 7:23:45 PM.
       Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCXX\\CompilerIdCXX.vcxproj" on node 1 (default targets).
       PrepareForBuild:
         Creating directory "Debug\\".
@@ -52,7 +52,7 @@ events:
           0 Warning(s)
           0 Error(s)
       
-      Time Elapsed 00:00:00.72
+      Time Elapsed 00:00:01.05
       
       
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
@@ -71,8 +71,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-awgayh"
-      binary: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-awgayh"
+      source: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-tp7kvk"
+      binary: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-tp7kvk"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /GR /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
@@ -82,39 +82,39 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-awgayh'
+        Change Dir: 'C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-tp7kvk'
         
-        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe" cmTC_47220.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:n
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe" cmTC_6f1a2.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:n
         Microsoft (R) Build Engine version 16.11.2+f32259642 for .NET Framework
         Copyright (C) Microsoft Corporation. All rights reserved.
         
-        Build started 4/23/2025 9:25:59 PM.
-        Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-awgayh\\cmTC_47220.vcxproj" on node 1 (default targets).
+        Build started 2/19/2026 7:23:47 PM.
+        Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tp7kvk\\cmTC_6f1a2.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_47220.dir\\Debug\\".
-          Creating directory "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-awgayh\\Debug\\".
-          Creating directory "cmTC_47220.dir\\Debug\\cmTC_47220.tlog\\".
+          Creating directory "cmTC_6f1a2.dir\\Debug\\".
+          Creating directory "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tp7kvk\\Debug\\".
+          Creating directory "cmTC_6f1a2.dir\\Debug\\cmTC_6f1a2.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_47220.dir\\Debug\\cmTC_47220.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Creating "cmTC_6f1a2.dir\\Debug\\cmTC_6f1a2.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
         ClCompile:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_47220.dir\\Debug\\\\" /Fd"cmTC_47220.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCXXCompilerABI.cpp"
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_6f1a2.dir\\Debug\\\\" /Fd"cmTC_6f1a2.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCXXCompilerABI.cpp"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.29.30159 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
           CMakeCXXCompilerABI.cpp
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_47220.dir\\Debug\\\\" /Fd"cmTC_47220.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCXXCompilerABI.cpp"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /Fo"cmTC_6f1a2.dir\\Debug\\\\" /Fd"cmTC_6f1a2.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCXXCompilerABI.cpp"
         Link:
-          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-awgayh\\Debug\\cmTC_47220.exe" /INCREMENTAL /ILK:"cmTC_47220.dir\\Debug\\cmTC_47220.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-awgayh/Debug/cmTC_47220.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-awgayh/Debug/cmTC_47220.lib" /MACHINE:X64  /machine:x64 cmTC_47220.dir\\Debug\\CMakeCXXCompilerABI.obj
-          cmTC_47220.vcxproj -> C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-awgayh\\Debug\\cmTC_47220.exe
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tp7kvk\\Debug\\cmTC_6f1a2.exe" /INCREMENTAL /ILK:"cmTC_6f1a2.dir\\Debug\\cmTC_6f1a2.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-tp7kvk/Debug/cmTC_6f1a2.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-tp7kvk/Debug/cmTC_6f1a2.lib" /MACHINE:X64  /machine:x64 cmTC_6f1a2.dir\\Debug\\CMakeCXXCompilerABI.obj
+          cmTC_6f1a2.vcxproj -> C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tp7kvk\\Debug\\cmTC_6f1a2.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_47220.dir\\Debug\\cmTC_47220.tlog\\unsuccessfulbuild".
-          Touching "cmTC_47220.dir\\Debug\\cmTC_47220.tlog\\cmTC_47220.lastbuildstate".
-        Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-awgayh\\cmTC_47220.vcxproj" (default targets).
+          Deleting file "cmTC_6f1a2.dir\\Debug\\cmTC_6f1a2.tlog\\unsuccessfulbuild".
+          Touching "cmTC_6f1a2.dir\\Debug\\cmTC_6f1a2.tlog\\cmTC_6f1a2.lastbuildstate".
+        Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-tp7kvk\\cmTC_6f1a2.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
             0 Error(s)
         
-        Time Elapsed 00:00:00.52
+        Time Elapsed 00:00:00.70
         
       exitCode: 0
   -
@@ -145,4 +145,655 @@ events:
       Running the CXX compiler's linker: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/HostX64/x64/link.exe" "-v"
       Microsoft (R) Incremental Linker Version 14.29.30159.0
       Copyright (C) Microsoft Corporation.  All rights reserved.
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineCompilerId.cmake:53 (__determine_compiler_id_test)"
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineCUDACompiler.cmake:131 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:47 (enable_language)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)"
+      - "CMakeLists.txt:12 (find_package)"
+    message: |
+      Compiling the CUDA compiler identification source file "CMakeCUDACompilerId.cu" succeeded.
+      Compiler:  
+      Build flags: 
+      Id flags: --keep;--keep-dir;tmp -v
+      
+      The output was:
+      0
+      Microsoft (R) Build Engine version 16.11.2+f32259642 for .NET Framework
+      Copyright (C) Microsoft Corporation. All rights reserved.
+      
+      Build started 2/19/2026 7:23:49 PM.
+      Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" on node 1 (default targets).
+      PrepareForBuild:
+        Creating directory "Debug\\".
+        Creating directory "Debug\\CompilerIdCUDA.tlog\\".
+      InitializeBuildStatus:
+        Creating "Debug\\CompilerIdCUDA.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+      AddCudaCompileDeps:
+        C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D__CUDACC_VER_MAJOR__=11 /D__CUDACC_VER_MINOR__=8 /D_MBCS /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /I. /FIcuda_runtime.h /c C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu 
+      Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (1) is building "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).
+      CudaBuildCore:
+        Compiling CUDA source file CMakeCUDACompilerId.cu...
+        Creating directory "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug".
+        cmd.exe /C "C:\\Users\\daris\\AppData\\Local\\Temp\\tmp7f624efcd3444e809a82071d0ecaf2d7.cmd"
+        "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe" -gencode=arch=compute_52,code=\\"sm_52,compute_52\\" --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu   -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"  -G   --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -v -allow-unsupported-compiler -g  -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\\vc142.pdb /FS /Zi /RTC1 /MDd " -o C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu"
+        
+        C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA>"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe" -gencode=arch=compute_52,code=\\"sm_52,compute_52\\" --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu   -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"  -G   --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -v -allow-unsupported-compiler -g  -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\\vc142.pdb /FS /Zi /RTC1 /MDd " -o C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" 
+        #$ _NVVM_BRANCH_=nvvm
+        #$ _SPACE_= 
+        #$ _CUDART_=cudart
+        #$ _HERE_=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin
+        #$ _THERE_=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin
+        #$ _TARGET_SIZE_=
+        #$ _TARGET_DIR_=
+        #$ _TARGET_SIZE_=64
+        #$ _WIN_PLATFORM_=x64
+        #$ TOP=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/..
+        #$ NVVMIR_LIBRARY_DIR=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../nvvm/libdevice
+        #$ PATH=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../nvvm/bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../lib;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22000.0\\x64;;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22000.0\\x86;;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\tools;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\ide;C:\\Program Files (x86)\\HTML Help Workshop;;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin;C:\\WINDOWS\\Microsoft.NET\\Framework64\\v4.0.30319\\;C:\\WINDOWS\\Microsoft.NET\\Framework\\v4.0.30319\\;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin;C:\\WINDOWS\\Microsoft.NET\\Framework\\v4.0.30319\\;;C:\\Users\\daris\\bin;C:\\Program Files\\Git\\mingw64\\bin;C:\\Program Files\\Git\\usr\\local\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Program Files\\Git\\mingw64\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Users\\daris\\bin;C:\\Users\\daris\\anaconda3\\condabin;C:\\Users\\daris\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\debugCommand;C:\\Users\\daris\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\copilotCli;C:\\Users\\daris\\.vscode\\extensions\\vadimcn.vscode-lldb-1.12.1\\bin;C:\\Python314\\Scripts;C:\\Python314;C:\\Program Files\\NVIDIA\\CUDNN\\v8.9.7\\bin;C:\\ffmpeg\\bin;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Android;C:\\Windows\\System32;C:\\msys64\\mingw64\\bin;C:\\Program Files\\Intel\\WiFi\\bin;C:\\Program Files\\Common Files\\Intel\\WirelessCommon;C:\\Program Files\\Microsoft SQL Server\\130\\Tools\\Binn;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Scripts;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files\\dotnet;C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.19.10173.0_x64__8wekyb3d8bbwe\\winget.exe;C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.19.10173.0_x64__8wekyb3d8bbwe\\AppInstaller.exe;C:\\WINDOWS\\system32\\cmd.exe;C:\\Users\\daris\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\daris\\anaconda3\\Scripts;C:\\Users\\daris\\anaconda3\\Library\\bin;C:\\Users\\daris\\anaconda3;C:\\Users\\daris\\libtorch\\lib;C:\\Users\\daris\\libtorch\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\libnvvp;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2025.2.0;C:\\Program Files\\Git\\cmd;C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR;C:\\Program Files\\Java\\jdk-22\\bin;C:\\Users\\daris\\.local\\bin;C:\\ProgramData\\chocolatey\\bin;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Program Files\\nodejs;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Launcher;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Scripts;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR;C:\\Program Files\\dotnet;C:\\Android;C:\\Windows\\System32;C:\\msys64\\mingw64\\bin;C:\\Program Files\\Intel\\WiFi\\bin;C:\\Program Files\\Common Files\\Intel\\WirelessCommon;C:\\Program Files\\Microsoft SQL Server\\130\\Tools\\Binn;C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python39\\Scripts;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python39;C:\\Users\\daris\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\daris\\AppData\\Roaming\\Python\\Python310\\Scripts;%USERPROFILE;C:\\Users\\daris\\AppData\\Local\\GitHubDesktop\\bin;C:\\Users\\daris\\AppData\\Local\\Muse Hub\\lib;C:\\Users\\daris\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\daris\\AppData\\Local\\Programs\\Ollama;C:\\Users\\daris\\libtorch\\lib;C:\\Users\\daris\\libtorch\\bin;C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\Release;C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\torch\\lib;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\libnvvp;C:\\Users\\daris\\.local\\bin;C:\\Users\\daris\\AppData\\Roaming\\npm;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Program Files\\nodejs;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\Users\\daris\\.vscode\\extensions\\ms-python.debugpy-2025.18.0-win32-x64\\bundled\\scripts\\noConfigScripts;C:\\Program Files\\Git\\usr\\bin\\vendor_perl;C:\\Program Files\\Git\\usr\\bin\\core_perl;
+        #$ INCLUDES="-IC:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../include"  
+        #$ LIBRARIES=  "/LIBPATH:C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../lib/x64"
+        #$ CUDAFE_FLAGS=--sdk_dir "C:\\Program Files (x86)\\Windows Kits\\10"
+        #$ PTXAS_FLAGS=
+        CMakeCUDACompilerId.cu
+        #$ cl.exe -D__NV_NO_HOST_COMPILER_CHECK=1 @"C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-9.res" > "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-8_CMakeCUDACompilerId.cpp1.ii" 
+        CMakeCUDACompilerId.cu
+        #$ erase C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-9.res
+        #$ cicc --microsoft_version=1929 --msvc_target_version=1929 --compiler_bindir "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/HostX64/x64/../../../../../../.." --display_error_number --orig_src_file_name "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed --debug_mode --sdk_dir "C:\\Program Files (x86)\\Windows Kits\\10"  -arch compute_52 -m64 --no-version-ident -ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 --include_file_name "tmpxft_000084e8_00000000-4_CMakeCUDACompilerId.fatbin.c" -g -O0 -tused --gen_module_id_file --module_id_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-5_CMakeCUDACompilerId.module_id" --gen_c_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.c" --stub_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.stub.c" --gen_device_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.gpu"  "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-8_CMakeCUDACompilerId.cpp1.ii" -o "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.ptx"
+        #$ ptxas -arch=sm_52 -m64 -g --dont-merge-basicblocks --return-at-end "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.ptx"  -o "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-10_CMakeCUDACompilerId.sm_52.cubin" 
+        #$ fatbinary -64 --ident="C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CMakeCUDACompilerId.cu" --cmdline="-g --dont-merge-basicblocks --return-at-end " --cicc-cmdline="-ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 " -g "--image3=kind=elf,sm=52,file=C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-10_CMakeCUDACompilerId.sm_52.cubin" "--image3=kind=ptx,sm=52,file=C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.ptx" --embedded-fatbin="C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-4_CMakeCUDACompilerId.fatbin.c" 
+        #$ erase C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-4_CMakeCUDACompilerId.fatbin
+        #$ cl.exe -D__NV_NO_HOST_COMPILER_CHECK=1 @"C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-11.res" > "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-6_CMakeCUDACompilerId.cpp4.ii" 
+        CMakeCUDACompilerId.cu
+        #$ erase C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-11.res
+        #$ cudafe++ --microsoft_version=1929 --msvc_target_version=1929 --compiler_bindir "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/HostX64/x64/../../../../../../.." --display_error_number --orig_src_file_name "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed --debug_mode --sdk_dir "C:\\Program Files (x86)\\Windows Kits\\10" --m64 --parse_templates --gen_c_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.cpp" --stub_file_name "tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.stub.c" --module_id_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-5_CMakeCUDACompilerId.module_id" "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-6_CMakeCUDACompilerId.cpp4.ii" 
+        #$ cl.exe @"C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-12.res" -Fo"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/x64/Debug/CMakeCUDACompilerId.cu.obj" 
+        tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.cpp
+        #$ erase C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-12.res
+      Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (CudaBuildCore target(s)).
+      Link:
+        C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCUDA.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudart_static.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCUDA.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCUDA.lib" /MACHINE:X64 "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj"
+           Creating library .\\CompilerIdCUDA.lib and object .\\CompilerIdCUDA.exp
+      LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj]
+        CompilerIdCUDA.vcxproj -> C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.exe
+      PostBuildEvent:
+        echo CMAKE_CUDA_COMPILER=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe
+        :VCEnd
+        CMAKE_CUDA_COMPILER=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe
+      FinalizeBuildStatus:
+        Deleting file "Debug\\CompilerIdCUDA.tlog\\unsuccessfulbuild".
+        Touching "Debug\\CompilerIdCUDA.tlog\\CompilerIdCUDA.lastbuildstate".
+      Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (default targets).
+      
+      Build succeeded.
+      
+      "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (default target) (1) ->
+      (Link target) -> 
+        LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj]
+      
+          1 Warning(s)
+          0 Error(s)
+      
+      Time Elapsed 00:00:03.41
+      
+      
+      Compilation of the CUDA compiler identification source "CMakeCUDACompilerId.cu" produced "CompilerIdCUDA.exe"
+      
+      Compilation of the CUDA compiler identification source "CMakeCUDACompilerId.cu" produced "CompilerIdCUDA.exp"
+      
+      Compilation of the CUDA compiler identification source "CMakeCUDACompilerId.cu" produced "CompilerIdCUDA.lib"
+      
+      Compilation of the CUDA compiler identification source "CMakeCUDACompilerId.cu" produced "CompilerIdCUDA.vcxproj"
+      
+      The CUDA compiler identification is NVIDIA, found in:
+        C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CompilerIdCUDA.exe
+      The host compiler identification is MSVC
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/Internal/CMakeNVCCParseImplicitInfo.cmake:128 (message)"
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineCUDACompiler.cmake:242 (cmake_nvcc_parse_implicit_info)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:47 (enable_language)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)"
+      - "CMakeLists.txt:12 (find_package)"
+    message: |
+      Parsed CUDA nvcc implicit link information:
+        found 'PATH=' string: [C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../nvvm/bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../lib;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22000.0\\x64;;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22000.0\\x86;;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\tools;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\ide;C:\\Program Files (x86)\\HTML Help Workshop;;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin;C:\\WINDOWS\\Microsoft.NET\\Framework64\\v4.0.30319\\;C:\\WINDOWS\\Microsoft.NET\\Framework\\v4.0.30319\\;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin;C:\\WINDOWS\\Microsoft.NET\\Framework\\v4.0.30319\\;;C:\\Users\\daris\\bin;C:\\Program Files\\Git\\mingw64\\bin;C:\\Program Files\\Git\\usr\\local\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Program Files\\Git\\mingw64\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Users\\daris\\bin;C:\\Users\\daris\\anaconda3\\condabin;C:\\Users\\daris\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\debugCommand;C:\\Users\\daris\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\copilotCli;C:\\Users\\daris\\.vscode\\extensions\\vadimcn.vscode-lldb-1.12.1\\bin;C:\\Python314\\Scripts;C:\\Python314;C:\\Program Files\\NVIDIA\\CUDNN\\v8.9.7\\bin;C:\\ffmpeg\\bin;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Android;C:\\Windows\\System32;C:\\msys64\\mingw64\\bin;C:\\Program Files\\Intel\\WiFi\\bin;C:\\Program Files\\Common Files\\Intel\\WirelessCommon;C:\\Program Files\\Microsoft SQL Server\\130\\Tools\\Binn;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Scripts;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files\\dotnet;C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.19.10173.0_x64__8wekyb3d8bbwe\\winget.exe;C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.19.10173.0_x64__8wekyb3d8bbwe\\AppInstaller.exe;C:\\WINDOWS\\system32\\cmd.exe;C:\\Users\\daris\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\daris\\anaconda3\\Scripts;C:\\Users\\daris\\anaconda3\\Library\\bin;C:\\Users\\daris\\anaconda3;C:\\Users\\daris\\libtorch\\lib;C:\\Users\\daris\\libtorch\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\libnvvp;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2025.2.0;C:\\Program Files\\Git\\cmd;C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR;C:\\Program Files\\Java\\jdk-22\\bin;C:\\Users\\daris\\.local\\bin;C:\\ProgramData\\chocolatey\\bin;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Program Files\\nodejs;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Launcher;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Scripts;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR;C:\\Program Files\\dotnet;C:\\Android;C:\\Windows\\System32;C:\\msys64\\mingw64\\bin;C:\\Program Files\\Intel\\WiFi\\bin;C:\\Program Files\\Common Files\\Intel\\WirelessCommon;C:\\Program Files\\Microsoft SQL Server\\130\\Tools\\Binn;C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python39\\Scripts;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python39;C:\\Users\\daris\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\daris\\AppData\\Roaming\\Python\\Python310\\Scripts;%USERPROFILE;C:\\Users\\daris\\AppData\\Local\\GitHubDesktop\\bin;C:\\Users\\daris\\AppData\\Local\\Muse Hub\\lib;C:\\Users\\daris\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\daris\\AppData\\Local\\Programs\\Ollama;C:\\Users\\daris\\libtorch\\lib;C:\\Users\\daris\\libtorch\\bin;C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\Release;C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\torch\\lib;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\libnvvp;C:\\Users\\daris\\.local\\bin;C:\\Users\\daris\\AppData\\Roaming\\npm;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Program Files\\nodejs;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\Users\\daris\\.vscode\\extensions\\ms-python.debugpy-2025.18.0-win32-x64\\bundled\\scripts\\noConfigScripts;C:\\Program Files\\Git\\usr\\bin\\vendor_perl;C:\\Program Files\\Git\\usr\\bin\\core_perl;]
+        found 'LIBRARIES=' string: ["/LIBPATH:C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../lib/x64"]
+        found 'INCLUDES=' string: ["-IC:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../include"  ]
+        considering line: [Microsoft (R) Build Engine version 16.11.2+f32259642 for .NET Framework]
+        considering line: [Copyright (C) Microsoft Corporation. All rights reserved.]
+        considering line: [Build started 2/19/2026 7:23:49 PM.]
+        considering line: [Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" on node 1 (default targets).]
+        considering line: [PrepareForBuild:]
+        considering line: [  Creating directory "Debug\\".]
+        considering line: [  Creating directory "Debug\\CompilerIdCUDA.tlog\\".]
+        considering line: [InitializeBuildStatus:]
+        considering line: [  Creating "Debug\\CompilerIdCUDA.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.]
+        considering line: [AddCudaCompileDeps:]
+        considering line: [  C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D__CUDACC_VER_MAJOR__=11 /D__CUDACC_VER_MINOR__=8 /D_MBCS /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /I. /FIcuda_runtime.h /c C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu ]
+        considering line: [Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (1) is building "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).]
+        considering line: [CudaBuildCore:]
+        considering line: [  Compiling CUDA source file CMakeCUDACompilerId.cu...]
+        considering line: [  Creating directory "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug".]
+        considering line: [  cmd.exe /C "C:\\Users\\daris\\AppData\\Local\\Temp\\tmp7f624efcd3444e809a82071d0ecaf2d7.cmd"]
+        considering line: [  "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe" -gencode=arch=compute_52,code=\\"sm_52,compute_52\\" --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu   -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"  -G   --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -v -allow-unsupported-compiler -g  -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\\vc142.pdb /FS /Zi /RTC1 /MDd " -o C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu"]
+        considering line: [  ]
+        considering line: [  C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA>"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe" -gencode=arch=compute_52,code=\\"sm_52,compute_52\\" --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu   -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"  -G   --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -v -allow-unsupported-compiler -g  -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\\vc142.pdb /FS /Zi /RTC1 /MDd " -o C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" ]
+        considering line: [                                  CMakeCUDACompilerId.cu]
+        considering line: [  #$ cl.exe -D__NV_NO_HOST_COMPILER_CHECK=1 @"C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-9.res" > "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-8_CMakeCUDACompilerId.cpp1.ii" ]
+        considering line: [  CMakeCUDACompilerId.cu]
+        considering line: [  #$ erase C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-9.res]
+        considering line: [  #$ cicc --microsoft_version=1929 --msvc_target_version=1929 --compiler_bindir "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/HostX64/x64/../../../../../../.." --display_error_number --orig_src_file_name "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed --debug_mode --sdk_dir "C:\\Program Files (x86)\\Windows Kits\\10"  -arch compute_52 -m64 --no-version-ident -ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 --include_file_name "tmpxft_000084e8_00000000-4_CMakeCUDACompilerId.fatbin.c" -g -O0 -tused --gen_module_id_file --module_id_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-5_CMakeCUDACompilerId.module_id" --gen_c_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.c" --stub_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.stub.c" --gen_device_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.gpu"  "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-8_CMakeCUDACompilerId.cpp1.ii" -o "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.ptx"]
+        considering line: [  #$ ptxas -arch=sm_52 -m64 -g --dont-merge-basicblocks --return-at-end "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.ptx"  -o "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-10_CMakeCUDACompilerId.sm_52.cubin" ]
+        considering line: [  #$ fatbinary -64 --ident="C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CMakeCUDACompilerId.cu" --cmdline="-g --dont-merge-basicblocks --return-at-end " --cicc-cmdline="-ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 " -g "--image3=kind=elf,sm=52,file=C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-10_CMakeCUDACompilerId.sm_52.cubin" "--image3=kind=ptx,sm=52,file=C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.ptx" --embedded-fatbin="C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-4_CMakeCUDACompilerId.fatbin.c" ]
+        considering line: [  #$ erase C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-4_CMakeCUDACompilerId.fatbin]
+        considering line: [  #$ cl.exe -D__NV_NO_HOST_COMPILER_CHECK=1 @"C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-11.res" > "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-6_CMakeCUDACompilerId.cpp4.ii" ]
+        considering line: [  CMakeCUDACompilerId.cu]
+        considering line: [  #$ erase C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-11.res]
+        considering line: [  #$ cudafe++ --microsoft_version=1929 --msvc_target_version=1929 --compiler_bindir "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/HostX64/x64/../../../../../../.." --display_error_number --orig_src_file_name "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed --debug_mode --sdk_dir "C:\\Program Files (x86)\\Windows Kits\\10" --m64 --parse_templates --gen_c_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.cpp" --stub_file_name "tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.stub.c" --module_id_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-5_CMakeCUDACompilerId.module_id" "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-6_CMakeCUDACompilerId.cpp4.ii" ]
+        considering line: [  #$ cl.exe @"C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-12.res" -Fo"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/x64/Debug/CMakeCUDACompilerId.cu.obj" ]
+        considering line: [  tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.cpp]
+        considering line: [  #$ erase C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-12.res]
+        considering line: [Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (CudaBuildCore target(s)).]
+        considering line: [Link:]
+        considering line: [  C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCUDA.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudart_static.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCUDA.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCUDA.lib" /MACHINE:X64 "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj"]
+          extracted link line: [link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCUDA.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudart_static.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCUDA.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCUDA.lib" /MACHINE:X64 "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj"]
+        considering line: [     Creating library .\\CompilerIdCUDA.lib and object .\\CompilerIdCUDA.exp]
+        considering line: [LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs]
+        considering line: [ use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj]]
+        considering line: [  CompilerIdCUDA.vcxproj -> C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.exe]
+        considering line: [PostBuildEvent:]
+        considering line: [  echo CMAKE_CUDA_COMPILER=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe]
+        considering line: [  :VCEnd]
+        considering line: [  CMAKE_CUDA_COMPILER=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe]
+        considering line: [FinalizeBuildStatus:]
+        considering line: [  Deleting file "Debug\\CompilerIdCUDA.tlog\\unsuccessfulbuild".]
+        considering line: [  Touching "Debug\\CompilerIdCUDA.tlog\\CompilerIdCUDA.lastbuildstate".]
+        considering line: [Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (default targets).]
+        considering line: [Build succeeded.]
+        considering line: ["C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (default target) (1) ->]
+        considering line: [(Link target) -> ]
+        considering line: [  LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs]
+        considering line: [ use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj]]
+        considering line: [    1 Warning(s)]
+        considering line: [    0 Error(s)]
+        considering line: [Time Elapsed 00:00:03.41]
+        considering line: []
+      
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        link line: [cuda-fake-ld link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCUDA.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudart_static.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCUDA.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCUDA.lib" /MACHINE:X64 "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj"]
+          arg [cuda-fake-ld] ==> ignore
+          arg [link.exe] ==> ignore
+          arg [/ERRORREPORT:QUEUE] ==> ignore
+          arg [/OUT:.\\CompilerIdCUDA.exe] ==> ignore
+          arg [/INCREMENTAL:NO] ==> ignore
+          arg [/NOLOGO] ==> ignore
+          arg [/LIBPATH:C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64] ==> dir [C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64]
+          arg [cudart_static.lib] ==> lib [cudart_static.lib]
+          arg [/MANIFEST] ==> ignore
+          arg [/MANIFESTUAC:level='asInvoker' uiAccess='false'] ==> ignore
+          arg [/manifest:embed] ==> ignore
+          arg [/PDB:.\\CompilerIdCUDA.pdb] ==> ignore
+          arg [/SUBSYSTEM:CONSOLE] ==> ignore
+          arg [/TLBID:1] ==> ignore
+          arg [/DYNAMICBASE] ==> ignore
+          arg [/NXCOMPAT] ==> ignore
+          arg [/IMPLIB:.\\CompilerIdCUDA.lib] ==> ignore MSVC link option
+          arg [/MACHINE:X64] ==> ignore
+          arg [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj] ==> ignore
+        collapse library dir [C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64] ==> [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8/lib/x64]
+        implicit libs: [cudart_static.lib]
+        implicit objs: []
+        implicit dirs: [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8/lib/x64]
+        implicit fwks: []
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/Internal/CMakeNVCCParseImplicitInfo.cmake:146 (message)"
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineCUDACompiler.cmake:242 (cmake_nvcc_parse_implicit_info)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:47 (enable_language)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)"
+      - "CMakeLists.txt:12 (find_package)"
+    message: |
+      Parsed CUDA nvcc include information:
+        found 'PATH=' string: [C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../nvvm/bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../lib;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22000.0\\x64;;C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22000.0\\x86;;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\tools;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Common7\\ide;C:\\Program Files (x86)\\HTML Help Workshop;;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin;C:\\WINDOWS\\Microsoft.NET\\Framework64\\v4.0.30319\\;C:\\WINDOWS\\Microsoft.NET\\Framework\\v4.0.30319\\;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\MSBuild\\Current\\Bin;C:\\WINDOWS\\Microsoft.NET\\Framework\\v4.0.30319\\;;C:\\Users\\daris\\bin;C:\\Program Files\\Git\\mingw64\\bin;C:\\Program Files\\Git\\usr\\local\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Program Files\\Git\\mingw64\\bin;C:\\Program Files\\Git\\usr\\bin;C:\\Users\\daris\\bin;C:\\Users\\daris\\anaconda3\\condabin;C:\\Users\\daris\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\debugCommand;C:\\Users\\daris\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\copilotCli;C:\\Users\\daris\\.vscode\\extensions\\vadimcn.vscode-lldb-1.12.1\\bin;C:\\Python314\\Scripts;C:\\Python314;C:\\Program Files\\NVIDIA\\CUDNN\\v8.9.7\\bin;C:\\ffmpeg\\bin;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\java8path;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Android;C:\\Windows\\System32;C:\\msys64\\mingw64\\bin;C:\\Program Files\\Intel\\WiFi\\bin;C:\\Program Files\\Common Files\\Intel\\WirelessCommon;C:\\Program Files\\Microsoft SQL Server\\130\\Tools\\Binn;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Scripts;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files\\dotnet;C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.19.10173.0_x64__8wekyb3d8bbwe\\winget.exe;C:\\Program Files\\WindowsApps\\Microsoft.DesktopAppInstaller_1.19.10173.0_x64__8wekyb3d8bbwe\\AppInstaller.exe;C:\\WINDOWS\\system32\\cmd.exe;C:\\Users\\daris\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\daris\\anaconda3\\Scripts;C:\\Users\\daris\\anaconda3\\Library\\bin;C:\\Users\\daris\\anaconda3;C:\\Users\\daris\\libtorch\\lib;C:\\Users\\daris\\libtorch\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\libnvvp;C:\\Program Files\\NVIDIA Corporation\\Nsight Compute 2025.2.0;C:\\Program Files\\Git\\cmd;C:\\Program Files\\NVIDIA Corporation\\NVIDIA App\\NvDLISR;C:\\Program Files\\Java\\jdk-22\\bin;C:\\Users\\daris\\.local\\bin;C:\\ProgramData\\chocolatey\\bin;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Program Files\\nodejs;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Launcher;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Scripts;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR;C:\\Program Files\\dotnet;C:\\Android;C:\\Windows\\System32;C:\\msys64\\mingw64\\bin;C:\\Program Files\\Intel\\WiFi\\bin;C:\\Program Files\\Common Files\\Intel\\WirelessCommon;C:\\Program Files\\Microsoft SQL Server\\130\\Tools\\Binn;C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\170\\Tools\\Binn;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python39\\Scripts;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python39;C:\\Users\\daris\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\daris\\AppData\\Roaming\\Python\\Python310\\Scripts;%USERPROFILE;C:\\Users\\daris\\AppData\\Local\\GitHubDesktop\\bin;C:\\Users\\daris\\AppData\\Local\\Muse Hub\\lib;C:\\Users\\daris\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\daris\\AppData\\Local\\Programs\\Ollama;C:\\Users\\daris\\libtorch\\lib;C:\\Users\\daris\\libtorch\\bin;C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\Release;C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src;C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\torch\\lib;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin;C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\libnvvp;C:\\Users\\daris\\.local\\bin;C:\\Users\\daris\\AppData\\Roaming\\npm;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\nvm4w\\nodejs;C:\\Program Files\\nodejs;C:\\Users\\daris\\AppData\\Local\\nvm;C:\\Users\\daris\\.vscode\\extensions\\ms-python.debugpy-2025.18.0-win32-x64\\bundled\\scripts\\noConfigScripts;C:\\Program Files\\Git\\usr\\bin\\vendor_perl;C:\\Program Files\\Git\\usr\\bin\\core_perl;]
+        found 'LIBRARIES=' string: ["/LIBPATH:C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../lib/x64"]
+        found 'INCLUDES=' string: ["-IC:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin/../include"  ]
+        considering line: [Microsoft (R) Build Engine version 16.11.2+f32259642 for .NET Framework]
+        considering line: [Copyright (C) Microsoft Corporation. All rights reserved.]
+        considering line: [Build started 2/19/2026 7:23:49 PM.]
+        considering line: [Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" on node 1 (default targets).]
+        considering line: [PrepareForBuild:]
+        considering line: [  Creating directory "Debug\\".]
+        considering line: [  Creating directory "Debug\\CompilerIdCUDA.tlog\\".]
+        considering line: [InitializeBuildStatus:]
+        considering line: [  Creating "Debug\\CompilerIdCUDA.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.]
+        considering line: [AddCudaCompileDeps:]
+        considering line: [  C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D__CUDACC_VER_MAJOR__=11 /D__CUDACC_VER_MINOR__=8 /D_MBCS /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /I. /FIcuda_runtime.h /c C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu ]
+        considering line: [Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (1) is building "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).]
+        considering line: [CudaBuildCore:]
+        considering line: [  Compiling CUDA source file CMakeCUDACompilerId.cu...]
+        considering line: [  Creating directory "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug".]
+        considering line: [  cmd.exe /C "C:\\Users\\daris\\AppData\\Local\\Temp\\tmp7f624efcd3444e809a82071d0ecaf2d7.cmd"]
+        considering line: [  "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe" -gencode=arch=compute_52,code=\\"sm_52,compute_52\\" --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu   -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"  -G   --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -v -allow-unsupported-compiler -g  -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\\vc142.pdb /FS /Zi /RTC1 /MDd " -o C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu"]
+        considering line: [  ]
+        considering line: [  C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA>"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe" -gencode=arch=compute_52,code=\\"sm_52,compute_52\\" --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu   -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"  -G   --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -v -allow-unsupported-compiler -g  -D_MBCS -Xcompiler "/EHsc /W0 /nologo /Od /FdDebug\\vc142.pdb /FS /Zi /RTC1 /MDd " -o C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" ]
+        considering line: [                                  CMakeCUDACompilerId.cu]
+        considering line: [  #$ cl.exe -D__NV_NO_HOST_COMPILER_CHECK=1 @"C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-9.res" > "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-8_CMakeCUDACompilerId.cpp1.ii" ]
+        considering line: [  CMakeCUDACompilerId.cu]
+        considering line: [  #$ erase C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-9.res]
+        considering line: [  #$ cicc --microsoft_version=1929 --msvc_target_version=1929 --compiler_bindir "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/HostX64/x64/../../../../../../.." --display_error_number --orig_src_file_name "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed --debug_mode --sdk_dir "C:\\Program Files (x86)\\Windows Kits\\10"  -arch compute_52 -m64 --no-version-ident -ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 --include_file_name "tmpxft_000084e8_00000000-4_CMakeCUDACompilerId.fatbin.c" -g -O0 -tused --gen_module_id_file --module_id_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-5_CMakeCUDACompilerId.module_id" --gen_c_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.c" --stub_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.stub.c" --gen_device_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.gpu"  "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-8_CMakeCUDACompilerId.cpp1.ii" -o "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.ptx"]
+        considering line: [  #$ ptxas -arch=sm_52 -m64 -g --dont-merge-basicblocks --return-at-end "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.ptx"  -o "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-10_CMakeCUDACompilerId.sm_52.cubin" ]
+        considering line: [  #$ fatbinary -64 --ident="C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CMakeCUDACompilerId.cu" --cmdline="-g --dont-merge-basicblocks --return-at-end " --cicc-cmdline="-ftz=0 -prec_div=1 -prec_sqrt=1 -fmad=1 " -g "--image3=kind=elf,sm=52,file=C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-10_CMakeCUDACompilerId.sm_52.cubin" "--image3=kind=ptx,sm=52,file=C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.ptx" --embedded-fatbin="C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-4_CMakeCUDACompilerId.fatbin.c" ]
+        considering line: [  #$ erase C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-4_CMakeCUDACompilerId.fatbin]
+        considering line: [  #$ cl.exe -D__NV_NO_HOST_COMPILER_CHECK=1 @"C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-11.res" > "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-6_CMakeCUDACompilerId.cpp4.ii" ]
+        considering line: [  CMakeCUDACompilerId.cu]
+        considering line: [  #$ erase C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-11.res]
+        considering line: [  #$ cudafe++ --microsoft_version=1929 --msvc_target_version=1929 --compiler_bindir "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/HostX64/x64/../../../../../../.." --display_error_number --orig_src_file_name "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/CMakeCUDACompilerId.cu" --orig_src_path_name "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CMakeCUDACompilerId.cu" --allow_managed --debug_mode --sdk_dir "C:\\Program Files (x86)\\Windows Kits\\10" --m64 --parse_templates --gen_c_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.cpp" --stub_file_name "tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.stub.c" --module_id_file_name "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-5_CMakeCUDACompilerId.module_id" "C:/Users/daris/AppData/Local/Temp/tmpxft_000084e8_00000000-6_CMakeCUDACompilerId.cpp4.ii" ]
+        considering line: [  #$ cl.exe @"C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-12.res" -Fo"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/3.31.4/CompilerIdCUDA/x64/Debug/CMakeCUDACompilerId.cu.obj" ]
+        considering line: [  tmpxft_000084e8_00000000-7_CMakeCUDACompilerId.cudafe1.cpp]
+        considering line: [  #$ erase C:\\Users\\daris\\AppData\\Local\\Temp/tmpxft_000084e8_00000000-12.res]
+        considering line: [Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (CudaBuildCore target(s)).]
+        considering line: [Link:]
+        considering line: [  C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCUDA.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudart_static.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCUDA.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCUDA.lib" /MACHINE:X64 "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj"]
+          extracted link line: [link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCUDA.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudart_static.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCUDA.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCUDA.lib" /MACHINE:X64 "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj"]
+        considering line: [     Creating library .\\CompilerIdCUDA.lib and object .\\CompilerIdCUDA.exp]
+        considering line: [LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs]
+        considering line: [ use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj]]
+        considering line: [  CompilerIdCUDA.vcxproj -> C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.exe]
+        considering line: [PostBuildEvent:]
+        considering line: [  echo CMAKE_CUDA_COMPILER=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe]
+        considering line: [  :VCEnd]
+        considering line: [  CMAKE_CUDA_COMPILER=C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe]
+        considering line: [FinalizeBuildStatus:]
+        considering line: [  Deleting file "Debug\\CompilerIdCUDA.tlog\\unsuccessfulbuild".]
+        considering line: [  Touching "Debug\\CompilerIdCUDA.tlog\\CompilerIdCUDA.lastbuildstate".]
+        considering line: [Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (default targets).]
+        considering line: [Build succeeded.]
+        considering line: ["C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj" (default target) (1) ->]
+        considering line: [(Link target) -> ]
+        considering line: [  LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs]
+        considering line: [ use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\CompilerIdCUDA.vcxproj]]
+        considering line: [    1 Warning(s)]
+        considering line: [    0 Error(s)]
+        considering line: [Time Elapsed 00:00:03.41]
+        considering line: []
+      
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        link line: [cuda-fake-ld link.exe /ERRORREPORT:QUEUE /OUT:".\\CompilerIdCUDA.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudart_static.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\\CompilerIdCUDA.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\\CompilerIdCUDA.lib" /MACHINE:X64 "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj"]
+          arg [cuda-fake-ld] ==> ignore
+          arg [link.exe] ==> ignore
+          arg [/ERRORREPORT:QUEUE] ==> ignore
+          arg [/OUT:.\\CompilerIdCUDA.exe] ==> ignore
+          arg [/INCREMENTAL:NO] ==> ignore
+          arg [/NOLOGO] ==> ignore
+          arg [/LIBPATH:C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64] ==> dir [C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64]
+          arg [cudart_static.lib] ==> lib [cudart_static.lib]
+          arg [/MANIFEST] ==> ignore
+          arg [/MANIFESTUAC:level='asInvoker' uiAccess='false'] ==> ignore
+          arg [/manifest:embed] ==> ignore
+          arg [/PDB:.\\CompilerIdCUDA.pdb] ==> ignore
+          arg [/SUBSYSTEM:CONSOLE] ==> ignore
+          arg [/TLBID:1] ==> ignore
+          arg [/DYNAMICBASE] ==> ignore
+          arg [/NXCOMPAT] ==> ignore
+          arg [/IMPLIB:.\\CompilerIdCUDA.lib] ==> ignore MSVC link option
+          arg [/MACHINE:X64] ==> ignore
+          arg [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\3.31.4\\CompilerIdCUDA\\x64\\Debug\\CMakeCUDACompilerId.cu.obj] ==> ignore
+        collapse library dir [C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64] ==> [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8/lib/x64]
+        implicit libs: [cudart_static.lib]
+        implicit objs: []
+        implicit dirs: [C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8/lib/x64]
+        implicit fwks: []
+      
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:74 (try_compile)"
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeTestCUDACompiler.cmake:19 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:47 (enable_language)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)"
+      - "CMakeLists.txt:12 (find_package)"
+    checks:
+      - "Detecting CUDA compiler ABI info"
+    directories:
+      source: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y"
+      binary: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y"
+    cmakeVariables:
+      CMAKE_CUDA_FLAGS: "-D_WINDOWS -Xcompiler=\" /GR /EHsc\""
+      CMAKE_CUDA_FLAGS_DEBUG: "-Xcompiler=\" -Zi -Ob0 -Od /RTC1\""
+      CMAKE_CUDA_RUNTIME_LIBRARY: "Static"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2;C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/../Modules_CUDA_fix"
+    buildResult:
+      variable: "CMAKE_CUDA_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y'
+        
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe" cmTC_a06e7.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:n
+        Microsoft (R) Build Engine version 16.11.2+f32259642 for .NET Framework
+        Copyright (C) Microsoft Corporation. All rights reserved.
+        
+        Build started 2/19/2026 7:23:52 PM.
+        Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" on node 1 (default targets).
+        PrepareForBuild:
+          Creating directory "cmTC_a06e7.dir\\Debug\\".
+          Creating directory "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\Debug\\".
+          Creating directory "cmTC_a06e7.dir\\Debug\\cmTC_a06e7.tlog\\".
+        InitializeBuildStatus:
+          Creating "cmTC_a06e7.dir\\Debug\\cmTC_a06e7.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+        AddCudaCompileDeps:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D__CUDACC_VER_MAJOR__=11 /D__CUDACC_VER_MINOR__=8 /D_WINDOWS /DCMAKE_INTDIR="Debug" /D_MBCS /DCMAKE_INTDIR="Debug" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /I. /FIcuda_runtime.h /c C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCUDACompilerABI.cu 
+        Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (1) is building "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).
+        CudaBuildCore:
+          Compiling CUDA source file ..\\..\\..\\..\\..\\..\\..\\..\\..\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCUDACompilerABI.cu...
+          cmd.exe /C "C:\\Users\\daris\\AppData\\Local\\Temp\\tmp8995dfdcc77c41c5a529cf9db672049b.cmd"
+          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe"  --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu    -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"     --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -Xcompiler="/EHsc -Zi -Ob0 -v" -g  -D_WINDOWS -D"CMAKE_INTDIR=\\"Debug\\"" -D_MBCS -D"CMAKE_INTDIR=\\"Debug\\"" -Xcompiler "/EHsc /W1 /nologo /Od /FdcmTC_a06e7.dir\\Debug\\vc142.pdb /FS /Zi /RTC1 /MDd /GR" -o cmTC_a06e7.dir\\Debug\\CMakeCUDACompilerABI.obj "C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCUDACompilerABI.cu"
+          
+          C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y>"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe"  --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu    -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"     --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -Xcompiler="/EHsc -Zi -Ob0 -v" -g  -D_WINDOWS -D"CMAKE_INTDIR=\\"Debug\\"" -D_MBCS -D"CMAKE_INTDIR=\\"Debug\\"" -Xcompiler "/EHsc /W1 /nologo /Od /FdcmTC_a06e7.dir\\Debug\\vc142.pdb /FS /Zi /RTC1 /MDd /GR" -o cmTC_a06e7.dir\\Debug\\CMakeCUDACompilerABI.obj "C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCUDACompilerABI.cu" 
+        cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+          CMakeCUDACompilerABI.cu
+        cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+          CMakeCUDACompilerABI.cu
+          CMakeCUDACompilerABI.cu
+        cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+        C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCompilerCUDAArch.h(10): warning C4305: 'return': truncation from 'int' to 'bool' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+        Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (CudaBuildCore target(s)).
+        Link:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\Debug\\cmTC_a06e7.exe" /INCREMENTAL /ILK:"cmTC_a06e7.dir\\Debug\\cmTC_a06e7.ilk" /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudadevrt.lib cudart_static.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y/Debug/cmTC_a06e7.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y/Debug/cmTC_a06e7.lib" /MACHINE:X64  /machine:x64 -v cmTC_a06e7.dir\\Debug\\CMakeCUDACompilerABI.obj
+        LINK : warning LNK4044: unrecognized option '/v'; ignored [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+             Creating library C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y/Debug/cmTC_a06e7.lib and object C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y/Debug/cmTC_a06e7.exp
+        LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+          cmTC_a06e7.vcxproj -> C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\Debug\\cmTC_a06e7.exe
+        FinalizeBuildStatus:
+          Deleting file "cmTC_a06e7.dir\\Debug\\cmTC_a06e7.tlog\\unsuccessfulbuild".
+          Touching "cmTC_a06e7.dir\\Debug\\cmTC_a06e7.tlog\\cmTC_a06e7.lastbuildstate".
+        Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (default targets).
+        
+        Build succeeded.
+        
+        "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (default target) (1) ->
+        "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (CudaBuildCore target) (1:2) ->
+        (CudaBuildCore target) -> 
+          cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+          cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+          cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+          C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCompilerCUDAArch.h(10): warning C4305: 'return': truncation from 'int' to 'bool' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+        
+        
+        "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (default target) (1) ->
+        (Link target) -> 
+          LINK : warning LNK4044: unrecognized option '/v'; ignored [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+          LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]
+        
+            6 Warning(s)
+            0 Error(s)
+        
+        Time Elapsed 00:00:02.81
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:182 (message)"
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeTestCUDACompiler.cmake:19 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:47 (enable_language)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)"
+      - "CMakeLists.txt:12 (find_package)"
+    message: |
+      Parsed CUDA implicit include dir info: rv=start
+        warn: unable to parse implicit include dirs!
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:218 (message)"
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeTestCUDACompiler.cmake:19 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:47 (enable_language)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)"
+      - "CMakeLists.txt:12 (find_package)"
+    message: |
+      Parsed CUDA implicit link information:
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        linker tool regex: [^[ 	]*(->|")?[ 	]*(([^"]*[/\\])?(ld[0-9]*(\\.[a-z]+)?|link\\.exe|lld-link(\\.exe)?))("|,| |$)]
+        ignore line: [Change Dir: 'C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y']
+        ignore line: []
+        ignore line: [Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe" cmTC_a06e7.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:n]
+        ignore line: [Microsoft (R) Build Engine version 16.11.2+f32259642 for .NET Framework]
+        ignore line: [Copyright (C) Microsoft Corporation. All rights reserved.]
+        ignore line: []
+        ignore line: [Build started 2/19/2026 7:23:52 PM.]
+        ignore line: [Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" on node 1 (default targets).]
+        ignore line: [PrepareForBuild:]
+        ignore line: [  Creating directory "cmTC_a06e7.dir\\Debug\\".]
+        ignore line: [  Creating directory "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\Debug\\".]
+        ignore line: [  Creating directory "cmTC_a06e7.dir\\Debug\\cmTC_a06e7.tlog\\".]
+        ignore line: [InitializeBuildStatus:]
+        ignore line: [  Creating "cmTC_a06e7.dir\\Debug\\cmTC_a06e7.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.]
+        ignore line: [AddCudaCompileDeps:]
+        ignore line: [  C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D__CUDACC_VER_MAJOR__=11 /D__CUDACC_VER_MINOR__=8 /D_WINDOWS /DCMAKE_INTDIR="Debug" /D_MBCS /DCMAKE_INTDIR="Debug" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /I. /FIcuda_runtime.h /c C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCUDACompilerABI.cu ]
+        ignore line: [Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (1) is building "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).]
+        ignore line: [CudaBuildCore:]
+        ignore line: [  Compiling CUDA source file ..\\..\\..\\..\\..\\..\\..\\..\\..\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCUDACompilerABI.cu...]
+        ignore line: [  cmd.exe /C "C:\\Users\\daris\\AppData\\Local\\Temp\\tmp8995dfdcc77c41c5a529cf9db672049b.cmd"]
+        ignore line: [  "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe"  --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu    -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"     --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -Xcompiler="/EHsc -Zi -Ob0 -v" -g  -D_WINDOWS -D"CMAKE_INTDIR=\\"Debug\\"" -D_MBCS -D"CMAKE_INTDIR=\\"Debug\\"" -Xcompiler "/EHsc /W1 /nologo /Od /FdcmTC_a06e7.dir\\Debug\\vc142.pdb /FS /Zi /RTC1 /MDd /GR" -o cmTC_a06e7.dir\\Debug\\CMakeCUDACompilerABI.obj "C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCUDACompilerABI.cu"]
+        ignore line: [  ]
+        ignore line: [  C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y>"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe"  --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu    -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"     --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -Xcompiler="/EHsc -Zi -Ob0 -v" -g  -D_WINDOWS -D"CMAKE_INTDIR=\\"Debug\\"" -D_MBCS -D"CMAKE_INTDIR=\\"Debug\\"" -Xcompiler "/EHsc /W1 /nologo /Od /FdcmTC_a06e7.dir\\Debug\\vc142.pdb /FS /Zi /RTC1 /MDd /GR" -o cmTC_a06e7.dir\\Debug\\CMakeCUDACompilerABI.obj "C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCUDACompilerABI.cu" ]
+        ignore line: [cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [  CMakeCUDACompilerABI.cu]
+        ignore line: [cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [  CMakeCUDACompilerABI.cu]
+        ignore line: [  CMakeCUDACompilerABI.cu]
+        ignore line: [cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCompilerCUDAArch.h(10): warning C4305: 'return': truncation from 'int' to 'bool' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (CudaBuildCore target(s)).]
+        ignore line: [Link:]
+        ignore line: [  C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\Debug\\cmTC_a06e7.exe" /INCREMENTAL /ILK:"cmTC_a06e7.dir\\Debug\\cmTC_a06e7.ilk" /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudadevrt.lib cudart_static.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y/Debug/cmTC_a06e7.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y/Debug/cmTC_a06e7.lib" /MACHINE:X64  /machine:x64 -v cmTC_a06e7.dir\\Debug\\CMakeCUDACompilerABI.obj]
+        ignore line: [LINK : warning LNK4044: unrecognized option '/v']
+        ignore line: [ ignored [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [     Creating library C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y/Debug/cmTC_a06e7.lib and object C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeScratch/TryCompile-grok0y/Debug/cmTC_a06e7.exp]
+        ignore line: [LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs]
+        ignore line: [ use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [  cmTC_a06e7.vcxproj -> C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\Debug\\cmTC_a06e7.exe]
+        ignore line: [FinalizeBuildStatus:]
+        ignore line: [  Deleting file "cmTC_a06e7.dir\\Debug\\cmTC_a06e7.tlog\\unsuccessfulbuild".]
+        ignore line: [  Touching "cmTC_a06e7.dir\\Debug\\cmTC_a06e7.tlog\\cmTC_a06e7.lastbuildstate".]
+        ignore line: [Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (default targets).]
+        ignore line: []
+        ignore line: [Build succeeded.]
+        ignore line: []
+        ignore line: ["C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (default target) (1) ->]
+        ignore line: ["C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (CudaBuildCore target) (1:2) ->]
+        ignore line: [(CudaBuildCore target) -> ]
+        ignore line: [  cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [  cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [  cl : Command line warning D9002: ignoring unknown option '-v' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [  C:\\Users\\daris\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\cmake\\data\\share\\cmake-3.31\\Modules\\CMakeCompilerCUDAArch.h(10): warning C4305: 'return': truncation from 'int' to 'bool' [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: []
+        ignore line: []
+        ignore line: ["C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj" (default target) (1) ->]
+        ignore line: [(Link target) -> ]
+        ignore line: [  LINK : warning LNK4044: unrecognized option '/v']
+        ignore line: [ ignored [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: [  LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs]
+        ignore line: [ use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeScratch\\TryCompile-grok0y\\cmTC_a06e7.vcxproj]]
+        ignore line: []
+        ignore line: [    6 Warning(s)]
+        ignore line: [    0 Error(s)]
+        ignore line: []
+        ignore line: [Time Elapsed 00:00:02.81]
+        ignore line: []
+        ignore line: []
+        linker tool for 'CUDA': C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/HostX64/x64/link.exe
+        implicit libs: []
+        implicit objs: []
+        implicit dirs: []
+        implicit fwks: []
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/Internal/CMakeDetermineLinkerId.cmake:40 (message)"
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeDetermineCompilerABI.cmake:255 (cmake_determine_linker_id)"
+      - "C:/Users/daris/AppData/Local/Programs/Python/Python310/Lib/site-packages/cmake/data/share/cmake-3.31/Modules/CMakeTestCUDACompiler.cmake:19 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:47 (enable_language)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)"
+      - "CMakeLists.txt:12 (find_package)"
+    message: |
+      Running the CUDA compiler's linker: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/HostX64/x64/link.exe" "-v"
+      Microsoft (R) Incremental Linker Version 14.29.30159.0
+      Copyright (C) Microsoft Corporation.  All rights reserved.
+  -
+    kind: "try_run-v1"
+    backtrace:
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:99 (try_run)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)"
+      - "CMakeLists.txt:12 (find_package)"
+    directories:
+      source: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/OZcTu/CMakeFiles/CMakeTmp"
+      binary: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/OZcTu/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /GR /EHsc"
+      CMAKE_CXX_FLAGS_DEBUG: "/Zi /Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2;C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/../Modules_CUDA_fix"
+    buildResult:
+      variable: "compile_result"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/OZcTu/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe" cmTC_0289f.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:n
+        Microsoft (R) Build Engine version 16.11.2+f32259642 for .NET Framework
+        Copyright (C) Microsoft Corporation. All rights reserved.
+        
+        Build started 2/19/2026 7:23:58 PM.
+        Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\OZcTu\\CMakeFiles\\CMakeTmp\\cmTC_0289f.vcxproj" on node 1 (default targets).
+        PrepareForBuild:
+          Creating directory "cmTC_0289f.dir\\Debug\\".
+          Creating directory "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\OZcTu\\CMakeFiles\\CMakeTmp\\Debug\\".
+          Creating directory "cmTC_0289f.dir\\Debug\\cmTC_0289f.tlog\\".
+        InitializeBuildStatus:
+          Creating "cmTC_0289f.dir\\Debug\\cmTC_0289f.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+        ClCompile:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\CL.exe /c /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /std:c++17 /Fo"cmTC_0289f.dir\\Debug\\\\" /Fd"cmTC_0289f.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\detect_cuda_version.cc"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.29.30159 for x64
+          Copyright (C) Microsoft Corporation.  All rights reserved.
+          detect_cuda_version.cc
+          cl /c /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /GR /std:c++17 /Fo"cmTC_0289f.dir\\Debug\\\\" /Fd"cmTC_0289f.dir\\Debug\\vc142.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\detect_cuda_version.cc"
+        Link:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\OZcTu\\CMakeFiles\\CMakeTmp\\Debug\\cmTC_0289f.exe" /INCREMENTAL /ILK:"cmTC_0289f.dir\\Debug\\cmTC_0289f.ilk" /NOLOGO "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64\\cudart_static.lib" kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/OZcTu/CMakeFiles/CMakeTmp/Debug/cmTC_0289f.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/OZcTu/CMakeFiles/CMakeTmp/Debug/cmTC_0289f.lib" /MACHINE:X64  /machine:x64 cmTC_0289f.dir\\Debug\\detect_cuda_version.obj
+          cmTC_0289f.vcxproj -> C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\OZcTu\\CMakeFiles\\CMakeTmp\\Debug\\cmTC_0289f.exe
+        FinalizeBuildStatus:
+          Deleting file "cmTC_0289f.dir\\Debug\\cmTC_0289f.tlog\\unsuccessfulbuild".
+          Touching "cmTC_0289f.dir\\Debug\\cmTC_0289f.tlog\\cmTC_0289f.lastbuildstate".
+        Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\OZcTu\\CMakeFiles\\CMakeTmp\\cmTC_0289f.vcxproj" (default targets).
+        
+        Build succeeded.
+            0 Warning(s)
+            0 Error(s)
+        
+        Time Elapsed 00:00:00.77
+        
+      exitCode: 0
+    runResult:
+      variable: "run_result"
+      cached: true
+      stdout: |
+        11.8
+      exitCode: 0
+  -
+    kind: "try_run-v1"
+    backtrace:
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Modules_CUDA_fix/upstream/FindCUDA/select_compute_arch.cmake:128 (try_run)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Modules_CUDA_fix/upstream/FindCUDA/select_compute_arch.cmake:188 (CUDA_DETECT_INSTALLED_GPUS)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/utils.cmake:344 (cuda_select_nvcc_arch_flags)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/cuda.cmake:331 (torch_cuda_get_nvcc_gencode_flag)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/Caffe2Config.cmake:86 (include)"
+      - "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Torch/TorchConfig.cmake:68 (find_package)"
+      - "CMakeLists.txt:12 (find_package)"
+    directories:
+      source: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeTmp"
+      binary: "C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CUDA_FLAGS: "-D_WINDOWS -Xcompiler=\" /GR /EHsc\""
+      CMAKE_CUDA_FLAGS_DEBUG: "-Xcompiler=\" -Zi -Ob0 -Od /RTC1\""
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2;C:/Users/daris/anaconda3/envs/eews/Lib/site-packages/torch/share/cmake/Caffe2/public/../Modules_CUDA_fix"
+    buildResult:
+      variable: "compile_result"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/MSBuild/Current/Bin/MSBuild.exe" cmTC_23b98.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=16.0 /v:n
+        Microsoft (R) Build Engine version 16.11.2+f32259642 for .NET Framework
+        Copyright (C) Microsoft Corporation. All rights reserved.
+        
+        Build started 2/19/2026 7:24:00 PM.
+        Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\cmTC_23b98.vcxproj" on node 1 (default targets).
+        PrepareForBuild:
+          Creating directory "cmTC_23b98.dir\\Debug\\".
+          Creating directory "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\Debug\\".
+          Creating directory "cmTC_23b98.dir\\Debug\\cmTC_23b98.tlog\\".
+        InitializeBuildStatus:
+          Creating "cmTC_23b98.dir\\Debug\\cmTC_23b98.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+        AddCudaCompileDeps:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /D__CUDACC_VER_MAJOR__=11 /D__CUDACC_VER_MINOR__=8 /D_WINDOWS /DCMAKE_INTDIR="Debug" /D_MBCS /DCMAKE_INTDIR="Debug" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin" /I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include" /I. /FIcuda_runtime.h /c C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\detect_cuda_compute_capabilities.cu 
+        Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\cmTC_23b98.vcxproj" (1) is building "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\cmTC_23b98.vcxproj" (1:2) on node 1 (CudaBuildCore target(s)).
+        CudaBuildCore:
+          Compiling CUDA source file ..\\..\\detect_cuda_compute_capabilities.cu...
+          cmd.exe /C "C:\\Users\\daris\\AppData\\Local\\Temp\\tmp129d7fa800f84683880fd8eed02aa175.cmd"
+          "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe"  --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu    -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"     --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -std=c++17 -Xcompiler="/EHsc -Zi -Ob0" -g  -D_WINDOWS -D"CMAKE_INTDIR=\\"Debug\\"" -D_MBCS -D"CMAKE_INTDIR=\\"Debug\\"" -Xcompiler "/EHsc /W1 /nologo /Od /FdcmTC_23b98.dir\\Debug\\vc142.pdb /FS /Zi /RTC1 /MDd /GR" -o cmTC_23b98.dir\\Debug\\detect_cuda_compute_capabilities.obj "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\detect_cuda_compute_capabilities.cu"
+          
+          C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp>"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\bin\\nvcc.exe"  --use-local-env -ccbin "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64" -x cu    -I"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\include"     --keep-dir x64\\Debug  -maxrregcount=0  --machine 64 --compile -cudart static -std=c++17 -Xcompiler="/EHsc -Zi -Ob0" -g  -D_WINDOWS -D"CMAKE_INTDIR=\\"Debug\\"" -D_MBCS -D"CMAKE_INTDIR=\\"Debug\\"" -Xcompiler "/EHsc /W1 /nologo /Od /FdcmTC_23b98.dir\\Debug\\vc142.pdb /FS /Zi /RTC1 /MDd /GR" -o cmTC_23b98.dir\\Debug\\detect_cuda_compute_capabilities.obj "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\detect_cuda_compute_capabilities.cu" 
+          detect_cuda_compute_capabilities.cu
+        Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\cmTC_23b98.vcxproj" (CudaBuildCore target(s)).
+        Link:
+          C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\Debug\\cmTC_23b98.exe" /INCREMENTAL /ILK:"cmTC_23b98.dir\\Debug\\cmTC_23b98.ilk" /NOLOGO /LIBPATH:"C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v11.8\\lib\\x64" cudadevrt.lib cudart_static.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeTmp/Debug/cmTC_23b98.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeTmp/Debug/cmTC_23b98.lib" /MACHINE:X64  /machine:x64 cmTC_23b98.dir\\Debug\\detect_cuda_compute_capabilities.obj
+             Creating library C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeTmp/Debug/cmTC_23b98.lib and object C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/CMakeTmp/Debug/cmTC_23b98.exp
+        LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\cmTC_23b98.vcxproj]
+          cmTC_23b98.vcxproj -> C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\Debug\\cmTC_23b98.exe
+        FinalizeBuildStatus:
+          Deleting file "cmTC_23b98.dir\\Debug\\cmTC_23b98.tlog\\unsuccessfulbuild".
+          Touching "cmTC_23b98.dir\\Debug\\cmTC_23b98.tlog\\cmTC_23b98.lastbuildstate".
+        Done Building Project "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\cmTC_23b98.vcxproj" (default targets).
+        
+        Build succeeded.
+        
+        "C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\cmTC_23b98.vcxproj" (default target) (1) ->
+        (Link target) -> 
+          LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library [C:\\Users\\daris\\Desktop\\School\\Mini-Stockfish\\src\\nnue\\build\\CMakeFiles\\CMakeTmp\\cmTC_23b98.vcxproj]
+        
+            1 Warning(s)
+            0 Error(s)
+        
+        Time Elapsed 00:00:02.92
+        
+      exitCode: 0
+    runResult:
+      variable: "run_result"
+      cached: true
+      stdout: |
+        8.6 
+      exitCode: 0
 ...

@@ -93,8 +93,6 @@ EXPORTS
 	??$endl@DU?$char_traits@D@std@@@std@@YAAEAV?$basic_ostream@DU?$char_traits@D@std@@@0@AEAV10@@Z
 	??$fill@PEAV?$_List_unchecked_iterator@V?$_List_val@U?$_List_simple_types@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@@std@@@std@@@std@@V12@@std@@YAXQEAV?$_List_unchecked_iterator@V?$_List_val@U?$_List_simple_types@U?$pair@$$CBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@UIValue@c10@@@std@@@std@@@std@@@0@0AEBV10@@Z
 	??$invokeCallback@$$CBV?$function@$$A6AXAEAUFuture@ivalue@c10@@@Z@std@@@Future@ivalue@c10@@AEAAXAEBV?$function@$$A6AXAEAUFuture@ivalue@c10@@@Z@std@@_N@Z
-	??$irange@H_K$00$00@c10@@YA?AU?$integer_range@_K$0A@$00@0@H_K@Z
-	??$irange@_K$00@c10@@YA?AU?$integer_range@_K$00$00@0@_K@Z
 	??$make_unique@UAutogradMeta@autograd@torch@@PEAUTensorImpl@c10@@AEA_N$0A@@std@@YA?AV?$unique_ptr@UAutogradMeta@autograd@torch@@U?$default_delete@UAutogradMeta@autograd@torch@@@std@@@0@$$QEAPEAUTensorImpl@c10@@AEA_N@Z
 	??$move@AEAVexception_ptr@std@@@std@@YA$$QEAVexception_ptr@0@AEAV10@@Z
 	??$str@$$BY0CD@D@c10@@YA?A_TAEAY0CD@$$CBD@Z
@@ -170,6 +168,7 @@ EXPORTS
 	??1Event@c10@@QEAA@XZ
 	??1Future@ivalue@c10@@UEAA@XZ
 	??1MultiStreamGuard@c10@@QEAA@XZ
+	??1NoTracerDispatchMode@impl@tracer@at@@QEAA@XZ
 	??1Object@ivalue@c10@@UEAA@XZ
 	??1OptionalDeviceGuard@c10@@QEAA@XZ
 	??1RRefInterface@c10@@UEAA@XZ
@@ -283,6 +282,7 @@ EXPORTS
 	?exchangeDevice@VirtualGuardImpl@impl@c10@@UEBA?AUDevice@3@U43@@Z
 	?exchangeStream@VirtualGuardImpl@impl@c10@@UEBA?AVStream@3@V43@@Z
 	?formatSetOfDevices@Future@ivalue@c10@@CA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV?$vector@UDevice@c10@@V?$allocator@UDevice@c10@@@std@@@5@@Z
+	?from_blob@torch@@YA?AVTensor@at@@PEAXV?$ArrayRef@_J@c10@@AEBUTensorOptions@5@@Z
 	?getDefaultStream@VirtualGuardImpl@impl@c10@@UEBA?AVStream@3@UDevice@3@@Z
 	?getDevice@VirtualGuardImpl@impl@c10@@UEBA?AUDevice@3@XZ
 	?getDeviceGuardImpl@impl@c10@@YAPEBUDeviceGuardImplInterface@12@W4DeviceType@2@@Z
@@ -349,3 +349,4 @@ EXPORTS
 	nnue_create
 	nnue_destroy
 	nnue_eval
+	nnue_eval_halfkp

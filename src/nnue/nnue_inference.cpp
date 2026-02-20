@@ -44,4 +44,22 @@ double nnue_eval(NNUEHandle h, const float* features, int length) {
     return out.item<double>();
 }
 
+double nnue_eval_halfkp(NNUEHandle h,
+                        const int64_t* idx0, int len0,
+                        const int64_t* idx1, int len1) {
+    auto w = reinterpret_cast<NNUEWrapper*>(h);
+    if (!w) return 0.0;
+    if (len0 <= 0 || len1 <= 0) return 0.0;
+
+    // Wrap raw int64 arrays into {1, N} LongTensors, clone for safety
+    auto t0 = torch::from_blob((void*)idx0, {1, len0}, torch::kInt64).clone();
+    auto t1 = torch::from_blob((void*)idx1, {1, len1}, torch::kInt64).clone();
+
+    std::vector<torch::jit::IValue> inputs;
+    inputs.push_back(t0);
+    inputs.push_back(t1);
+    auto out = w->module->forward(inputs).toTensor();
+    return out.item<double>();
+}
+
 }  // extern "C"

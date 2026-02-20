@@ -10,7 +10,7 @@ set(CMAKE_CXX_EXTENSIONS    OFF)
 
 # ─── Find the CPU‑only LibTorch ───
 find_package(Torch REQUIRED
-             PATHS "C:/Users/daris/libtorch"
+             PATHS "C:/Users/daris/anaconda3/envs/eews/lib/site-packages/torch/share/cmake"
              NO_DEFAULT_PATH)
 
 # ─── Build the shared library ───
@@ -18,10 +18,7 @@ add_library(nnue_inference SHARED
     nnue_inference.cpp
 )
 
-set_target_properties(nnue_inference
-    PROPERTIES
-      WINDOWS_EXPORT_ALL_SYMBOLS ON
-)
+target_compile_definitions(nnue_inference PRIVATE NNUE_INFERENCE_EXPORTS)
 
 # ─── Include & link Torch the old way ───
 target_include_directories(nnue_inference PRIVATE

@@ -58,7 +58,7 @@ class ChessAI:
         self.depth = depth
         self.use_dnn = use_dnn
         core_search.set_use_nnue(self.use_dnn)
-        core_search.init_nnue("nnue/64indepth_int8.pt") # "nnue/hidden64best1.057e-2_int8.pt"
+        core_search.init_nnue("nnue/halfkp_int8.pt")
         
         # Book moves are stored in book/book.json
         with open("book/book.json") as f:
@@ -382,7 +382,9 @@ class ChessAI:
                    ai_color: str) -> float:
         """Compute blended NNUE/static eval, then apply all handcrafted bonuses/penalties."""
         if self.model:
-           base = self.model(acc.state).item()
+           idx0_t = torch.tensor(acc.idx0, dtype=torch.long).unsqueeze(0)
+           idx1_t = torch.tensor(acc.idx1, dtype=torch.long).unsqueeze(0)
+           base = self.model(idx0_t, idx1_t).item()
         else:
            base = self._evaluate_bb(board, ai_color)
         
@@ -922,8 +924,13 @@ class ChessAI:
 
     def _fen_to_tensor(self, fen_str: str):
         """
-        Wraps your existing fen_to_features and tensor conversion.
+        Convert FEN to HalfKP index tensors for model evaluation.
         """
-        from nnue.nnue_train import fen_to_features
-        arr = fen_to_features(fen_str)
-        return torch.from_numpy(arr).unsqueeze(0)
+        from nnue.halfkp import halfkp_indices_for_fen
+        PAD_LEN = 30
+        raw0, raw1 = halfkp_indices_for_fen(fen_str)
+        idx0 = raw0 + [0] * (PAD_LEN - len(raw0))
+        idx1 = raw1 + [0] * (PAD_LEN - len(raw1))
+        t0 = torch.tensor(idx0[:PAD_LEN], dtype=torch.long).unsqueeze(0)
+        t1 = torch.tensor(idx1[:PAD_LEN], dtype=torch.long).unsqueeze(0)
+        return t0, t1

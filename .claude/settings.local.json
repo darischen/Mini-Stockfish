@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(C:/Users/daris/anaconda3/envs/eews/python.exe -c \"import torch; print\\(torch.utils.cmake_prefix_path\\)\")",
+      "Bash(cmake --build:*)",
+      "Bash(C:/Users/daris/anaconda3/envs/eews/python.exe:*)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/dumpbin.exe\" /exports \"C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/Release/nnue_inference.dll\")",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/dumpbin.exe\" \"/exports\" \"C:\\\\Users\\\\daris\\\\Desktop\\\\School\\\\Mini-Stockfish\\\\src\\\\nnue\\\\build\\\\Release\\\\nnue_inference.dll\")",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/dumpbin.exe\" //exports nnue_inference.dll)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/dumpbin.exe\" //symbols nnue_inference.lib)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/dumpbin.exe\" //all nnue_inference.lib)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/dumpbin.exe\" //all \"build/temp.win-amd64-cpython-310/Release/core_search.obj\")",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/dumpbin.exe\" //symbols core_search.obj)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/dumpbin.exe\" //all core_search.obj)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/2019/Community/VC\\\\Tools/MSVC/14.29.30133/bin/Hostx64/x64/dumpbin.exe\" //all core_search.obj)"
+    ]
+  }
+}
