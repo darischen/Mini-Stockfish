@@ -9,7 +9,7 @@ from move import Move  # Move class for interoperability with the game engine
 from square import Square
 from accumulator import Accumulator  # Accumulator for incremental feature updates
 from chess.polyglot import zobrist_hash
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed  # kept for potential future use
 from tqdm import tqdm
 from chess import SquareSet
 import json
@@ -254,19 +254,16 @@ class ChessAI:
             print("[DEBUG] Left opening book")
 
         # Main Search
-        
+
         core_search.reset_counters()
-        
+        core_search.reset_tt_counters()
+        core_search.clear_tt()  # fresh TT for this move's search
+
         core_search.set_use_nnue(self.use_dnn)
 
         root_fen = board.get_fen()
-        maximize = (color == 'white')
         best_move = None
-        best_eval = -math.inf if maximize else math.inf
-        
-        max_workers = os.cpu_count() or 1
-        executor = ThreadPoolExecutor(max_workers=max_workers)
-        executor.submit(lambda: None).result()
+        best_eval = -math.inf
 
         total_start = time.time()
 
@@ -275,36 +272,68 @@ class ChessAI:
         last_finite_eval = None
         last_finite_depth = 0
 
+        # Track best move from previous depth for move ordering
+        previous_best_move = None
+
         # iterate depths 1..self.depth
         for depth in range(1, self.depth + 1):
             core_search.reset_counters()
+            # Keep TT between depths — iterative deepening benefits from
+            # shallower results (TT probe already checks depth >= required)
             bar = tqdm(desc=f"Depth {depth}", total=None)
 
             # snapshot of nodes before this depth
             nodes_before = core_search.get_nodes_evaluated()
 
-            # launch parallel root evaluations
             root_board = chess.Board(root_fen)
             root_board.turn = chess.WHITE if color == 'white' else chess.BLACK
             all_moves = list(root_board.legal_moves)
             # Filter obvious blunders at root level
             moves = self._filter_blunders(root_board, all_moves)
-            futures = [
-                executor.submit(
-                    self._evaluate_root,
-                    root_fen,
-                    uci,
-                    depth,
-                    maximize,
-                    color
-                ) for uci in moves
-            ]
-            current_best = None
-            current_eval = -math.inf if maximize else math.inf
-            first_move = True  # Track first move to ensure we always have a fallback
-            for fut in as_completed(futures):
-                val, uci = fut.result()
-                # update progress by number of nodes this branch consumed
+
+            # Sort moves: put previous best move first for better alpha-beta cutoffs
+            if previous_best_move and previous_best_move in moves:
+                moves.remove(previous_best_move)
+                moves = [previous_best_move] + moves
+
+            # Sequential root search with proper alpha-beta bounds.
+            # In negamax, we negate the child's value so the root always
+            # maximizes. After evaluating the first (hopefully best) move,
+            # alpha tightens and subsequent moves get pruned quickly.
+            alpha = -math.inf
+            current_best = moves[0] if moves else None
+
+            # Compute root hash once (same board state for all root moves)
+            root_ref = chess.Board(root_fen)
+            root_ref.turn = chess.WHITE if color == 'white' else chess.BLACK
+            pre_hash = core_search.compute_hash(root_ref)
+            root_ck = root_ref.has_kingside_castling_rights(chess.WHITE)
+            root_cq = root_ref.has_queenside_castling_rights(chess.WHITE)
+            root_ck2 = root_ref.has_kingside_castling_rights(chess.BLACK)
+            root_cq2 = root_ref.has_queenside_castling_rights(chess.BLACK)
+            root_ep = root_ref.ep_square
+
+            for uci in moves:
+                b = chess.Board(root_fen)
+                b.turn = chess.WHITE if color == 'white' else chess.BLACK
+                acc = Accumulator(); acc.init(b)
+                captured = b.piece_at(uci.to_square)
+                mover = b.piece_at(uci.from_square)
+
+                b.push(uci); acc.update(uci, captured)
+                root_key = core_search.update_hash_full(
+                    pre_hash, uci, mover, captured,
+                    root_ck, root_cq, root_ck2, root_cq2, root_ep, b)
+
+                # Negamax: negate child so we always maximize at root
+                val = -minimax(b, acc,
+                               depth - 1,
+                               -math.inf, -alpha,
+                               color,
+                               root_key,
+                               depth)
+
+                # Update progress bar
                 nodes_after = core_search.get_nodes_evaluated()
                 delta = nodes_after - nodes_before
                 nodes_before = nodes_after
@@ -314,41 +343,43 @@ class ChessAI:
                     'pruned': core_search.get_branches_pruned()
                 })
 
-                # Always track the first move as fallback (handles inf eval case)
-                if first_move:
+                if val > alpha:
+                    alpha = val
                     current_best = uci
-                    current_eval = val
-                    first_move = False
-                elif maximize:
-                    if val > current_eval:
-                        current_eval, current_best = val, uci
-                elif val < current_eval:
-                    current_eval, current_best = val, uci
 
             bar.close()
-            best_move, best_eval = current_best, current_eval
+            best_move, best_eval = current_best, alpha
 
-            # Save this depth's result if eval is finite
-            if not math.isinf(best_eval):
+            # Track best move for next iteration's move ordering
+            if best_move is not None:
+                previous_best_move = best_move
+
+            # Save this depth's result if eval is finite and not a mate score
+            if not math.isinf(best_eval) and abs(best_eval) < 90000:
                 last_finite_move = best_move
                 last_finite_eval = best_eval
                 last_finite_depth = depth
 
             # Handle inf values in printing
             eval_str = "inf" if math.isinf(best_eval) else f"{best_eval:.4f}"
-            print(f"Depth {depth} → best={best_move} eval={eval_str}")
+            tt_h = core_search.get_tt_hits()
+            tt_m = core_search.get_tt_misses()
+            tt_total = tt_h + tt_m
+            tt_pct = (100.0 * tt_h / tt_total) if tt_total > 0 else 0.0
+            print(f"Depth {depth} → best={best_move} eval={eval_str}  TT: {tt_h}/{tt_total} hits ({tt_pct:.1f}%)")
 
-        # If final eval is inf, use the last finite result
+        # If final eval is inf (search bug), fall back to last reasonable result.
+        # But keep mate scores (>=90000) — those are real forced mates.
         if math.isinf(best_eval) and last_finite_move is not None:
             print(f"Final eval is inf, using depth {last_finite_depth} result instead")
             best_move = last_finite_move
             best_eval = last_finite_eval
 
         elapsed = time.time() - total_start
-        eval_str = "inf" if math.isinf(best_eval) else f"{best_eval:.4f}"
+        display_eval = best_eval if color == 'white' else -best_eval
+        eval_str = "inf" if math.isinf(display_eval) else f"{display_eval:.4f}"
         print(f"AI search complete. Nodes: {core_search.get_nodes_evaluated()}, Pruned: {core_search.get_branches_pruned()}, Time: {elapsed:.2f}s")
-        print(f"Best eval for {color}: {eval_str}")
-        executor.shutdown()
+        print(f"Eval: {eval_str}")
 
         if best_move is None:
             return None
@@ -365,9 +396,19 @@ class ChessAI:
         acc = Accumulator(); acc.init(board)
 
         captured = board.piece_at(uci.to_square)
-        board.push(uci); acc.update(uci, captured)
+        mover = board.piece_at(uci.from_square)
 
-        root_key = zobrist_hash(board)
+        pre_hash = core_search.compute_hash(board)
+        ck = board.has_kingside_castling_rights(chess.WHITE)
+        cq = board.has_queenside_castling_rights(chess.WHITE)
+        ck2 = board.has_kingside_castling_rights(chess.BLACK)
+        cq2 = board.has_queenside_castling_rights(chess.BLACK)
+        old_ep = board.ep_square
+
+        board.push(uci); acc.update(uci, captured)
+        root_key = core_search.update_hash_full(
+            pre_hash, uci, mover, captured,
+            ck, cq, ck2, cq2, old_ep, board)
         val = minimax(board, acc,
                 depth - 1,
                 -math.inf, math.inf,

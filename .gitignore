@@ -2,7 +2,12 @@ chessData.csv
 random_evals.csv
 tactic_evals.csv
 combined_chessData.csv
+combined_chessData - Copy.csv
 /src/endgame/dtm/
 /src/endgame/syzygy/
 /src/endgame/gaviota/
+/src/nnue/data/
+/src/nnue/data/combined_chessData_halfkp_v6/
 **/__pycache__/
+*.npz
+*.parquet

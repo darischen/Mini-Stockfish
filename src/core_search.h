@@ -26,6 +26,8 @@
 
 __PYX_EXTERN_C int nodes_evaluated;
 __PYX_EXTERN_C int branches_pruned;
+__PYX_EXTERN_C int tt_hits;
+__PYX_EXTERN_C int tt_misses;
 
 #endif /* !__PYX_HAVE_API__core_search */
 

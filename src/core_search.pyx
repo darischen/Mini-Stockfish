@@ -7,13 +7,25 @@ import os
 from libc.string cimport memset
 from libc.stdint cimport uint64_t, int64_t
 from libc.stdlib cimport malloc, free
-from chess.polyglot import zobrist_hash
 cdef bint USE_NNUE = False
+cdef bint USE_TT = True
+
+cpdef set_use_tt(bint flag):
+    global USE_TT
+    USE_TT = flag
 
 import chess
 from libc.math cimport INFINITY
 
 cdef int[7] PIECE_VAL = [0, 100, 300, 310, 400, 900, 20000]
+
+cpdef bint verify_hash(uint64_t h_incremental, object board):
+    """Debug: verify incremental hash matches full recompute."""
+    cdef uint64_t h_full = compute_hash(board)
+    if h_incremental != h_full:
+        print(f"HASH MISMATCH! incremental={h_incremental}, full={h_full}, fen={board.fen()}")        
+        return False
+    return True
 
 cpdef int see(object board, object mv):
     cdef object vic, att
@@ -80,7 +92,7 @@ cdef struct TTEntry:
 cdef TTEntry *tt_entries = NULL
 cdef int       tt_size, tt_mask
 
-cpdef init_tt(int size_pow2 = 1<<20):
+cpdef init_tt(int size_pow2 = 1<<28):
     """
     Call once at module init (or from Python) to allocate the TT.
     """
@@ -93,8 +105,159 @@ cpdef init_tt(int size_pow2 = 1<<20):
     # zero out everything
     memset(tt_entries, 0, tt_size * sizeof(TTEntry))
 
+cpdef clear_tt():
+    """
+    Zero out all TT entries without reallocating.
+    Call between iterative deepening iterations.
+    """
+    if tt_entries != NULL:
+        memset(tt_entries, 0, tt_size * sizeof(TTEntry))
+
 cdef inline int piece_index(int piece_type, bint is_white):
     return (piece_type-1)*2 + (0 if is_white else 1)
+
+cpdef uint64_t compute_hash(object board):
+    """
+    Compute a full Zobrist hash from a chess.Board using our own
+    zob_piece/zob_side/zob_castle/zob_ep tables, so incremental
+    updates in the search are consistent with this root key.
+    """
+    cdef uint64_t h = 0
+    cdef int pi, sq
+
+    # 1) Pieces
+    for sq, pc in board.piece_map().items():
+        pi = piece_index(pc.piece_type, pc.color)
+        h ^= zob_piece[pi * 64 + sq]
+
+    # 2) Side to move (XOR if black to move)
+    if not board.turn:  # board.turn == False means black
+        h ^= zob_side
+
+    # 3) Castling rights
+    if board.has_kingside_castling_rights(chess.WHITE):
+        h ^= zob_castle[0]
+    if board.has_queenside_castling_rights(chess.WHITE):
+        h ^= zob_castle[1]
+    if board.has_kingside_castling_rights(chess.BLACK):
+        h ^= zob_castle[2]
+    if board.has_queenside_castling_rights(chess.BLACK):
+        h ^= zob_castle[3]
+
+    # 4) En passant file
+    if board.ep_square is not None:
+        h ^= zob_ep[chess.square_file(board.ep_square)]
+
+    return h
+
+cpdef uint64_t update_hash_full(uint64_t h,
+                                 object mv,
+                                 object mover_piece,
+                                 object captured_piece,
+                                 bint old_castle_K, bint old_castle_Q,
+                                 bint old_castle_k, bint old_castle_q,
+                                 object old_ep_square,
+                                 object board_after):
+    """
+    Incrementally update Zobrist hash. All info about pre-move state is passed in.
+    `board_after` is the board AFTER push (used only for new castling/EP state).
+    """
+    cdef int from_sq = mv.from_square
+    cdef int to_sq = mv.to_square
+    cdef int pi, ep_cap_sq, pawn_pi2, promo_pi, rpi
+
+    # 1) Flip side to move
+    h ^= zob_side
+
+    # 2) Remove old castling rights
+    if old_castle_K:
+        h ^= zob_castle[0]
+    if old_castle_Q:
+        h ^= zob_castle[1]
+    if old_castle_k:
+        h ^= zob_castle[2]
+    if old_castle_q:
+        h ^= zob_castle[3]
+
+    # 3) Remove old EP
+    if old_ep_square is not None:
+        h ^= zob_ep[old_ep_square % 8]
+
+    # 4) Remove captured piece (if any)
+    if captured_piece is not None and captured_piece.piece_type != chess.KING:
+        pi = piece_index(captured_piece.piece_type, captured_piece.color)
+        # En passant: the captured pawn is NOT on to_sq
+        if old_ep_square is not None and to_sq == old_ep_square and mover_piece.piece_type == 1:
+            if mover_piece.color:  # white capturing
+                ep_cap_sq = to_sq - 8
+            else:
+                ep_cap_sq = to_sq + 8
+            h ^= zob_piece[pi * 64 + ep_cap_sq]
+        else:
+            h ^= zob_piece[pi * 64 + to_sq]
+
+    # 5) Move the piece
+    if mv.promotion is not None:
+        # Remove pawn from from_sq
+        pawn_pi2 = piece_index(1, mover_piece.color)
+        h ^= zob_piece[pawn_pi2 * 64 + from_sq]
+        # Add promoted piece to to_sq
+        promoted = board_after.piece_at(to_sq)
+        promo_pi = piece_index(promoted.piece_type, promoted.color)
+        h ^= zob_piece[promo_pi * 64 + to_sq]
+    else:
+        pi = piece_index(mover_piece.piece_type, mover_piece.color)
+        h ^= zob_piece[pi * 64 + from_sq]
+        h ^= zob_piece[pi * 64 + to_sq]
+
+    # 6) Castling rook movement
+    if mover_piece.piece_type == chess.KING and abs(to_sq - from_sq) == 2:
+        rpi = piece_index(chess.ROOK, mover_piece.color)
+        if to_sq > from_sq:
+            # Kingside
+            h ^= zob_piece[rpi * 64 + (from_sq + 3)]
+            h ^= zob_piece[rpi * 64 + (from_sq + 1)]
+        else:
+            # Queenside
+            h ^= zob_piece[rpi * 64 + (from_sq - 4)]
+            h ^= zob_piece[rpi * 64 + (from_sq - 1)]
+
+    # 7) Add new castling rights
+    if board_after.has_kingside_castling_rights(chess.WHITE):
+        h ^= zob_castle[0]
+    if board_after.has_queenside_castling_rights(chess.WHITE):
+        h ^= zob_castle[1]
+    if board_after.has_kingside_castling_rights(chess.BLACK):
+        h ^= zob_castle[2]
+    if board_after.has_queenside_castling_rights(chess.BLACK):
+        h ^= zob_castle[3]
+
+    # 8) Add new EP square
+    if board_after.ep_square is not None:
+        h ^= zob_ep[board_after.ep_square % 8]
+
+    return h
+
+cpdef uint64_t null_move_hash(uint64_t h,
+                               bint old_castle_K, bint old_castle_Q,
+                               bint old_castle_k, bint old_castle_q,
+                               object old_ep_square,
+                               object board_after):
+    """
+    Hash update for null move: flip side, adjust EP (castling doesn't change).
+    """
+    # Flip side
+    h ^= zob_side
+
+    # EP disappears after null move
+    if old_ep_square is not None:
+        h ^= zob_ep[old_ep_square % 8]
+    # board_after.ep_square should be None after null move, but check anyway
+    if board_after.ep_square is not None:
+        h ^= zob_ep[board_after.ep_square % 8]
+
+    return h
+
 # ——————————————————————————————————————————————————————————————————————
 
 cpdef set_use_nnue(bint flag):
@@ -176,7 +339,7 @@ def init_nnue(model_path=None):
     if model_path is None:
         # __file__ here points to core_search.cp310-win_amd64.pyd
         base = os.path.dirname(__file__)
-        model_path = os.path.join(base, "nnue", "halfkp_int8.pt")
+        model_path = os.path.join(base, "nnue", "halfkp_int8_36154.pt")
 
     if not os.path.isfile(model_path):
         raise RuntimeError(f"NNUE model not found at {model_path!r}")
@@ -244,6 +407,8 @@ cdef double MATE_SCORE = 100000.0
 # Python‐level counter variables
 cdef public int nodes_evaluated = 0
 cdef public int branches_pruned = 0
+cdef public int tt_hits = 0
+cdef public int tt_misses = 0
 
 cpdef int get_nodes_evaluated():
     return nodes_evaluated
@@ -251,10 +416,21 @@ cpdef int get_nodes_evaluated():
 cpdef int get_branches_pruned():
     return branches_pruned
 
+cpdef int get_tt_hits():
+    return tt_hits
+
+cpdef int get_tt_misses():
+    return tt_misses
+
 cpdef void reset_counters():
     global nodes_evaluated, branches_pruned
     nodes_evaluated = 0
     branches_pruned = 0
+
+cpdef void reset_tt_counters():
+    global tt_hits, tt_misses
+    tt_hits = 0
+    tt_misses = 0
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -292,9 +468,7 @@ cdef double static_eval(object board, object acc, str ai_color):
         score += val if piece_is_white == ai_is_white else -val
 
     # --- Mobility ---
-    mob = 0
-    for _ in board.legal_moves:
-        mob += 1
+    mob = board.legal_moves.count()
     score += mob * 10 if board.turn == ai_is_white else -mob * 10
 
     # --- Bishop pair ---
@@ -449,15 +623,14 @@ cdef double quiesce(object board,
     Quiescence search with TT + incremental Zobrist hashing.
     `key` is the 64-bit hash for `board` before any moves here.
     """
-    if board.is_game_over():
-        if board.is_checkmate():
-            return beta  if beta < 0 else -MATE_SCORE
+    if not board.legal_moves:
+        if board.is_check():
+            return -MATE_SCORE
         else:
             return 0.0
 
     cdef char hit
     cdef double val
-    cdef object mover
 
     # 0) probe TT
     val = tt_probe(key, 0, alpha, beta, &hit)
@@ -467,8 +640,14 @@ cdef double quiesce(object board,
     # 1) stand-pat
     if USE_NNUE:
         val = nnue_eval_halfkp_py(acc.idx0, acc.idx1)
+        # NNUE returns from White's perspective; negamax needs side-to-move's
+        if not board.turn:  # Black to move → flip
+            val = -val
     else:
         val = static_eval(board, acc, ai_color)
+        # static_eval returns from ai_color's perspective; flip if not side-to-move
+        if board.turn != (ai_color == "white"):
+            val = -val
 
     # 2) alpha/beta check on stand-pat
     if val >= beta:
@@ -478,40 +657,38 @@ cdef double quiesce(object board,
         alpha = val
 
     # 3) only consider captures
-    cdef object mv, captured
-    cdef uint64_t next_key, cap_hash
+    cdef object mv, captured, mover
+    cdef uint64_t next_key
     cdef double score
-    cdef int from_pi, to_pi
-    for mv in order_moves(board, (board.turn == (ai_color == "white")), None):
+    cdef bint ck, cq, ck2, cq2
+    cdef object old_ep
+    for mv in order_moves(board):
         if not board.is_capture(mv):
             continue
 
-        # who’s on from_square?
-        mover = board.piece_at(mv.from_square)
-        # who’s captured on to_square?
-        captured = board.piece_at(mv.to_square)
-
-        # incremental hash:
-        #  a) remove mover from from_square
-        from_pi = piece_index(mover.piece_type, mover.color)
-        to_pi   = piece_index(mv.promotion if mv.promotion else mover.piece_type,
-                                    mover.color)
-        next_key = key ^ zobrist_random[from_pi * 64 + mv.from_square]
-        # if there is a capture, remove the captured piece
-        if captured is not None:
-            cap_hash = zobrist_random[piece_index(captured.piece_type, captured.color) * 64 + mv.to_square]
+        # For en passant, the captured pawn is not on to_sq
+        if board.is_en_passant(mv):
+            ep_cap_sq2 = mv.to_square + (-8 if board.turn else 8)
+            captured = board.piece_at(ep_cap_sq2)
         else:
-            cap_hash = 0
-        next_key ^= cap_hash
-        # add mover at to_square (handle promotions by using to_pi)
-        next_key ^= zobrist_random[to_pi * 64 + mv.to_square]
-        # flip the side‐to‐move bit
-        next_key ^= zobrist_random[768]
-        
+            captured = board.piece_at(mv.to_square)
+        mover = board.piece_at(mv.from_square)
+
+        # Save pre-move state for incremental hash
+        ck = board.has_kingside_castling_rights(chess.WHITE)
+        cq = board.has_queenside_castling_rights(chess.WHITE)
+        ck2 = board.has_kingside_castling_rights(chess.BLACK)
+        cq2 = board.has_queenside_castling_rights(chess.BLACK)
+        old_ep = board.ep_square
 
         # do the capture
         board.push(mv)
         acc.update(mv, captured)
+        next_key = update_hash_full(key, mv, mover, captured,
+                                     ck, cq, ck2, cq2, old_ep, board)
+
+        if not verify_hash(next_key, board):
+            next_key = compute_hash(board)
 
         # recurse with flipped colors and updated key
         score = -quiesce(board, acc, -beta, -alpha, ai_color, next_key)
@@ -530,6 +707,21 @@ cdef double quiesce(object board,
     tt_store(key, 0, alpha, EXACT)
     return alpha
 
+cdef bint _has_non_pawn_material(object board, bint side):
+    """Check if side has any non-pawn, non-king material (for null move safety)."""
+    for pt in [chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN]:
+        if board.pieces(pt, side):
+            return True
+    return False
+
+# Null move pruning depth reduction
+cdef int NMP_REDUCTION = 2
+
+# LMR: how many full-depth moves before reducing
+cdef int LMR_FULL_MOVES = 4
+# LMR: minimum depth to apply reduction
+cdef int LMR_MIN_DEPTH = 3
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef double minimax(object board,
@@ -541,28 +733,40 @@ cpdef double minimax(object board,
                      uint64_t key,
                      int required_depth):
     """
-    Negamax with alpha-beta, TT, and incremental Zobrist hashing.
+    Negamax with alpha-beta, TT, null move pruning, and late move reduction.
     - `key` is the current zobrist hash for `board`.
+    - `depth` is the remaining search depth at this node.
+    - `required_depth` is the root iteration depth, passed unchanged to
+      all children. TT entries are stored AND probed with this value,
+      ensuring each iteration fully re-searches the tree.
+      Within a single iteration, TT reuse happens via matching keys
+      (same position reached via different move orders).
     """
-    global nodes_evaluated, branches_pruned
-    cdef double value, child, cached
-    cdef object mv, captured, mover
-    cdef uint64_t next_key, cap_hash
+    global nodes_evaluated, branches_pruned, tt_hits, tt_misses
+    cdef double value, child, cached, null_score
+    cdef object mv, captured
+    cdef uint64_t next_key, null_key
     cdef char hit
-    cdef int from_pi, to_pi
+    cdef int moves_searched, reduced_depth
+    cdef bint is_capture, gives_check, is_promotion
+    cdef bint in_check
 
     # Count nodes
     nodes_evaluated += 1
 
-    # 1) TT probe
-    cached = tt_probe(key, required_depth, alpha, beta, &hit)
-    if hit:
-        return cached
+    # 1) TT probe — use `depth` (remaining search depth).
+    #    TT is cleared between iterations so no cross-iteration pollution.
+    if USE_TT:
+        cached = tt_probe(key, depth, alpha, beta, &hit)
+        if hit:
+            tt_hits += 1
+            return cached
+        tt_misses += 1
 
-    # 2) Terminal:
-    if board.is_game_over():
-        if board.is_checkmate():
-            # if side‐to‐move is mated, return a mate score
+    # 2) Terminal — only check checkmate/stalemate, not draw claims
+    #    (draw claims can give false positives with fresh board copies)
+    if not board.legal_moves:
+        if board.is_check():
             return -MATE_SCORE + depth
         else:
             return 0.0
@@ -570,52 +774,122 @@ cpdef double minimax(object board,
     # 3) Leaf → quiescence
     if depth == 0:
         child = quiesce(board, acc, alpha, beta, ai_color, key)
-        tt_store(key, 0, child, EXACT)
+        if USE_TT:
+            tt_store(key, depth, child, EXACT)
         return child
 
-    # 4) Negamax loop
-    value = -INFINITY
-    for mv in order_moves(board, (board.turn == (ai_color == "white")), None):
-        if board.is_capture(mv):
-            see_val = see(board, mv)
-            if see_val < 0:
-                branches_pruned += 1
-                continue
-        # skip non-captures if you want deeper quiescence, etc.
-        # (here we do full moves)
-        mover    = board.piece_at(mv.from_square)
-        captured = board.piece_at(mv.to_square)
+    in_check = board.is_check()
 
-        # incremental Zobrist:
-        #   remove mover @ from, remove captured @ to, add mover @ to
-        from_pi = piece_index(mover.piece_type, mover.color)
-        to_pi   = piece_index(mv.promotion if mv.promotion else mover.piece_type,
-                                    mover.color)
-        next_key = key ^ zobrist_random[from_pi * 64 + mv.from_square]
-        # if there is a capture, remove the captured piece
-        if captured is not None:
-            cap_hash = zobrist_random[piece_index(captured.piece_type, captured.color) * 64 + mv.to_square]
+    cdef bint ck, cq, ck2, cq2
+    cdef object old_ep, mover
+
+    # ——— Null Move Pruning ———
+    # Skip if: in check, depth too shallow, no non-pawn material (zugzwang risk),
+    # or beta is infinity (PV node with wide-open window — null move can't prune reliably)
+    if (not in_check
+        and depth >= NMP_REDUCTION + 1
+        and beta < INFINITY
+        and _has_non_pawn_material(board, board.turn)):
+        # Save pre-move state
+        ck = board.has_kingside_castling_rights(chess.WHITE)
+        cq = board.has_queenside_castling_rights(chess.WHITE)
+        ck2 = board.has_kingside_castling_rights(chess.BLACK)
+        cq2 = board.has_queenside_castling_rights(chess.BLACK)
+        old_ep = board.ep_square
+
+        # Play a "null move" (pass turn) and search with reduced depth
+        null_mv = chess.Move.null()
+        board.push(null_mv)
+        acc.update(null_mv, None)
+        null_key = null_move_hash(key, ck, cq, ck2, cq2, old_ep, board)
+        if not verify_hash(null_key, board):
+            null_key = compute_hash(board)
+        null_score = -minimax(board, acc,
+                              depth - 1 - NMP_REDUCTION,
+                              -beta, -beta + 1,
+                              ai_color,
+                              null_key,
+                              required_depth)
+        board.pop()
+        acc.rollback(null_mv, None)
+
+        if null_score >= beta:
+            branches_pruned += 1
+            return beta
+
+    # 4) Negamax loop with Late Move Reduction
+    value = -INFINITY
+    moves_searched = 0
+    for mv in order_moves(board):
+        is_capture = board.is_capture(mv)
+
+        # For en passant, the captured pawn is not on to_sq
+        if is_capture and board.is_en_passant(mv):
+            ep_cap_sq3 = mv.to_square + (-8 if board.turn else 8)
+            captured = board.piece_at(ep_cap_sq3)
         else:
-            cap_hash = 0
-        next_key ^= cap_hash
-        # add mover at to_square (handle promotions by using to_pi)
-        next_key ^= zobrist_random[to_pi * 64 + mv.to_square]
-        # flip the side‐to‐move bit
-        next_key ^= zobrist_random[768]
+            captured = board.piece_at(mv.to_square)
+        mover = board.piece_at(mv.from_square)
+
+        # Save pre-move state for incremental hash
+        ck = board.has_kingside_castling_rights(chess.WHITE)
+        cq = board.has_queenside_castling_rights(chess.WHITE)
+        ck2 = board.has_kingside_castling_rights(chess.BLACK)
+        cq2 = board.has_queenside_castling_rights(chess.BLACK)
+        old_ep = board.ep_square
 
         board.push(mv)
         acc.update(mv, captured)
+        next_key = update_hash_full(key, mv, mover, captured,
+                                     ck, cq, ck2, cq2, old_ep, board)
 
-        # negamax recursive call with swapped alpha/beta
-        child = -minimax(board, acc,
-                         depth-1,
-                         -beta, -alpha,
-                         ai_color,
-                         next_key,
-                         required_depth)
+        if not verify_hash(next_key, board):
+            # Hash is wrong, fall back to full recompute
+            next_key = compute_hash(board)
+
+        is_promotion = mv.promotion is not None
+        gives_check = board.is_check()
+
+        # ——— Late Move Reduction ———
+        # After searching the first few moves at full depth, reduce later
+        # quiet moves (non-captures, non-checks, non-promotions).
+        if (moves_searched >= LMR_FULL_MOVES
+            and depth >= LMR_MIN_DEPTH
+            and not is_capture
+            and not gives_check
+            and not is_promotion
+            and not in_check):
+            # Search with reduced depth first
+            reduced_depth = depth - 2  # reduce by 1 extra ply
+            if reduced_depth < 1:
+                reduced_depth = 1
+            child = -minimax(board, acc,
+                             reduced_depth - 1,
+                             -beta, -alpha,
+                             ai_color,
+                             next_key,
+                             required_depth)
+            # If reduced search beats alpha, re-search at full depth
+            if child > alpha:
+                child = -minimax(board, acc,
+                                 depth - 1,
+                                 -beta, -alpha,
+                                 ai_color,
+                                 next_key,
+                                 required_depth)
+        else:
+            # Full depth search for important moves
+            child = -minimax(board, acc,
+                             depth-1,
+                             -beta, -alpha,
+                             ai_color,
+                             next_key,
+                             required_depth)
 
         board.pop()
         acc.rollback(mv, captured)
+
+        moves_searched += 1
 
         if child > value:
             value = child
@@ -623,83 +897,52 @@ cpdef double minimax(object board,
             alpha = value
 
         if alpha >= beta:
-            # cutoff
             branches_pruned += 1
-            tt_store(key, depth, value, LOWERBOUND)
+            if USE_TT:
+                tt_store(key, depth, value, LOWERBOUND)
             return value
 
-    # 5) store exact and return
-    tt_store(key, depth, value, EXACT)
+    # 5) If no moves were searched (all pruned), fall back to static/quiesce eval
+    if moves_searched == 0:
+        child = quiesce(board, acc, alpha, beta, ai_color, key)
+        if USE_TT:
+            tt_store(key, depth, child, EXACT)
+        return child
+
+    # 6) store exact and return
+    if USE_TT:
+        tt_store(key, depth, value, EXACT)
     return value
 
-cdef list order_moves(object board, bint maximize, object tt_history):
+cdef list order_moves(object board):
     """
-    Generates and scores all legal moves for `board`, pruning:
-     - any losing capture (see < 0)
-     - moves that leave the queen under attack if it’s currently undefended.
-    Returns a Python list of moves in descending score order if maximize else ascending.
+    Generates and scores all legal moves for `board`.
+    Returns a Python list of moves in descending score order (best first).
+    No hard pruning — move ordering only. The search handles pruning via alpha-beta.
     """
     cdef int us       = board.turn
     cdef int them     = not us
-    cdef int qsq      = -1
-    cdef bint queen_under_threat = False
-    cdef object mv, attacker, victim, hist
-    cdef int from_sq, to_sq, a_val, v_val, score, new_qsq, ep_sq
-    cdef uint64_t opp_attacks = 0, our_defends = 0, pawn_attack_mask = 0
+    cdef object mv, attacker, victim
+    cdef int from_sq, to_sq, a_val, v_val, score, ep_sq
+    cdef uint64_t pawn_attack_mask = 0
     cdef list scored = []
-    global branches_pruned
 
-    # 1) Precompute opponent‐attack & our‐defend bitboards, plus pawn attacks
-    for sq, pc in board.piece_map().items():
-        if pc.color != us:
-            opp_attacks |= board.attacks_mask(sq)
-            if pc.piece_type == chess.PAWN:
-                pawn_attack_mask |= board.attacks_mask(sq)
-        else:
-            our_defends |= board.attacks_mask(sq)
-    # 2) Locate queen square, check if attacked & undefended
-    for qs in board.pieces(chess.QUEEN, us):
-        qsq = qs
-        break
-    if qsq >= 0:
-        if (opp_attacks >> qsq) & 1 and not ((our_defends >> qsq) & 1):
-            queen_under_threat = True
+    # 1) Precompute pawn attacks for scoring (skip full opp_attacks — too expensive)
+    for sq in board.pieces(chess.PAWN, them):
+        pawn_attack_mask |= board.attacks_mask(sq)
 
-    # 3) History move from TT
-    hist = tt_history.get_move(zobrist_hash(board)) if tt_history is not None else None
-
-    # 4) Loop & prune
+    # 2) Loop & score (no hard pruning — let the search decide)
     for mv in board.legal_moves:
-        # 4a) prune losing captures immediately
-        if board.is_capture(mv):
-            if see(board, mv) < 0:
-                branches_pruned += 1
-                continue
-
         from_sq = mv.from_square
         to_sq   = mv.to_square
 
-        # 4b) if queen is undefended and under attack, simulate to ensure it's solved
-        if queen_under_threat:
-            board.push(mv)
-            # if we moved the queen, update its square
-            new_qsq = from_sq == qsq and mv.promotion is None and mv.to_square or qsq
-            # if queen still attacked, prune
-            if board.is_attacked_by(them, new_qsq):
-                board.pop()
-                branches_pruned += 1
-                continue
-            board.pop()
-
-        # 5) Now score the move
-        #   - Attacker value
+        # Attacker value
         attacker = board.piece_at(from_sq)
         a_val = PIECE_VAL[attacker.piece_type] if attacker else 0
 
-        #   - Victim value
+        # Victim value
         if board.is_capture(mv):
             if board.is_en_passant(mv):
-                # en-passant victim on the square behind the pawn
                 ep_sq = mv.to_square + (8 if us else -8)
                 victim = board.piece_at(ep_sq)
             else:
@@ -719,24 +962,12 @@ cdef list order_moves(object board, bint maximize, object tt_history):
         if (pawn_attack_mask >> to_sq) & 1:
             score -= 10 * a_val
 
-        # History bonus
-        if mv == hist:
-            score += 1000
-
-        # Check-giving bonus
-        if board.gives_check(mv):
-            score += 1000
-
-        # Capture-hanging-piece bonus
-        if board.is_capture(mv) and not ((opp_attacks >> to_sq) & 1):
-            score += 10000
-
         scored.append((mv, score))
 
-    # 6) Final sort & return
-    scored.sort(key=lambda x: x[1], reverse=maximize)
+    # 3) Final sort & return
+    scored.sort(key=lambda x: x[1], reverse=True)
     return [m for m, _ in scored]
 
 # Allocate a 4M-entry table by default
 _init_zobrist_random()
-init_tt(1<<22)
+init_tt(1<<28)
