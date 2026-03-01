@@ -339,7 +339,7 @@ def init_nnue(model_path=None):
     if model_path is None:
         # __file__ here points to core_search.cp310-win_amd64.pyd
         base = os.path.dirname(__file__)
-        model_path = os.path.join(base, "nnue", "halfkp_int8_36154.pt")
+        model_path = os.path.join(base, "nnue", "halfkp_int8.pt")
 
     if not os.path.isfile(model_path):
         raise RuntimeError(f"NNUE model not found at {model_path!r}")
