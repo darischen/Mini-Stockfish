@@ -258,8 +258,17 @@ class Board:
         if isinstance(piece, King):
             if self.castling(initial, final) and not testing:
                 diff = final.col - initial.col
-                rook = piece.left_rook if (diff < 0) else piece.right_rook
-                self.move(rook, rook.moves[-1])
+                if diff < 0:
+                    # Queenside castling
+                    rook_initial = Square(final.row, 0)
+                    rook_final = Square(final.row, 3)
+                else:
+                    # Kingside castling
+                    rook_initial = Square(final.row, 7)
+                    rook_final = Square(final.row, 5)
+                rook = self.squares[rook_initial.row][rook_initial.col].piece
+                rook_move = Move(rook_initial, rook_final)
+                self.move(rook, rook_move)
                 self.config.castle_sound.play()
         
         if not testing:
