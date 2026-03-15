@@ -639,8 +639,8 @@ cdef double quiesce(object board,
 
     # 1) stand-pat
     if USE_NNUE:
-        val = nnue_eval_halfkp_py(acc.idx0, acc.idx1)
-        # NNUE returns from White's perspective; negamax needs side-to-move's
+        val = acc.evaluate()
+        # evaluate() returns from White's perspective; negamax needs side-to-move's
         if not board.turn:  # Black to move → flip
             val = -val
     else:

@@ -1,10 +1,37 @@
 # accumulator.py
 
 import numpy as np
+import os
+import torch
 import chess
 from nnue.halfkp import halfkp_indices_for_fen, piece_to_idx, NUM_NONKING, PIECES_PER_KING
 
 PAD_LEN = 30  # match TorchScript tracing pad length
+
+# --- Module-level weight cache (loaded once) ---
+_weights = None
+
+def _load_weights():
+    """Load HalfKP model weights from checkpoint into numpy arrays."""
+    global _weights
+    if _weights is not None:
+        return _weights
+
+    base = os.path.dirname(__file__)
+    pth_path = os.path.join(base, "nnue", "halfkp_best.pth")
+
+    state = torch.load(pth_path, map_location="cpu", weights_only=True)
+    _weights = {
+        'emb0': state['emb0.weight'].numpy().astype(np.float32),    # (40960, 1024)
+        'emb1': state['emb1.weight'].numpy().astype(np.float32),    # (40960, 1024)
+        'fc2_w': state['fc2.weight'].numpy().astype(np.float32),    # (64, 2048)
+        'fc2_b': state['fc2.bias'].numpy().astype(np.float32),      # (64,)
+        'fc3_w': state['fc3.weight'].numpy().astype(np.float32),    # (64, 64)
+        'fc3_b': state['fc3.bias'].numpy().astype(np.float32),      # (64,)
+        'out_w': state['fc_out.weight'].numpy().astype(np.float32), # (1, 64)
+        'out_b': state['fc_out.bias'].numpy().astype(np.float32),   # (1,)
+    }
+    return _weights
 
 
 class Accumulator:
@@ -21,7 +48,10 @@ class Accumulator:
         self.idx0 = None   # numpy int64 array, padded to PAD_LEN
         self.idx1 = None
         self.board = None
-        self._stack = []   # stack of (idx0_copy, idx1_copy) for rollback
+        self._stack = []   # stack of (idx0, idx1, hidden0, hidden1) for rollback
+        # Cached hidden activations (accumulated embedding sums)
+        self.hidden0 = None  # shape (1024,) - view 0 (white king perspective)
+        self.hidden1 = None  # shape (1024,) - view 1 (black king perspective)
 
     def _pad(self, lst):
         """Pad an index list to PAD_LEN with zeros and return int64 numpy array."""
@@ -38,6 +68,14 @@ class Accumulator:
         raw0, raw1 = halfkp_indices_for_fen(board.fen())
         self.idx0 = self._pad(raw0)
         self.idx1 = self._pad(raw1)
+
+        # Compute initial hidden activations by summing embeddings
+        # Use padded idx arrays (not raw) to match the model's forward pass,
+        # where padding zeros contribute emb[0] to the sum.
+        w = _load_weights()
+        self.hidden0 = w['emb0'][self.idx0].sum(axis=0).copy()
+        self.hidden1 = w['emb1'][self.idx1].sum(axis=0).copy()
+
         return self.idx0, self.idx1
 
     def update(self, move: chess.Move, captured: chess.Piece = None):
@@ -50,8 +88,9 @@ class Accumulator:
         """
         assert self.board is not None, "Call init() before update()"
 
-        # Save snapshot before any changes
-        self._stack.append((self.idx0.copy(), self.idx1.copy()))
+        # Save snapshot before any changes (including hidden activations)
+        self._stack.append((self.idx0.copy(), self.idx1.copy(),
+                            self.hidden0.copy(), self.hidden1.copy()))
 
         # Null move (0000) — just flip turn, no pieces change
         if not move:
@@ -72,14 +111,11 @@ class Accumulator:
         from_sq = move.from_square
         to_sq = move.to_square
 
-        # Detect en passant: captured pawn but no piece was on to_sq before move.
-        # The caller passes the actual captured piece. For EP, mover is a pawn
-        # and captured is a pawn, but the captured pawn wasn't on to_sq.
-        is_ep = (captured is not None
-                 and captured.piece_type == chess.PAWN
-                 and mover.piece_type == chess.PAWN
-                 and abs(from_sq % 8 - to_sq % 8) == 1  # diagonal pawn move
-                 and self.board.piece_at(to_sq) == mover)  # mover landed on to_sq, no piece was there before
+        # Detect en passant: pop to pre-move state, check, re-push.
+        # The old heuristic was buggy (falsely triggered on regular pawn captures).
+        self.board.pop()
+        is_ep = self.board.is_en_passant(move)
+        self.board.push(move)
 
         if is_ep:
             # Captured pawn was behind the to_square (from mover's perspective)
@@ -90,15 +126,25 @@ class Accumulator:
         else:
             cap_sq = to_sq
 
+        w = _load_weights()
+        emb_weights = [w['emb0'], w['emb1']]
+        hiddens = [self.hidden0, self.hidden1]
+
         # For each view (view 0 = white king perspective, view 1 = black king perspective):
         for view_idx, view_arr in enumerate([self.idx0, self.idx1]):
             king_sq = self.board.king(bool(view_idx))
+            emb_w = emb_weights[view_idx]
+            hidden = hiddens[view_idx]
 
             # 1) Remove captured piece's index (if capture)
             if captured and captured.piece_type != chess.KING:
                 cap_key = (captured.color, captured.piece_type)
                 if cap_key in piece_to_idx:
                     old_cap_idx = king_sq * PIECES_PER_KING + cap_sq * NUM_NONKING + piece_to_idx[cap_key]
+                    # Update hidden: swap from captured embedding to padding embedding (0)
+                    hidden -= emb_w[old_cap_idx]
+                    hidden += emb_w[0]
+                    # Update index array (set to 0 = padding)
                     mask = (view_arr == old_cap_idx)
                     positions = np.where(mask)[0]
                     if len(positions) > 0:
@@ -109,6 +155,10 @@ class Accumulator:
             if mover_key in piece_to_idx:
                 old_idx = king_sq * PIECES_PER_KING + from_sq * NUM_NONKING + piece_to_idx[mover_key]
                 new_idx = king_sq * PIECES_PER_KING + to_sq * NUM_NONKING + piece_to_idx[mover_key]
+                # Update hidden: subtract old position, add new position
+                hidden -= emb_w[old_idx]
+                hidden += emb_w[new_idx]
+                # Update index array
                 mask = (view_arr == old_idx)
                 positions = np.where(mask)[0]
                 if len(positions) > 0:
@@ -123,11 +173,33 @@ class Accumulator:
         O(1) — no FEN parsing or recomputation needed.
         """
         assert self.board is not None, "Call init() before rollback()"
-        self.idx0, self.idx1 = self._stack.pop()
+        self.idx0, self.idx1, self.hidden0, self.hidden1 = self._stack.pop()
         return self.idx0, self.idx1
 
+    def evaluate(self):
+        """
+        Run the MLP on cached hidden activations.
+        Returns the network's scalar output (from White's perspective).
+
+        Computation: ~135k ops vs ~921k for full forward pass.
+        """
+        w = _load_weights()
+        # Clamp (ReLU on accumulated sums, matching model's forward())
+        h = np.concatenate([np.maximum(self.hidden0, 0),
+                            np.maximum(self.hidden1, 0)])
+        # MLP: fc2 -> relu -> fc3 -> relu -> fc_out
+        x = w['fc2_w'] @ h + w['fc2_b']
+        np.maximum(x, 0, out=x)  # relu in-place
+        x = w['fc3_w'] @ x + w['fc3_b']
+        np.maximum(x, 0, out=x)  # relu in-place
+        out = w['out_w'] @ x + w['out_b']
+        return float(out[0])
+
     def _recompute(self):
-        """Full recompute of indices from current board state."""
+        """Full recompute of indices and hidden activations from current board state."""
         raw0, raw1 = halfkp_indices_for_fen(self.board.fen())
         self.idx0 = self._pad(raw0)
         self.idx1 = self._pad(raw1)
+        w = _load_weights()
+        self.hidden0 = w['emb0'][self.idx0].sum(axis=0).copy()
+        self.hidden1 = w['emb1'][self.idx1].sum(axis=0).copy()

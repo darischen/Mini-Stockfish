@@ -23,13 +23,13 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
-syzygy_tb = SyzygyTablebase()
-syzygy_tb.add_directory("endgame/syzygy/")
+# syzygy_tb = SyzygyTablebase()
+# syzygy_tb.add_directory("endgame/syzygy/")
 
-gaviota_tb = GaviotaTablebase()
-gaviota_tb.add_directory("endgame/gaviota/3/")
-gaviota_tb.add_directory("endgame/gaviota/4/")
-gaviota_tb.add_directory("endgame/gaviota/5/")
+# gaviota_tb = GaviotaTablebase()
+# gaviota_tb.add_directory("endgame/gaviota/3/")
+# gaviota_tb.add_directory("endgame/gaviota/4/")
+# gaviota_tb.add_directory("endgame/gaviota/5/")
 
 from chess import KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN
 piece_map = {
