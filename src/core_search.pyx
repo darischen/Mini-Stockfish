@@ -623,6 +623,8 @@ cdef double quiesce(object board,
     Quiescence search with TT + incremental Zobrist hashing.
     `key` is the 64-bit hash for `board` before any moves here.
     """
+    global tt_hits, tt_misses
+
     if not board.legal_moves:
         if board.is_check():
             return -MATE_SCORE
@@ -635,7 +637,9 @@ cdef double quiesce(object board,
     # 0) probe TT
     val = tt_probe(key, 0, alpha, beta, &hit)
     if hit:
+        tt_hits += 1
         return val
+    tt_misses += 1
 
     # 1) stand-pat
     if USE_NNUE:
