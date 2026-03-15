@@ -369,6 +369,11 @@ class ChessAI:
             tt_pct = (100.0 * tt_h / tt_total) if tt_total > 0 else 0.0
             print(f"Depth {depth} → best={best_move} eval={eval_str}  TT: {tt_h}/{tt_total} hits ({tt_pct:.1f}%)")
 
+            # Print call count profiling data
+            call_stats = core_search.get_call_counts()
+            if call_stats:
+                print(f"  Call counts: {call_stats}")
+
         # If final eval is inf (search bug), fall back to last reasonable result.
         # But keep mate scores (>=90000) — those are real forced mates.
         if math.isinf(best_eval) and last_finite_move is not None:

@@ -999,37 +999,39 @@ cdef list order_moves(object board, object tt_move = None):
       2. Captures by MVV/LVA   (score = 2000*victim - attacker, always positive for captures)
       3. Quiet moves by history (score = history[from][to], capped well below captures)
     """
-    global order_moves_calls, piece_at_calls, is_capture_calls
+    global order_moves_calls
     cdef int us       = board.turn
     cdef int them     = not us
     cdef object mv, attacker, victim
     cdef int from_sq, to_sq, a_val, v_val, score, ep_sq
     cdef list scored = []
+    cdef dict piece_cache = {}
     order_moves_calls += 1
+
+    # Pre-cache all piece positions and identify captures (faster than repeated method calls)
+    for sq in range(64):
+        piece_cache[sq] = board.piece_at(sq)
 
     # 1) Loop through legal moves and score them
     for mv in board.legal_moves:
         from_sq = mv.from_square
         to_sq   = mv.to_square
 
-        # Attacker value
-        attacker = board.piece_at(from_sq)
-        piece_at_calls += 1
+        # Attacker value (use cached piece)
+        attacker = piece_cache[from_sq]
         a_val = PIECE_VAL[attacker.piece_type] if attacker else 0
 
-        # Victim value
-        if board.is_capture(mv):
-            is_capture_calls += 1
-            if board.is_en_passant(mv):
-                ep_sq = mv.to_square + (8 if us else -8)
-                victim = board.piece_at(ep_sq)
-                piece_at_calls += 1
-            else:
-                victim = board.piece_at(to_sq)
-                piece_at_calls += 1
+        # Victim value: check cached piece at destination (faster than is_capture call)
+        victim = piece_cache[to_sq]
+        if victim is not None:
+            # It's a capture if there's a piece at the destination
+            v_val = PIECE_VAL[victim.piece_type]
+        elif board.is_en_passant(mv):
+            # En passant: piece is on a different square
+            ep_sq = mv.to_square + (8 if us else -8)
+            victim = piece_cache[ep_sq]
             v_val = PIECE_VAL[victim.piece_type] if victim else 0
         else:
-            is_capture_calls += 1
             v_val = 0
 
         if v_val > 0:
