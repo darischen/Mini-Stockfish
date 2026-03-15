@@ -258,6 +258,7 @@ class ChessAI:
         core_search.reset_counters()
         core_search.reset_tt_counters()
         core_search.clear_tt()  # fresh TT for this move's search
+        core_search.clear_history()  # fresh history table for this move's search
 
         core_search.set_use_nnue(self.use_dnn)
 

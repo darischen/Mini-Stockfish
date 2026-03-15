@@ -19,6 +19,35 @@ from libc.math cimport INFINITY
 
 cdef int[7] PIECE_VAL = [0, 100, 300, 310, 400, 900, 20000]
 
+# Call counters for profiling
+cdef long order_moves_calls = 0
+cdef long piece_at_calls = 0
+cdef long is_capture_calls = 0
+cdef long board_push_calls = 0
+cdef long board_pop_calls = 0
+
+cpdef dict get_call_counts():
+    """Return call count stats."""
+    cdef int total_nodes = nodes_evaluated
+    if total_nodes == 0:
+        return {}
+    return {
+        'order_moves_calls': order_moves_calls,
+        'calls_per_node_avg': (order_moves_calls + piece_at_calls + is_capture_calls) / total_nodes if total_nodes else 0,
+        'piece_at_calls': piece_at_calls,
+        'is_capture_calls': is_capture_calls,
+        'board_push_calls': board_push_calls,
+        'board_pop_calls': board_pop_calls,
+    }
+
+cpdef reset_call_counts():
+    global order_moves_calls, piece_at_calls, is_capture_calls, board_push_calls, board_pop_calls
+    order_moves_calls = 0
+    piece_at_calls = 0
+    is_capture_calls = 0
+    board_push_calls = 0
+    board_pop_calls = 0
+
 cpdef bint verify_hash(uint64_t h_incremental, object board):
     """Debug: verify incremental hash matches full recompute."""
     cdef uint64_t h_full = compute_hash(board)
@@ -88,6 +117,8 @@ cdef struct TTEntry:
     int           depth
     double        value
     unsigned char flag
+    int           best_from   # from_square of best move (-1 = none)
+    int           best_to     # to_square of best move
 
 cdef TTEntry *tt_entries = NULL
 cdef int       tt_size, tt_mask
@@ -318,15 +349,29 @@ cdef inline double tt_probe(uint64_t key,
 cdef inline void tt_store(uint64_t key,
                            int depth,
                            double value,
-                           unsigned char flag) nogil:
+                           unsigned char flag,
+                           int best_from = -1,
+                           int best_to = -1) nogil:
     cdef int idx = <int>(key & tt_mask)
     cdef TTEntry *e = &tt_entries[idx]
-    # only replace if deeper, or same-depth EXACT overrides
-    if e.depth < depth or (e.depth == depth and flag == EXACT and e.flag != EXACT):
+    # Replace if: empty slot, deeper search, or same-depth EXACT upgrade
+    if (e.key == 0
+        or e.depth < depth
+        or (e.depth == depth and flag == EXACT and e.flag != EXACT)):
         e.key   = key
         e.depth = depth
         e.value = value
         e.flag  = flag
+        e.best_from = best_from
+        e.best_to   = best_to
+
+cdef inline object tt_get_best_move(uint64_t key):
+    """Return the best move stored for this key, or None."""
+    cdef int idx = <int>(key & tt_mask)
+    cdef TTEntry e = tt_entries[idx]
+    if e.key == key and e.best_from >= 0:
+        return chess.Move(e.best_from, e.best_to)
+    return None
 # ——————————————————————————————————————————————————————————————————————
 
 def init_nnue(model_path=None):
@@ -403,6 +448,16 @@ from accumulator import Accumulator
 from libc.math cimport INFINITY
 
 cdef double MATE_SCORE = 100000.0
+
+# ——————————————————— History Heuristic Table ———————————————————————
+# Indexed by [from_square][to_square]. Quiet moves that cause beta
+# cutoffs get their score bumped by depth², so deeper cutoffs matter more.
+cdef int history[64][64]
+
+cpdef void clear_history():
+    memset(history, 0, 64 * 64 * sizeof(int))
+
+# ——————————————————————————————————————————————————————————————————
 
 # Python‐level counter variables
 cdef public int nodes_evaluated = 0
@@ -746,7 +801,7 @@ cpdef double minimax(object board,
       Within a single iteration, TT reuse happens via matching keys
       (same position reached via different move orders).
     """
-    global nodes_evaluated, branches_pruned, tt_hits, tt_misses
+    global nodes_evaluated, branches_pruned, tt_hits, tt_misses, board_push_calls, board_pop_calls
     cdef double value, child, cached, null_score
     cdef object mv, captured
     cdef uint64_t next_key, null_key
@@ -760,12 +815,16 @@ cpdef double minimax(object board,
 
     # 1) TT probe — use `depth` (remaining search depth).
     #    TT is cleared between iterations so no cross-iteration pollution.
+    cdef object tt_move = None
     if USE_TT:
         cached = tt_probe(key, depth, alpha, beta, &hit)
         if hit:
             tt_hits += 1
             return cached
         tt_misses += 1
+        # Even if depth was insufficient for a cutoff, grab the best move
+        # for move ordering — it's still the best move found at this position.
+        tt_move = tt_get_best_move(key)
 
     # 2) Terminal — only check checkmate/stalemate, not draw claims
     #    (draw claims can give false positives with fresh board copies)
@@ -786,6 +845,7 @@ cpdef double minimax(object board,
 
     cdef bint ck, cq, ck2, cq2
     cdef object old_ep, mover
+    cdef object best_mv = None
 
     # ——— Null Move Pruning ———
     # Skip if: in check, depth too shallow, no non-pawn material (zugzwang risk),
@@ -824,7 +884,7 @@ cpdef double minimax(object board,
     # 4) Negamax loop with Late Move Reduction
     value = -INFINITY
     moves_searched = 0
-    for mv in order_moves(board):
+    for mv in order_moves(board, tt_move):
         is_capture = board.is_capture(mv)
 
         # For en passant, the captured pawn is not on to_sq
@@ -843,6 +903,7 @@ cpdef double minimax(object board,
         old_ep = board.ep_square
 
         board.push(mv)
+        board_push_calls += 1
         acc.update(mv, captured)
         next_key = update_hash_full(key, mv, mover, captured,
                                      ck, cq, ck2, cq2, old_ep, board)
@@ -891,19 +952,25 @@ cpdef double minimax(object board,
                              required_depth)
 
         board.pop()
+        board_pop_calls += 1
         acc.rollback(mv, captured)
 
         moves_searched += 1
 
         if child > value:
             value = child
+            best_mv = mv
         if value > alpha:
             alpha = value
 
         if alpha >= beta:
             branches_pruned += 1
+            # History: reward quiet moves that cause cutoffs
+            if not is_capture:
+                history[mv.from_square][mv.to_square] += depth * depth
             if USE_TT:
-                tt_store(key, depth, value, LOWERBOUND)
+                tt_store(key, depth, value, LOWERBOUND,
+                         mv.from_square, mv.to_square)
             return value
 
     # 5) If no moves were searched (all pruned), fall back to static/quiesce eval
@@ -913,62 +980,76 @@ cpdef double minimax(object board,
             tt_store(key, depth, child, EXACT)
         return child
 
-    # 6) store exact and return
+    # 6) store exact with best move and return
     if USE_TT:
-        tt_store(key, depth, value, EXACT)
+        if best_mv is not None:
+            tt_store(key, depth, value, EXACT,
+                     best_mv.from_square, best_mv.to_square)
+        else:
+            tt_store(key, depth, value, EXACT)
     return value
 
-cdef list order_moves(object board):
+cdef list order_moves(object board, object tt_move = None):
     """
     Generates and scores all legal moves for `board`.
     Returns a Python list of moves in descending score order (best first).
-    No hard pruning — move ordering only. The search handles pruning via alpha-beta.
+
+    Priority tiers:
+      1. TT best move          (score += 10_000_000)
+      2. Captures by MVV/LVA   (score = 2000*victim - attacker, always positive for captures)
+      3. Quiet moves by history (score = history[from][to], capped well below captures)
     """
+    global order_moves_calls, piece_at_calls, is_capture_calls
     cdef int us       = board.turn
     cdef int them     = not us
     cdef object mv, attacker, victim
     cdef int from_sq, to_sq, a_val, v_val, score, ep_sq
-    cdef uint64_t pawn_attack_mask = 0
     cdef list scored = []
+    order_moves_calls += 1
 
-    # 1) Precompute pawn attacks for scoring (skip full opp_attacks — too expensive)
-    for sq in board.pieces(chess.PAWN, them):
-        pawn_attack_mask |= board.attacks_mask(sq)
-
-    # 2) Loop & score (no hard pruning — let the search decide)
+    # 1) Loop through legal moves and score them
     for mv in board.legal_moves:
         from_sq = mv.from_square
         to_sq   = mv.to_square
 
         # Attacker value
         attacker = board.piece_at(from_sq)
+        piece_at_calls += 1
         a_val = PIECE_VAL[attacker.piece_type] if attacker else 0
 
         # Victim value
         if board.is_capture(mv):
+            is_capture_calls += 1
             if board.is_en_passant(mv):
                 ep_sq = mv.to_square + (8 if us else -8)
                 victim = board.piece_at(ep_sq)
+                piece_at_calls += 1
             else:
                 victim = board.piece_at(to_sq)
+                piece_at_calls += 1
             v_val = PIECE_VAL[victim.piece_type] if victim else 0
         else:
+            is_capture_calls += 1
             v_val = 0
 
-        # MVV/LVA core
-        score = 2000 * v_val - a_val
+        if v_val > 0:
+            # Capture: MVV/LVA
+            score = 2000 * v_val - a_val
+        else:
+            # Quiet move: use history heuristic
+            score = history[from_sq][to_sq]
 
         # Promotion bonus
         if mv.promotion is not None:
             score += PIECE_VAL[mv.promotion]
 
-        # Pawn-attack penalty
-        if (pawn_attack_mask >> to_sq) & 1:
-            score -= 10 * a_val
+        # TT best move gets absolute priority
+        if tt_move is not None and mv == tt_move:
+            score += 10000000
 
         scored.append((mv, score))
 
-    # 3) Final sort & return
+    # 2) Final sort & return
     scored.sort(key=lambda x: x[1], reverse=True)
     return [m for m, _ in scored]
 
