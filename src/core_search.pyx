@@ -19,35 +19,6 @@ from libc.math cimport INFINITY
 
 cdef int[7] PIECE_VAL = [0, 100, 300, 310, 400, 900, 20000]
 
-# Call counters for profiling
-cdef long order_moves_calls = 0
-cdef long piece_at_calls = 0
-cdef long is_capture_calls = 0
-cdef long board_push_calls = 0
-cdef long board_pop_calls = 0
-
-cpdef dict get_call_counts():
-    """Return call count stats."""
-    cdef int total_nodes = nodes_evaluated
-    if total_nodes == 0:
-        return {}
-    return {
-        'order_moves_calls': order_moves_calls,
-        'calls_per_node_avg': (order_moves_calls + piece_at_calls + is_capture_calls) / total_nodes if total_nodes else 0,
-        'piece_at_calls': piece_at_calls,
-        'is_capture_calls': is_capture_calls,
-        'board_push_calls': board_push_calls,
-        'board_pop_calls': board_pop_calls,
-    }
-
-cpdef reset_call_counts():
-    global order_moves_calls, piece_at_calls, is_capture_calls, board_push_calls, board_pop_calls
-    order_moves_calls = 0
-    piece_at_calls = 0
-    is_capture_calls = 0
-    board_push_calls = 0
-    board_pop_calls = 0
-
 cpdef bint verify_hash(uint64_t h_incremental, object board):
     """Debug: verify incremental hash matches full recompute."""
     cdef uint64_t h_full = compute_hash(board)
@@ -123,7 +94,7 @@ cdef struct TTEntry:
 cdef TTEntry *tt_entries = NULL
 cdef int       tt_size, tt_mask
 
-cpdef init_tt(int size_pow2 = 1<<28):
+cpdef init_tt(int size_pow2 = 1<<26):
     """
     Call once at module init (or from Python) to allocate the TT.
     """
@@ -801,7 +772,7 @@ cpdef double minimax(object board,
       Within a single iteration, TT reuse happens via matching keys
       (same position reached via different move orders).
     """
-    global nodes_evaluated, branches_pruned, tt_hits, tt_misses, board_push_calls, board_pop_calls
+    global nodes_evaluated, branches_pruned, tt_hits, tt_misses
     cdef double value, child, cached, null_score
     cdef object mv, captured
     cdef uint64_t next_key, null_key
@@ -903,7 +874,6 @@ cpdef double minimax(object board,
         old_ep = board.ep_square
 
         board.push(mv)
-        board_push_calls += 1
         acc.update(mv, captured)
         next_key = update_hash_full(key, mv, mover, captured,
                                      ck, cq, ck2, cq2, old_ep, board)
@@ -952,7 +922,6 @@ cpdef double minimax(object board,
                              required_depth)
 
         board.pop()
-        board_pop_calls += 1
         acc.rollback(mv, captured)
 
         moves_searched += 1
@@ -996,17 +965,15 @@ cdef list order_moves(object board, object tt_move = None):
 
     Priority tiers:
       1. TT best move          (score += 10_000_000)
-      2. Captures by MVV/LVA   (score = 2000*victim - attacker, always positive for captures)
-      3. Quiet moves by history (score = history[from][to], capped well below captures)
+      2. Captures by MVV/LVA   (score = 2000*victim - attacker)
+      3. Quiet moves by history (score = history[from][to])
     """
-    global order_moves_calls
     cdef int us       = board.turn
     cdef int them     = not us
     cdef object mv, attacker, victim
     cdef int from_sq, to_sq, a_val, v_val, score, ep_sq
     cdef list scored = []
     cdef dict piece_cache = {}
-    order_moves_calls += 1
 
     # Pre-cache all piece positions and identify captures (faster than repeated method calls)
     for sq in range(64):
@@ -1057,4 +1024,4 @@ cdef list order_moves(object board, object tt_move = None):
 
 # Allocate a 4M-entry table by default
 _init_zobrist_random()
-init_tt(1<<28)
+init_tt(1<<26)
