@@ -13,3 +13,4 @@ combined_chessData - Copy.csv
 *.parquet
 .claude/
 .superpowers/
+docs/
