@@ -27,30 +27,6 @@ cpdef bint verify_hash(uint64_t h_incremental, object board):
         return False
     return True
 
-cpdef int see(object board, object mv):
-    cdef object vic, att
-    cdef int v_pt, a_pt
-
-    # only consider captures
-    if not board.is_capture(mv):
-        return -100000
-
-    vic = board.piece_at(mv.to_square)
-    if vic is None:
-        # weird edge‐case: nothing to capture
-        return -100000
-
-    att = board.piece_at(mv.from_square)
-    if att is None:
-        # also weird: no attacker
-        return -100000
-
-    v_pt = vic.piece_type
-    a_pt = att.piece_type
-
-    # positive if we net gain, negative if we net lose
-    return PIECE_VAL[v_pt] - PIECE_VAL[a_pt]
-
 # ———————————————————————————Transposition Table———————————————————————————————————————————
 cdef uint64_t zobrist_random[769]
 cdef uint64_t zob_piece[12*64]
@@ -88,11 +64,13 @@ cdef struct TTEntry:
     int           depth
     double        value
     unsigned char flag
+    int           best_from   # from_square of best move (-1 = none)
+    int           best_to     # to_square of best move
 
 cdef TTEntry *tt_entries = NULL
 cdef int       tt_size, tt_mask
 
-cpdef init_tt(int size_pow2 = 1<<28):
+cpdef init_tt(int size_pow2 = 1<<26):
     """
     Call once at module init (or from Python) to allocate the TT.
     """
@@ -318,15 +296,29 @@ cdef inline double tt_probe(uint64_t key,
 cdef inline void tt_store(uint64_t key,
                            int depth,
                            double value,
-                           unsigned char flag) nogil:
+                           unsigned char flag,
+                           int best_from = -1,
+                           int best_to = -1) nogil:
     cdef int idx = <int>(key & tt_mask)
     cdef TTEntry *e = &tt_entries[idx]
-    # only replace if deeper, or same-depth EXACT overrides
-    if e.depth < depth or (e.depth == depth and flag == EXACT and e.flag != EXACT):
+    # Replace if: empty slot, deeper search, or same-depth EXACT upgrade
+    if (e.key == 0
+        or e.depth < depth
+        or (e.depth == depth and flag == EXACT and e.flag != EXACT)):
         e.key   = key
         e.depth = depth
         e.value = value
         e.flag  = flag
+        e.best_from = best_from
+        e.best_to   = best_to
+
+cdef inline object tt_get_best_move(uint64_t key):
+    """Return the best move stored for this key, or None."""
+    cdef int idx = <int>(key & tt_mask)
+    cdef TTEntry e = tt_entries[idx]
+    if e.key == key and e.best_from >= 0:
+        return chess.Move(e.best_from, e.best_to)
+    return None
 # ——————————————————————————————————————————————————————————————————————
 
 def init_nnue(model_path=None):
@@ -404,6 +396,16 @@ from libc.math cimport INFINITY
 
 cdef double MATE_SCORE = 100000.0
 
+# ——————————————————— History Heuristic Table ———————————————————————
+# Indexed by [from_square][to_square]. Quiet moves that cause beta
+# cutoffs get their score bumped by depth², so deeper cutoffs matter more.
+cdef int history[64][64]
+
+cpdef void clear_history():
+    memset(history, 0, 64 * 64 * sizeof(int))
+
+# ——————————————————————————————————————————————————————————————————
+
 # Python‐level counter variables
 cdef public int nodes_evaluated = 0
 cdef public int branches_pruned = 0
@@ -432,183 +434,25 @@ cpdef void reset_tt_counters():
     tt_hits = 0
     tt_misses = 0
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
 cdef double static_eval(object board, object acc, str ai_color):
-    cdef dict pm = board.piece_map()
+    """
+    Simple material-based evaluation (fallback when not using NNUE).
+    Returns score from perspective of ai_color.
+    """
     cdef double score = 0.0
-    cdef bint piece_is_white, ai_is_white, us, them
-    cdef int pt, mob, sq, file, rank, f, r, ep_file, ep_rank
-    cdef int king_sq, king_file, king_rank, effective_rank
-    cdef int pawns_on_file, bishop_count
-    cdef double val, shield
-    cdef list our_pawns, enemy_pawns
-    cdef bint is_passed, has_neighbor, has_our_pawn, has_enemy_pawn
+    cdef int piece_type
 
-    ai_is_white = (ai_color == "white")
-    us = ai_is_white
-    them = not us
+    for piece_type in range(1, 7):  # 1=pawn, 2=knight, 3=bishop, 4=rook, 5=queen, 6=king
+        # White pieces
+        white_count = len(board.pieces(piece_type, chess.WHITE))
+        # Black pieces
+        black_count = len(board.pieces(piece_type, chess.BLACK))
 
-    # --- Material ---
-    for sq, p in pm.items():
-        piece_is_white = p.color
-        pt = p.piece_type
-        if pt == 1:
-            val = 100.0
-        elif pt == 2:
-            val = 300.0
-        elif pt == 3:
-            val = 310.0
-        elif pt == 4:
-            val = 400.0
-        elif pt == 5:
-            val = 900.0
-        else:
-            val = 20000.0
-        score += val if piece_is_white == ai_is_white else -val
+        score += PIECE_VAL[piece_type] * (white_count - black_count)
 
-    # --- Mobility ---
-    mob = board.legal_moves.count()
-    score += mob * 10 if board.turn == ai_is_white else -mob * 10
-
-    # --- Bishop pair ---
-    bishop_count = 0
-    for sq, p in pm.items():
-        if p.piece_type == 3 and p.color == us:  # BISHOP = 3
-            bishop_count += 1
-    if bishop_count >= 2:
-        score += 50
-
-    # --- Passed pawns ---
-    cdef int[8] passed_bonus = [0, 10, 20, 40, 70, 120, 200, 0]
-    our_pawns = list(board.pieces(1, us))  # PAWN = 1
-    enemy_pawns = list(board.pieces(1, them))
-
-    for sq in our_pawns:
-        file = sq % 8
-        rank = sq // 8
-        is_passed = True
-        for ep in enemy_pawns:
-            ep_file = ep % 8
-            ep_rank = ep // 8
-            if abs(ep_file - file) <= 1:
-                if us and ep_rank > rank:
-                    is_passed = False
-                    break
-                elif not us and ep_rank < rank:
-                    is_passed = False
-                    break
-        if is_passed:
-            effective_rank = rank if us else 7 - rank
-            score += passed_bonus[effective_rank]
-
-    # --- Doubled pawns penalty ---
-    for f in range(8):
-        pawns_on_file = 0
-        for p in our_pawns:
-            if p % 8 == f:
-                pawns_on_file += 1
-        if pawns_on_file > 1:
-            score -= 20 * (pawns_on_file - 1)
-
-    # --- Isolated pawns penalty ---
-    for sq in our_pawns:
-        file = sq % 8
-        has_neighbor = False
-        for p in our_pawns:
-            if p != sq and abs(p % 8 - file) == 1:
-                has_neighbor = True
-                break
-        if not has_neighbor:
-            score -= 15
-
-    # --- Rook on open/semi-open file ---
-    for sq in board.pieces(4, us):  # ROOK = 4
-        file = sq % 8
-        has_our_pawn = False
-        has_enemy_pawn = False
-        for p in our_pawns:
-            if p % 8 == file:
-                has_our_pawn = True
-                break
-        for p in enemy_pawns:
-            if p % 8 == file:
-                has_enemy_pawn = True
-                break
-        if not has_our_pawn and not has_enemy_pawn:
-            score += 40  # Open file
-        elif not has_our_pawn:
-            score += 20  # Semi-open file
-
-    # --- Rook on 7th rank ---
-    for sq in board.pieces(4, us):  # ROOK = 4
-        rank = sq // 8
-        if (us and rank == 6) or (not us and rank == 1):
-            score += 50
-
-    # --- King safety (pawn shield) ---
-    king_sq_obj = board.king(us)
-    if king_sq_obj is not None:
-        king_sq = king_sq_obj
-        king_file = king_sq % 8
-        king_rank = king_sq // 8
-        shield = 0.0
-        for f in range(max(0, king_file - 1), min(8, king_file + 2)):
-            if us:
-                # White: check ranks above king
-                for r in [king_rank + 1, king_rank + 2]:
-                    if 0 <= r < 8:
-                        sq = r * 8 + f
-                        p = board.piece_at(sq)
-                        if p is not None and p.piece_type == 1 and p.color == us:
-                            shield += 15 if r == king_rank + 1 else 10
-                            break
-            else:
-                # Black: check ranks below king
-                for r in [king_rank - 1, king_rank - 2]:
-                    if 0 <= r < 8:
-                        sq = r * 8 + f
-                        p = board.piece_at(sq)
-                        if p is not None and p.piece_type == 1 and p.color == us:
-                            shield += 15 if r == king_rank - 1 else 10
-                            break
-        score += shield
-
-        # Penalty for open files near king
-        for f in range(max(0, king_file - 1), min(8, king_file + 2)):
-            has_our_pawn = False
-            has_enemy_pawn = False
-            for p in our_pawns:
-                if p % 8 == f:
-                    has_our_pawn = True
-                    break
-            for p in enemy_pawns:
-                if p % 8 == f:
-                    has_enemy_pawn = True
-                    break
-            if not has_our_pawn and not has_enemy_pawn:
-                score -= 25
-            elif not has_our_pawn:
-                score -= 15
-
-    # --- Center control ---
-    cdef list center = [28, 27, 36, 35]  # e4, d4, e5, d5
-    for sq in center:
-        if board.is_attacked_by(us, sq):
-            score += 10
-        p = board.piece_at(sq)
-        if p is not None and p.color == us:
-            if p.piece_type == 1:  # Pawn
-                score += 20
-            elif p.piece_type in [2, 3]:  # Knight, Bishop
-                score += 15
-
-    # --- Hanging piece penalty ---
-    for sq, p in pm.items():
-        if p.color == us:
-            if board.is_attacked_by(them, sq) and not board.is_attacked_by(us, sq):
-                score -= PIECE_VAL[p.piece_type] * 0.5
-
+    # Return from ai_color's perspective
+    if ai_color == "black":
+        score = -score
     return score
 
 @cython.boundscheck(False)
@@ -618,14 +462,20 @@ cdef double quiesce(object board,
                     double alpha,
                     double beta,
                     str ai_color,
-                    uint64_t key):
+                    uint64_t key,
+                    int depth = 0,
+                    int tree_depth = 0):
     """
     Quiescence search with TT + incremental Zobrist hashing.
     `key` is the 64-bit hash for `board` before any moves here.
+    `depth` is quiesce recursion depth.
+    `tree_depth` is actual plies from root (used for correct mate scoring).
     """
+    global tt_hits, tt_misses
+
     if not board.legal_moves:
         if board.is_check():
-            return -MATE_SCORE
+            return -(MATE_SCORE - tree_depth)
         else:
             return 0.0
 
@@ -635,12 +485,14 @@ cdef double quiesce(object board,
     # 0) probe TT
     val = tt_probe(key, 0, alpha, beta, &hit)
     if hit:
+        tt_hits += 1
         return val
+    tt_misses += 1
 
     # 1) stand-pat
     if USE_NNUE:
-        val = nnue_eval_halfkp_py(acc.idx0, acc.idx1)
-        # NNUE returns from White's perspective; negamax needs side-to-move's
+        val = acc.evaluate()
+        # evaluate() returns from White's perspective; negamax needs side-to-move's
         if not board.turn:  # Black to move → flip
             val = -val
     else:
@@ -691,7 +543,7 @@ cdef double quiesce(object board,
             next_key = compute_hash(board)
 
         # recurse with flipped colors and updated key
-        score = -quiesce(board, acc, -beta, -alpha, ai_color, next_key)
+        score = -quiesce(board, acc, -beta, -alpha, ai_color, next_key, depth - 1, tree_depth + 1)
 
         board.pop()
         acc.rollback(mv, captured)
@@ -718,9 +570,9 @@ cdef bint _has_non_pawn_material(object board, bint side):
 cdef int NMP_REDUCTION = 2
 
 # LMR: how many full-depth moves before reducing
-cdef int LMR_FULL_MOVES = 4
+cdef int LMR_FULL_MOVES = 2
 # LMR: minimum depth to apply reduction
-cdef int LMR_MIN_DEPTH = 3
+cdef int LMR_MIN_DEPTH = 2
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -756,24 +608,29 @@ cpdef double minimax(object board,
 
     # 1) TT probe — use `depth` (remaining search depth).
     #    TT is cleared between iterations so no cross-iteration pollution.
+    cdef object tt_move = None
     if USE_TT:
         cached = tt_probe(key, depth, alpha, beta, &hit)
         if hit:
             tt_hits += 1
             return cached
         tt_misses += 1
+        # Even if depth was insufficient for a cutoff, grab the best move
+        # for move ordering — it's still the best move found at this position.
+        tt_move = tt_get_best_move(key)
 
     # 2) Terminal — only check checkmate/stalemate, not draw claims
     #    (draw claims can give false positives with fresh board copies)
     if not board.legal_moves:
         if board.is_check():
-            return -MATE_SCORE + depth
+            actual_ply_count = required_depth - depth
+            return -(MATE_SCORE - actual_ply_count)
         else:
             return 0.0
 
     # 3) Leaf → quiescence
     if depth == 0:
-        child = quiesce(board, acc, alpha, beta, ai_color, key)
+        child = quiesce(board, acc, alpha, beta, ai_color, key, 0, required_depth)
         if USE_TT:
             tt_store(key, depth, child, EXACT)
         return child
@@ -782,6 +639,7 @@ cpdef double minimax(object board,
 
     cdef bint ck, cq, ck2, cq2
     cdef object old_ep, mover
+    cdef object best_mv = None
 
     # ——— Null Move Pruning ———
     # Skip if: in check, depth too shallow, no non-pawn material (zugzwang risk),
@@ -820,7 +678,7 @@ cpdef double minimax(object board,
     # 4) Negamax loop with Late Move Reduction
     value = -INFINITY
     moves_searched = 0
-    for mv in order_moves(board):
+    for mv in order_moves(board, tt_move):
         is_capture = board.is_capture(mv)
 
         # For en passant, the captured pawn is not on to_sq
@@ -893,13 +751,18 @@ cpdef double minimax(object board,
 
         if child > value:
             value = child
+            best_mv = mv
         if value > alpha:
             alpha = value
 
         if alpha >= beta:
             branches_pruned += 1
+            # History: reward quiet moves that cause cutoffs
+            if not is_capture:
+                history[mv.from_square][mv.to_square] += depth * depth
             if USE_TT:
-                tt_store(key, depth, value, LOWERBOUND)
+                tt_store(key, depth, value, LOWERBOUND,
+                         mv.from_square, mv.to_square)
             return value
 
     # 5) If no moves were searched (all pruned), fall back to static/quiesce eval
@@ -909,65 +772,79 @@ cpdef double minimax(object board,
             tt_store(key, depth, child, EXACT)
         return child
 
-    # 6) store exact and return
+    # 6) store exact with best move and return
     if USE_TT:
-        tt_store(key, depth, value, EXACT)
+        if best_mv is not None:
+            tt_store(key, depth, value, EXACT,
+                     best_mv.from_square, best_mv.to_square)
+        else:
+            tt_store(key, depth, value, EXACT)
     return value
 
-cdef list order_moves(object board):
+cdef list order_moves(object board, object tt_move = None):
     """
     Generates and scores all legal moves for `board`.
     Returns a Python list of moves in descending score order (best first).
-    No hard pruning — move ordering only. The search handles pruning via alpha-beta.
+
+    Priority tiers:
+      1. TT best move          (score += 10_000_000)
+      2. Captures by MVV/LVA   (score = 2000*victim - attacker)
+      3. Quiet moves by history (score = history[from][to])
     """
     cdef int us       = board.turn
     cdef int them     = not us
     cdef object mv, attacker, victim
     cdef int from_sq, to_sq, a_val, v_val, score, ep_sq
-    cdef uint64_t pawn_attack_mask = 0
     cdef list scored = []
+    cdef dict piece_cache = {}
 
-    # 1) Precompute pawn attacks for scoring (skip full opp_attacks — too expensive)
-    for sq in board.pieces(chess.PAWN, them):
-        pawn_attack_mask |= board.attacks_mask(sq)
+    # Pre-cache all piece positions and identify captures (faster than repeated method calls)
+    for sq in range(64):
+        piece_cache[sq] = board.piece_at(sq)
 
-    # 2) Loop & score (no hard pruning — let the search decide)
+    # 1) Loop through legal moves and score them
     for mv in board.legal_moves:
         from_sq = mv.from_square
         to_sq   = mv.to_square
 
-        # Attacker value
-        attacker = board.piece_at(from_sq)
+        # Attacker value (use cached piece)
+        attacker = piece_cache[from_sq]
         a_val = PIECE_VAL[attacker.piece_type] if attacker else 0
 
-        # Victim value
-        if board.is_capture(mv):
-            if board.is_en_passant(mv):
-                ep_sq = mv.to_square + (8 if us else -8)
-                victim = board.piece_at(ep_sq)
-            else:
-                victim = board.piece_at(to_sq)
+        # Victim value: check cached piece at destination (faster than is_capture call)
+        victim = piece_cache[to_sq]
+        if victim is not None:
+            # It's a capture if there's a piece at the destination
+            v_val = PIECE_VAL[victim.piece_type]
+        elif board.is_en_passant(mv):
+            # En passant: piece is on a different square
+            ep_sq = mv.to_square + (8 if us else -8)
+            victim = piece_cache[ep_sq]
             v_val = PIECE_VAL[victim.piece_type] if victim else 0
         else:
             v_val = 0
 
-        # MVV/LVA core
-        score = 2000 * v_val - a_val
+        if v_val > 0:
+            # Capture: MVV/LVA
+            score = 2000 * v_val - a_val
+        else:
+            # Quiet move: use history heuristic
+            score = history[from_sq][to_sq]
 
         # Promotion bonus
         if mv.promotion is not None:
             score += PIECE_VAL[mv.promotion]
 
-        # Pawn-attack penalty
-        if (pawn_attack_mask >> to_sq) & 1:
-            score -= 10 * a_val
+        # TT best move gets absolute priority
+        if tt_move is not None and mv == tt_move:
+            score += 10000000
 
         scored.append((mv, score))
 
-    # 3) Final sort & return
+    # 2) Final sort & return
     scored.sort(key=lambda x: x[1], reverse=True)
     return [m for m, _ in scored]
 
 # Allocate a 4M-entry table by default
 _init_zobrist_random()
-init_tt(1<<28)
+init_tt(1<<26)

@@ -5,6 +5,7 @@ from move import Move
 from sound import Sound
 from config import Config
 import os
+import chess
 
 class Board:
     def __init__(self):
@@ -17,6 +18,7 @@ class Board:
         self.position_history = {}
         self.update_position_history('white')
         self.half_move_clock = 0
+        self.chess_board = chess.Board()  # Keep synchronized chess board for SAN notation
         
     def board_signature(self, next_player):
         signature = [next_player]
@@ -252,8 +254,8 @@ class Board:
                         os.path.join('../assets/sounds/capture.mp3'))
                     sound.play()
             
-            else:
-                self.check_promotion(piece, final)
+            # Promotion is now handled externally by the game loop
+            # (check_promotion just returns True/False, doesn't auto-promote)
 
         if isinstance(piece, King):
             if self.castling(initial, final) and not testing:
@@ -282,9 +284,25 @@ class Board:
             self.last_move = move
 
     def check_promotion(self, piece, final):
-        if final.row == 0 or final.row == 7:
-            self.config.promotion_sound.play()
-            self.squares[final.row][final.col].piece = Queen(piece.color)
+        """Return True if this pawn move is a promotion (reached rank 0 or 7)."""
+        return isinstance(piece, Pawn) and (final.row == 0 or final.row == 7)
+
+    def complete_promotion(self, row, col, piece_cls):
+        """Replace the pawn at (row, col) with the chosen piece."""
+        color = self.squares[row][col].piece.color
+        self.squares[row][col].piece = piece_cls(color)
+        self.config.promotion_sound.play()
+
+    def revert_promotion(self, piece, from_row, from_col, to_row, to_col, captured_piece):
+        """
+        Undo a pawn move to the promotion rank.
+        Move the pawn back from (to_row, to_col) to (from_row, from_col),
+        and restore any captured piece at (to_row, to_col).
+        """
+        self.squares[from_row][from_col].piece = piece
+        self.squares[to_row][to_col].piece = captured_piece
+        self.last_move = None
+        piece.moved = False
 
     def castling(self, initial, final):
         return abs(initial.col - final.col) == 2
@@ -712,3 +730,29 @@ class Board:
             castling = "-"
 
         return f"{fen_piece_placement} {turn_char} {castling} - 0 1"
+
+    def load_from_chess_board(self, chess_board):
+        """Load position from a python-chess Board object."""
+        piece_map = {
+            chess.PAWN: Pawn, chess.KNIGHT: Knight, chess.BISHOP: Bishop,
+            chess.ROOK: Rook, chess.QUEEN: Queen, chess.KING: King
+        }
+        # Clear all squares
+        for row in range(ROWS):
+            for col in range(COLS):
+                self.squares[row][col] = Square(row, col)
+        # Place pieces from chess board
+        for square in chess.SQUARES:
+            piece = chess_board.piece_at(square)
+            if piece:
+                file_idx = chess.square_file(square)
+                rank_idx = 7 - chess.square_rank(square)
+                color = 'white' if piece.color == chess.WHITE else 'black'
+                piece_cls = piece_map[piece.piece_type]
+                self.squares[rank_idx][file_idx] = Square(rank_idx, file_idx, piece_cls(color))
+        # Reset state
+        self.position_history = {}
+        self.half_move_clock = 0
+        self.last_move = None
+        self.chess_board = chess_board  # Store synchronized chess board
+        self.update_position_history('white')

@@ -11,3 +11,6 @@ combined_chessData - Copy.csv
 **/__pycache__/
 *.npz
 *.parquet
+.claude/
+.superpowers/
+docs/

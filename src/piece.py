@@ -14,7 +14,9 @@ class Piece:
         self.texture_rect = texture_rect
         
     def set_texture(self, size=80):
-        self.texture = os.path.join(f'../assets/images/imgs-{size}px/{self.color}_{self.name}.png')
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        assets_dir = os.path.join(os.path.dirname(script_dir), 'assets', 'images', f'imgs-{size}px')
+        self.texture = os.path.join(assets_dir, f'{self.color}_{self.name}.png')
     
     def add_move(self, move):
         self.moves.append(move)
