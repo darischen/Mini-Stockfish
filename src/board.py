@@ -18,6 +18,7 @@ class Board:
         self.position_history = {}
         self.update_position_history('white')
         self.half_move_clock = 0
+        self.chess_board = chess.Board()  # Keep synchronized chess board for SAN notation
         
     def board_signature(self, next_player):
         signature = [next_player]
@@ -753,4 +754,5 @@ class Board:
         self.position_history = {}
         self.half_move_clock = 0
         self.last_move = None
+        self.chess_board = chess_board  # Store synchronized chess board
         self.update_position_history('white')

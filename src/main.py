@@ -15,7 +15,7 @@ class Main:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Chess AI")
         self.game = Game()
-        self.ai = ChessAI(depth=4, use_dnn=True)
+        self.ai = ChessAI(depth=10, use_dnn=True)
 
     def mainloop(self):
         game = self.game
@@ -142,7 +142,10 @@ class Main:
 
                         if board.valid_move(dragger.piece, move):
                             captured = board.squares[released_row][released_col].piece
+                            uci_move = chess.Move(chess.parse_square(f"{chr(97+initial.col)}{8-initial.row}"),
+                                                 chess.parse_square(f"{chr(97+final.col)}{8-final.row}"))
                             board.move(dragger.piece, move)
+                            board.chess_board.push(uci_move)  # Keep chess board in sync
 
                             # Check if this is a promotion
                             if board.check_promotion(dragger.piece, final):
@@ -223,7 +226,14 @@ class Main:
                                 _, mv = ai_move
                                 piece = board.squares[mv.initial.row][mv.initial.col].piece
                                 captured = board.squares[mv.final.row][mv.final.col].has_piece()
+
+                                # Compute SAN from synchronized chess board
+                                uci_move = chess.Move(chess.parse_square(f"{chr(97+mv.initial.col)}{8-mv.initial.row}"),
+                                                     chess.parse_square(f"{chr(97+mv.final.col)}{8-mv.final.row}"))
+                                san_move = board.chess_board.san(uci_move)
+
                                 board.move(piece, mv)
+                                board.chess_board.push(uci_move)  # Keep chess board in sync
 
                                 # Check if AI move is a promotion
                                 if board.check_promotion(piece, mv.final):
@@ -235,7 +245,7 @@ class Main:
                                         mv.final.row, mv.final.col, promo_cls
                                     )
 
-                                print(f"AI (black) moves: {mv}")
+                                print(f"AI (black) moves: {mv} ({san_move})")
                                 board.set_true_en_passant(piece)
                                 game.play_sound(captured)
                                 game.show_bg(screen)
@@ -257,7 +267,14 @@ class Main:
                                 _, mv = ai_move
                                 piece = board.squares[mv.initial.row][mv.initial.col].piece
                                 captured = board.squares[mv.final.row][mv.final.col].has_piece()
+
+                                # Compute SAN from synchronized chess board
+                                uci_move = chess.Move(chess.parse_square(f"{chr(97+mv.initial.col)}{8-mv.initial.row}"),
+                                                     chess.parse_square(f"{chr(97+mv.final.col)}{8-mv.final.row}"))
+                                san_move = board.chess_board.san(uci_move)
+
                                 board.move(piece, mv)
+                                board.chess_board.push(uci_move)  # Keep chess board in sync
 
                                 # Check if AI move is a promotion
                                 if board.check_promotion(piece, mv.final):
@@ -269,7 +286,7 @@ class Main:
                                         mv.final.row, mv.final.col, promo_cls
                                     )
 
-                                print(f"AI (white) moves: {mv}")
+                                print(f"AI (white) moves: {mv} ({san_move})")
                                 board.set_true_en_passant(piece)
                                 game.play_sound(captured)
                                 game.show_bg(screen)
