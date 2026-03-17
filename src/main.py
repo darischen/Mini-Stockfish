@@ -1,5 +1,6 @@
 import pygame
 import sys
+import chess
 
 from const import *
 from game import Game
@@ -14,7 +15,7 @@ class Main:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Chess AI")
         self.game = Game()
-        self.ai = ChessAI(depth=10, use_dnn=True)
+        self.ai = ChessAI(depth=4, use_dnn=True)
 
     def mainloop(self):
         game = self.game
@@ -45,8 +46,9 @@ class Main:
                         continue  # board is frozen during promotion
                     dragger.update_mouse(event.pos)
 
-                    clicked_row = dragger.mouseY // SQSIZE
-                    clicked_col = dragger.mouseX // SQSIZE
+                    screen_row = dragger.mouseY // SQSIZE
+                    screen_col = dragger.mouseX // SQSIZE
+                    clicked_row, clicked_col = game.screen_to_board(screen_row, screen_col)
 
                     if board.squares[clicked_row][clicked_col].has_piece():
                         piece = board.squares[clicked_row][clicked_col].piece
@@ -124,8 +126,9 @@ class Main:
                     elif dragger.dragging:
                         dragger.update_mouse(event.pos)
 
-                        released_row = dragger.mouseY // SQSIZE
-                        released_col = dragger.mouseX // SQSIZE
+                        screen_row = dragger.mouseY // SQSIZE
+                        screen_col = dragger.mouseX // SQSIZE
+                        released_row, released_col = game.screen_to_board(screen_row, screen_col)
 
                         dragger.piece.clear_moves()
                         board.calc_moves(dragger.piece, dragger.initial_row, dragger.initial_col, bool=True)
@@ -185,6 +188,22 @@ class Main:
                     if event.key == pygame.K_t:
                         game.change_theme()
 
+                    # flip board perspective
+                    if event.key == pygame.K_f:
+                        game.board_flipped = not game.board_flipped
+
+                    # load FEN
+                    if event.key == pygame.K_e:
+                        fen = input("Enter FEN: ")
+                        try:
+                            chess_board = chess.Board(fen)
+                            board.load_from_chess_board(chess_board)
+                            game.next_player = 'white' if chess_board.turn == chess.WHITE else 'black'
+                            self.ai.reset()
+                            print("Board loaded from FEN")
+                        except Exception as ex:
+                            print(f"Invalid FEN: {ex}")
+
                      # reset game
                     if event.key == pygame.K_r:
                         game.reset()
@@ -225,6 +244,39 @@ class Main:
                                 print("AI found no legal moves for black.")
                         else:
                             print("It's not black's turn. AI move skipped.")
+                    if event.key == pygame.K_s:
+                        # Check if it's white's turn
+                        if game.next_player == 'white':
+                            ai_move = self.ai.choose_move(board, 'white')
+                            if ai_move:
+                                _, mv = ai_move
+                                piece = board.squares[mv.initial.row][mv.initial.col].piece
+                                captured = board.squares[mv.final.row][mv.final.col].has_piece()
+                                board.move(piece, mv)
+
+                                # Check if AI move is a promotion
+                                if board.check_promotion(piece, mv.final):
+                                    promo_cls = self.ai.choose_promotion_piece(
+                                        board, 'white',
+                                        mv.final.row, mv.final.col
+                                    )
+                                    board.complete_promotion(
+                                        mv.final.row, mv.final.col, promo_cls
+                                    )
+
+                                print(f"AI (white) moves: {mv}")
+                                board.set_true_en_passant(piece)
+                                game.play_sound(captured)
+                                game.show_bg(screen)
+                                game.show_last_move(screen)
+                                game.show_pieces(screen)
+                                game.show_check(screen)
+                                game.show_hover(screen)
+                                game.next_turn()
+                            else:
+                                print("AI found no legal moves for white.")
+                        else:
+                            print("It's not white's turn. AI move skipped.")
 
                 if event.type == pygame.QUIT:
                     pygame.quit()

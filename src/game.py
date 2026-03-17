@@ -14,6 +14,7 @@ class Game:
         self.dragger = Dragger()
         self.config = Config()
         self.game_over = False
+        self.board_flipped = False  # False = white on bottom, True = black on bottom
 
         # Promotion modal state
         self.promotion_pending = False
@@ -24,28 +25,40 @@ class Game:
         self.promotion_to_col = 0
         self.promotion_captured = None      # piece that was on the promotion square (if any)
         self.promotion_modal = PromotionModal()
-    
-    
+
+    def screen_to_board(self, screen_row, screen_col):
+        """Convert screen coordinates to actual board coordinates, accounting for flip."""
+        if self.board_flipped:
+            return 7 - screen_row, 7 - screen_col
+        return screen_row, screen_col
+
+    def board_to_screen(self, board_row, board_col):
+        """Convert board coordinates to screen coordinates, accounting for flip."""
+        if self.board_flipped:
+            return 7 - board_row, 7 - board_col
+        return board_row, board_col
+
     #Functions to show
     def show_bg(self, surface):
         theme = self.config.theme
-        
+
         for row in range(ROWS):
             for col in range(COLS):
+                screen_row, screen_col = self.board_to_screen(row, col)
                 color = theme.bg.light if (row + col) % 2 == 0 else theme.bg.dark
-                rect = (col * SQSIZE, row * SQSIZE, SQSIZE, SQSIZE)
+                rect = (screen_col * SQSIZE, screen_row * SQSIZE, SQSIZE, SQSIZE)
                 pygame.draw.rect(surface, color, rect)
 
-                if col == 0:
-                    color = theme.bg.dark if row % 2 == 0 else theme.bg.light
+                if screen_col == 0:
+                    color = theme.bg.dark if screen_row % 2 == 0 else theme.bg.light
                     lbl = self.config.font.render(str(ROWS-row), 1, color)
-                    lbl_pos = (5, 5 + row * SQSIZE)
+                    lbl_pos = (5, 5 + screen_row * SQSIZE)
                     surface.blit(lbl, lbl_pos)
 
-                if row == 7:
+                if screen_row == 7:
                     color = theme.bg.dark if (row + col) % 2 == 0 else theme.bg.light
                     lbl = self.config.font.render(Square.get_alphacol(col), 1, color)
-                    lbl_pos = (col * SQSIZE + SQSIZE - 20, HEIGHT - 20)
+                    lbl_pos = (screen_col * SQSIZE + SQSIZE - 20, screen_row * SQSIZE + SQSIZE - 20)
                     surface.blit(lbl, lbl_pos)
 
     def show_pieces(self, surface):
@@ -53,11 +66,12 @@ class Game:
             for col in range(COLS):
                 if self.board.squares[row][col].has_piece():
                     piece = self.board.squares[row][col].piece
-                    
+
                     if piece is not self.dragger.piece:
                         piece.set_texture(size=80)
                         img = pygame.image.load(piece.texture)
-                        img_center = (col * SQSIZE + SQSIZE // 2, row * SQSIZE + SQSIZE // 2)
+                        screen_row, screen_col = self.board_to_screen(row, col)
+                        img_center = (screen_col * SQSIZE + SQSIZE // 2, screen_row * SQSIZE + SQSIZE // 2)
                         piece.texture_rect = img.get_rect(center=img_center)
                         surface.blit(img, piece.texture_rect)
                         
@@ -67,7 +81,8 @@ class Game:
             piece = self.dragger.piece
             for move in piece.moves:
                 color = theme.moves.light if (move.final.row + move.final.col) % 2 == 0 else theme.moves.dark
-                rect = (move.final.col * SQSIZE, move.final.row * SQSIZE, SQSIZE, SQSIZE)
+                screen_row, screen_col = self.board_to_screen(move.final.row, move.final.col)
+                rect = (screen_col * SQSIZE, screen_row * SQSIZE, SQSIZE, SQSIZE)
                 pygame.draw.rect(surface, color, rect)
                 
     def show_last_move(self, surface):
@@ -75,16 +90,18 @@ class Game:
         if self.board.last_move:
             initial = self.board.last_move.initial
             final = self.board.last_move.final
-            
+
             for pos in [initial, final]:
                 color = theme.trace.light if (pos.row + pos.col) % 2 == 0 else theme.trace.dark
-                rect = (pos.col * SQSIZE, pos.row * SQSIZE, SQSIZE, SQSIZE)
+                screen_row, screen_col = self.board_to_screen(pos.row, pos.col)
+                rect = (screen_col * SQSIZE, screen_row * SQSIZE, SQSIZE, SQSIZE)
                 pygame.draw.rect(surface, color, rect)
 
     def show_hover(self, surface):
         if self.hovered_sqr:
             color = (180, 180, 180)
-            rect = (self.hovered_sqr.col * SQSIZE, self.hovered_sqr.row * SQSIZE, SQSIZE, SQSIZE)
+            screen_row, screen_col = self.board_to_screen(self.hovered_sqr.row, self.hovered_sqr.col)
+            rect = (screen_col * SQSIZE, screen_row * SQSIZE, SQSIZE, SQSIZE)
             pygame.draw.rect(surface, color, rect, width=3)
         
     def next_turn(self):
@@ -121,11 +138,13 @@ class Game:
                     piece = square.piece
                     if piece.__class__.__name__ == "King" and self.board.is_in_check(piece.color):
                         color = theme.moves.light if (row + col) % 2 == 0 else theme.moves.dark
-                        rect = (col * SQSIZE, row * SQSIZE, SQSIZE, SQSIZE)
+                        screen_row, screen_col = self.board_to_screen(row, col)
+                        rect = (screen_col * SQSIZE, screen_row * SQSIZE, SQSIZE, SQSIZE)
                         pygame.draw.rect(surface, color, rect)
         
-    def set_hover(self, row, col):
-        self.hovered_sqr = self.board.squares[row][col]
+    def set_hover(self, screen_row, screen_col):
+        board_row, board_col = self.screen_to_board(screen_row, screen_col)
+        self.hovered_sqr = self.board.squares[board_row][board_col]
         
     def change_theme(self):
         self.config.change_theme()

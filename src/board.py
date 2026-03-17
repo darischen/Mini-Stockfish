@@ -5,6 +5,7 @@ from move import Move
 from sound import Sound
 from config import Config
 import os
+import chess
 
 class Board:
     def __init__(self):
@@ -728,3 +729,28 @@ class Board:
             castling = "-"
 
         return f"{fen_piece_placement} {turn_char} {castling} - 0 1"
+
+    def load_from_chess_board(self, chess_board):
+        """Load position from a python-chess Board object."""
+        piece_map = {
+            chess.PAWN: Pawn, chess.KNIGHT: Knight, chess.BISHOP: Bishop,
+            chess.ROOK: Rook, chess.QUEEN: Queen, chess.KING: King
+        }
+        # Clear all squares
+        for row in range(ROWS):
+            for col in range(COLS):
+                self.squares[row][col] = Square(row, col)
+        # Place pieces from chess board
+        for square in chess.SQUARES:
+            piece = chess_board.piece_at(square)
+            if piece:
+                file_idx = chess.square_file(square)
+                rank_idx = 7 - chess.square_rank(square)
+                color = 'white' if piece.color == chess.WHITE else 'black'
+                piece_cls = piece_map[piece.piece_type]
+                self.squares[rank_idx][file_idx] = Square(rank_idx, file_idx, piece_cls(color))
+        # Reset state
+        self.position_history = {}
+        self.half_move_clock = 0
+        self.last_move = None
+        self.update_position_history('white')

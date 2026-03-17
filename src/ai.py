@@ -351,10 +351,11 @@ class ChessAI:
                     alpha = val
                     current_best = uci
                     if abs(val) >= 90000:
+                        san_move = root_ref.san(uci)
                         if both_mates:
-                            print(f"    Better mate found: {uci} eval={val:.0f} (faster than previous)")
+                            print(f"    Better mate found: {san_move} eval={val:.0f} (faster than previous)")
                         else:
-                            print(f"    First mate found: {uci} eval={val:.0f}, continuing to find faster mate...")
+                            print(f"    First mate found: {san_move} eval={val:.0f}, continuing to find faster mate...")
 
             bar.close()
             best_move, best_eval = current_best, alpha
@@ -375,7 +376,8 @@ class ChessAI:
             tt_m = core_search.get_tt_misses()
             tt_total = tt_h + tt_m
             tt_pct = (100.0 * tt_h / tt_total) if tt_total > 0 else 0.0
-            print(f"Depth {depth} → best={best_move} eval={eval_str}  TT: {tt_h}/{tt_total} hits ({tt_pct:.1f}%)")
+            san_move = root_ref.san(best_move) if best_move else "None"
+            print(f"Depth {depth} → best={san_move} eval={eval_str}  TT: {tt_h}/{tt_total} hits ({tt_pct:.1f}%)")
 
         # If final eval is inf (search bug), fall back to last reasonable result.
         # But keep mate scores (>=90000) — those are real forced mates.
@@ -385,8 +387,7 @@ class ChessAI:
             best_eval = last_finite_eval
 
         elapsed = time.time() - total_start
-        display_eval = best_eval if color == 'white' else -best_eval
-        eval_str = "inf" if math.isinf(display_eval) else f"{display_eval:.4f}"
+        eval_str = "inf" if math.isinf(best_eval) else f"{best_eval:.4f}"
         print(f"AI search complete. Nodes: {core_search.get_nodes_evaluated()}, Pruned: {core_search.get_branches_pruned()}, Time: {elapsed:.2f}s")
         print(f"Eval: {eval_str}")
 
