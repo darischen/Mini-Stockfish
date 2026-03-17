@@ -23,13 +23,13 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
-# syzygy_tb = SyzygyTablebase()
-# syzygy_tb.add_directory("endgame/syzygy/")
+syzygy_tb = SyzygyTablebase()
+syzygy_tb.add_directory("endgame/syzygy/")
 
-# gaviota_tb = GaviotaTablebase()
-# gaviota_tb.add_directory("endgame/gaviota/3/")
-# gaviota_tb.add_directory("endgame/gaviota/4/")
-# gaviota_tb.add_directory("endgame/gaviota/5/")
+gaviota_tb = GaviotaTablebase()
+gaviota_tb.add_directory("endgame/gaviota/3/")
+gaviota_tb.add_directory("endgame/gaviota/4/")
+gaviota_tb.add_directory("endgame/gaviota/5/")
 
 from chess import KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN
 piece_map = {
@@ -344,12 +344,17 @@ class ChessAI:
                     'pruned': core_search.get_branches_pruned()
                 })
 
+                # Check if both are mate scores (>= 90000 means mate within horizon)
+                both_mates = abs(val) >= 90000 and abs(alpha) >= 90000
+
                 if val > alpha:
                     alpha = val
                     current_best = uci
-                    # If mate found, continue searching remaining moves to find the FASTEST mate
                     if abs(val) >= 90000:
-                        print(f"    Mate found with {uci}: eval={val:.0f}, continuing to find best mate...")
+                        if both_mates:
+                            print(f"    Better mate found: {uci} eval={val:.0f} (faster than previous)")
+                        else:
+                            print(f"    First mate found: {uci} eval={val:.0f}, continuing to find faster mate...")
 
             bar.close()
             best_move, best_eval = current_best, alpha
@@ -392,6 +397,64 @@ class ChessAI:
         mv = self._uci_to_move(board, best_move)
         piece = board.squares[mv.initial.row][mv.initial.col].piece
         return piece, mv
+
+    def choose_promotion_piece(self, board, color, to_row, to_col):
+        """
+        Evaluate each promotion candidate (Q, R, B, N) with a 6-ply search.
+        Returns the piece class with the highest evaluation.
+        """
+        from piece import Queen, Rook, Bishop, Knight
+
+        piece_map = {
+            chess.QUEEN: Queen,
+            chess.ROOK: Rook,
+            chess.BISHOP: Bishop,
+            chess.KNIGHT: Knight,
+        }
+
+        root_fen = board.get_fen()
+        best_cls = Queen  # default
+        best_val = -math.inf
+
+        for pt, cls in piece_map.items():
+            # Build a board with this promotion applied
+            test_board = chess.Board(root_fen)
+            test_board.turn = chess.WHITE if color == 'white' else chess.BLACK
+
+            # Place the promoted piece
+            sq = (7 - to_row) * 8 + to_col  # convert row/col to python-chess square
+            piece_obj = chess.Piece(pt, test_board.turn)
+            test_board.set_piece_at(sq, piece_obj)
+
+            # Flip turn to opponent for evaluation
+            test_board.turn = not test_board.turn
+
+            # Quick 6-ply search from opponent's perspective
+            acc = Accumulator()
+            acc.init(test_board)
+            key = core_search.compute_hash(test_board)
+
+            core_search.reset_counters()
+            val = core_search.minimax(
+                test_board, acc,
+                6,                  # 6-ply depth
+                -math.inf, math.inf,
+                color,
+                key,
+                6                   # required_depth
+            )
+            # minimax returns from side-to-move perspective (opponent)
+            # negate to get our perspective
+            val = -val
+
+            print(f"  Promotion eval: {cls.__name__} = {val:.2f}")
+
+            if val > best_val:
+                best_val = val
+                best_cls = cls
+
+        print(f"  AI chooses: {best_cls.__name__} (eval={best_val:.2f})")
+        return best_cls
 
     def _evaluate_root(self, root_fen, uci, depth, maximize, ai_color):
         """Evaluate one root move via Cython minimax."""

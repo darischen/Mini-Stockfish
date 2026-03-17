@@ -4,6 +4,7 @@ from board import Board
 from dragger import Dragger
 from square import Square
 from config import Config
+from promotion import PromotionModal
 
 class Game:
     def __init__(self):
@@ -13,6 +14,16 @@ class Game:
         self.dragger = Dragger()
         self.config = Config()
         self.game_over = False
+
+        # Promotion modal state
+        self.promotion_pending = False
+        self.promotion_pawn = None          # the Pawn piece object
+        self.promotion_from_row = 0
+        self.promotion_from_col = 0
+        self.promotion_to_row = 0
+        self.promotion_to_col = 0
+        self.promotion_captured = None      # piece that was on the promotion square (if any)
+        self.promotion_modal = PromotionModal()
     
     
     #Functions to show
@@ -124,6 +135,10 @@ class Game:
             self.config.capture_sound.play()
         else:
             self.config.move_sound.play()
+
+    def show_promotion_modal(self, surface):
+        """Draw the promotion modal if active."""
+        self.promotion_modal.draw(surface)
 
     def reset(self):
         self.__init__()

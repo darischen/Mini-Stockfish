@@ -434,6 +434,27 @@ cpdef void reset_tt_counters():
     tt_hits = 0
     tt_misses = 0
 
+cdef double static_eval(object board, object acc, str ai_color):
+    """
+    Simple material-based evaluation (fallback when not using NNUE).
+    Returns score from perspective of ai_color.
+    """
+    cdef double score = 0.0
+    cdef int piece_type
+
+    for piece_type in range(1, 7):  # 1=pawn, 2=knight, 3=bishop, 4=rook, 5=queen, 6=king
+        # White pieces
+        white_count = len(board.pieces(piece_type, chess.WHITE))
+        # Black pieces
+        black_count = len(board.pieces(piece_type, chess.BLACK))
+
+        score += PIECE_VAL[piece_type] * (white_count - black_count)
+
+    # Return from ai_color's perspective
+    if ai_color == "black":
+        score = -score
+    return score
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef double quiesce(object board,
@@ -442,17 +463,19 @@ cdef double quiesce(object board,
                     double beta,
                     str ai_color,
                     uint64_t key,
-                    int depth = 0):
+                    int depth = 0,
+                    int tree_depth = 0):
     """
     Quiescence search with TT + incremental Zobrist hashing.
     `key` is the 64-bit hash for `board` before any moves here.
-    `depth` is used for mate distance scoring consistency (same as minimax).
+    `depth` is quiesce recursion depth.
+    `tree_depth` is actual plies from root (used for correct mate scoring).
     """
     global tt_hits, tt_misses
 
     if not board.legal_moves:
         if board.is_check():
-            return -MATE_SCORE + depth
+            return -(MATE_SCORE - tree_depth)
         else:
             return 0.0
 
@@ -520,7 +543,7 @@ cdef double quiesce(object board,
             next_key = compute_hash(board)
 
         # recurse with flipped colors and updated key
-        score = -quiesce(board, acc, -beta, -alpha, ai_color, next_key, depth - 1)
+        score = -quiesce(board, acc, -beta, -alpha, ai_color, next_key, depth - 1, tree_depth + 1)
 
         board.pop()
         acc.rollback(mv, captured)
@@ -600,13 +623,14 @@ cpdef double minimax(object board,
     #    (draw claims can give false positives with fresh board copies)
     if not board.legal_moves:
         if board.is_check():
-            return -MATE_SCORE + depth
+            actual_ply_count = required_depth - depth
+            return -(MATE_SCORE - actual_ply_count)
         else:
             return 0.0
 
     # 3) Leaf → quiescence
     if depth == 0:
-        child = quiesce(board, acc, alpha, beta, ai_color, key, required_depth)
+        child = quiesce(board, acc, alpha, beta, ai_color, key, 0, required_depth)
         if USE_TT:
             tt_store(key, depth, child, EXACT)
         return child

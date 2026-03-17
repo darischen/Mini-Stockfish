@@ -5,7 +5,7 @@ from halfkp import HalfKP_NNUE
 
 # 1) Load the checkpoint into the HalfKP model
 model = HalfKP_NNUE()
-model.load_state_dict(torch.load("halfkp_best.pth", map_location="cpu"))
+model.load_state_dict(torch.load("halfkp_best_1_33.pth", map_location="cpu"))
 model.eval()
 
 # 2) Apply dynamic INT8 quantization to Linear layers BEFORE tracing

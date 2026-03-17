@@ -252,8 +252,8 @@ class Board:
                         os.path.join('../assets/sounds/capture.mp3'))
                     sound.play()
             
-            else:
-                self.check_promotion(piece, final)
+            # Promotion is now handled externally by the game loop
+            # (check_promotion just returns True/False, doesn't auto-promote)
 
         if isinstance(piece, King):
             if self.castling(initial, final) and not testing:
@@ -282,9 +282,25 @@ class Board:
             self.last_move = move
 
     def check_promotion(self, piece, final):
-        if final.row == 0 or final.row == 7:
-            self.config.promotion_sound.play()
-            self.squares[final.row][final.col].piece = Queen(piece.color)
+        """Return True if this pawn move is a promotion (reached rank 0 or 7)."""
+        return isinstance(piece, Pawn) and (final.row == 0 or final.row == 7)
+
+    def complete_promotion(self, row, col, piece_cls):
+        """Replace the pawn at (row, col) with the chosen piece."""
+        color = self.squares[row][col].piece.color
+        self.squares[row][col].piece = piece_cls(color)
+        self.config.promotion_sound.play()
+
+    def revert_promotion(self, piece, from_row, from_col, to_row, to_col, captured_piece):
+        """
+        Undo a pawn move to the promotion rank.
+        Move the pawn back from (to_row, to_col) to (from_row, from_col),
+        and restore any captured piece at (to_row, to_col).
+        """
+        self.squares[from_row][from_col].piece = piece
+        self.squares[to_row][to_col].piece = captured_piece
+        self.last_move = None
+        piece.moved = False
 
     def castling(self, initial, final):
         return abs(initial.col - final.col) == 2
