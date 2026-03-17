@@ -16,6 +16,10 @@ class Game:
         self.game_over = False
         self.board_flipped = False  # False = white on bottom, True = black on bottom
 
+        # Move history for undo/redo
+        self.move_history = [(self.board.get_fen(), None)]  # (fen, move)
+        self.history_index = 0
+
         # Promotion modal state
         self.promotion_pending = False
         self.promotion_pawn = None          # the Pawn piece object
@@ -37,6 +41,33 @@ class Game:
         if self.board_flipped:
             return 7 - board_row, 7 - board_col
         return board_row, board_col
+
+    def add_move_to_history(self, move):
+        """Add a move to history, truncating any moves after current position."""
+        self.move_history = self.move_history[:self.history_index + 1]
+        self.move_history.append((self.board.get_fen(), move))
+        self.history_index = len(self.move_history) - 1
+
+    def navigate_history(self, direction):
+        """Navigate history: 'left' = back, 'right' = forward, 'up' = end, 'down' = start."""
+        if direction == 'left':
+            if self.history_index > 0:
+                self.history_index -= 1
+        elif direction == 'right':
+            if self.history_index < len(self.move_history) - 1:
+                self.history_index += 1
+        elif direction == 'up':
+            self.history_index = len(self.move_history) - 1
+        elif direction == 'down':
+            self.history_index = 0
+
+        fen, move = self.move_history[self.history_index]
+        import chess
+        chess_board = chess.Board(fen)
+        self.board.load_from_chess_board(chess_board)
+        self.board.last_move = move if move is not None else None
+        self.next_player = 'white' if chess_board.turn == chess.WHITE else 'black'
+        self.dragger.undrag_piece()
 
     #Functions to show
     def show_bg(self, surface):

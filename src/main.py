@@ -107,6 +107,9 @@ class Main:
                             game.show_pieces(screen)
 
                             game.next_turn()
+                            promo_move = Move(Square(game.promotion_from_row, game.promotion_from_col),
+                                            Square(game.promotion_to_row, game.promotion_to_col))
+                            game.add_move_to_history(promo_move)
                         elif action == 'cancel':
                             # Revert the move
                             board.revert_promotion(
@@ -167,6 +170,7 @@ class Main:
                                 game.show_pieces(screen)
 
                                 game.next_turn()
+                                game.add_move_to_history(move)
                         else:
                             # if the released square is the same as the initial square don't play the sound
                             if (dragger.initial_row, dragger.initial_col) != (released_row, released_col):
@@ -240,6 +244,7 @@ class Main:
                                 game.show_check(screen)
                                 game.show_hover(screen)
                                 game.next_turn()
+                                game.add_move_to_history(mv)
                             else:
                                 print("AI found no legal moves for black.")
                         else:
@@ -273,10 +278,37 @@ class Main:
                                 game.show_check(screen)
                                 game.show_hover(screen)
                                 game.next_turn()
+                                game.add_move_to_history(mv)
                             else:
                                 print("AI found no legal moves for white.")
                         else:
                             print("It's not white's turn. AI move skipped.")
+
+                    # Navigate move history
+                    if event.key == pygame.K_LEFT:
+                        game.navigate_history('left')
+                        game.show_bg(screen)
+                        game.show_last_move(screen)
+                        game.show_pieces(screen)
+                        game.show_check(screen)
+                    elif event.key == pygame.K_RIGHT:
+                        game.navigate_history('right')
+                        game.show_bg(screen)
+                        game.show_last_move(screen)
+                        game.show_pieces(screen)
+                        game.show_check(screen)
+                    elif event.key == pygame.K_UP:
+                        game.navigate_history('up')
+                        game.show_bg(screen)
+                        game.show_last_move(screen)
+                        game.show_pieces(screen)
+                        game.show_check(screen)
+                    elif event.key == pygame.K_DOWN:
+                        game.navigate_history('down')
+                        game.show_bg(screen)
+                        game.show_last_move(screen)
+                        game.show_pieces(screen)
+                        game.show_check(screen)
 
                 if event.type == pygame.QUIT:
                     pygame.quit()
