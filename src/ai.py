@@ -24,12 +24,18 @@ os.environ["MKL_NUM_THREADS"] = "1"
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
 syzygy_tb = SyzygyTablebase()
-syzygy_tb.add_directory("endgame/syzygy/")
+try:
+    syzygy_tb.add_directory("endgame/syzygy/")
+except (FileNotFoundError, OSError):
+    pass  # Tablebase directory not found, continue without it
 
 gaviota_tb = GaviotaTablebase()
-gaviota_tb.add_directory("endgame/gaviota/3/")
-gaviota_tb.add_directory("endgame/gaviota/4/")
-gaviota_tb.add_directory("endgame/gaviota/5/")
+try:
+    gaviota_tb.add_directory("endgame/gaviota/3/")
+    gaviota_tb.add_directory("endgame/gaviota/4/")
+    gaviota_tb.add_directory("endgame/gaviota/5/")
+except (FileNotFoundError, OSError):
+    pass  # Tablebase directory not found, continue without it
 
 from chess import KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN
 piece_map = {
@@ -370,8 +376,9 @@ class ChessAI:
                 last_finite_eval = best_eval
                 last_finite_depth = depth
 
-            # Handle inf values in printing
-            eval_str = "inf" if math.isinf(best_eval) else f"{best_eval:.4f}"
+            # Handle inf values in printing (convert to White's perspective for consistency)
+            display_eval = best_eval if color == 'white' else -best_eval
+            eval_str = "inf" if math.isinf(display_eval) else f"{display_eval:.4f}"
             tt_h = core_search.get_tt_hits()
             tt_m = core_search.get_tt_misses()
             tt_total = tt_h + tt_m
@@ -387,7 +394,9 @@ class ChessAI:
             best_eval = last_finite_eval
 
         elapsed = time.time() - total_start
-        eval_str = "inf" if math.isinf(best_eval) else f"{best_eval:.4f}"
+        # Convert to absolute perspective: positive = White better, negative = Black better
+        display_eval = best_eval if color == 'white' else -best_eval
+        eval_str = "inf" if math.isinf(display_eval) else f"{display_eval:.4f}"
         print(f"AI search complete. Nodes: {core_search.get_nodes_evaluated()}, Pruned: {core_search.get_branches_pruned()}, Time: {elapsed:.2f}s")
         print(f"Eval: {eval_str}")
 
