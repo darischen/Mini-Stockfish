@@ -33,3 +33,19 @@ set_target_properties(nnue_inference PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
+
+# ─── Chess move generation library (no Torch dependency) ───
+add_library(chess_movegen SHARED
+    chess_movegen.cpp
+)
+target_compile_definitions(chess_movegen PRIVATE CHESS_MOVEGEN_EXPORTS)
+if(MSVC)
+    target_compile_options(chess_movegen PRIVATE /O2)
+else()
+    target_compile_options(chess_movegen PRIVATE -O3)
+endif()
+set_target_properties(chess_movegen PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    CXX_STANDARD 17
+)

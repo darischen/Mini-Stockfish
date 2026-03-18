@@ -1,0 +1,10 @@
+^C:\USERS\DARIS\DESKTOP\SCHOOL\MINI-STOCKFISH\SRC\NNUE\CMAKELISTS.TXT
+setlocal
+C:\Users\daris\AppData\Local\Programs\Python\Python310\Lib\site-packages\cmake\data\bin\cmake.exe -SC:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue -BC:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build --check-stamp-file C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

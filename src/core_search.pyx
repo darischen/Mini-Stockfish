@@ -1,5 +1,5 @@
 # distutils: language = c++
-# distutils: libraries = nnue_inference
+# distutils: libraries = nnue_inference chess_movegen
 # distutils: library_dirs = nnue/build nnue/build/Release
 # distutils: include_dirs = nnue
 
@@ -271,7 +271,85 @@ cdef extern from *:
                              const int64_t* idx0, int len0,
                              const int64_t* idx1, int len1) nogil
 
-#  3) module‐level handle
+#  3) C++ move generation API
+cdef extern from "chess_movegen.h":
+    ctypedef unsigned int CMove
+
+    struct CBoard:
+        uint64_t pieces[2][7]
+        uint64_t occupied
+        uint64_t occupied_co[2]
+        int      side_to_move
+        int      ep_square
+        unsigned char castling
+
+    void cboard_from_bitboards(CBoard* b, const uint64_t* bb14,
+                                int stm, int ep, unsigned char castle) nogil
+    int  cboard_legal_moves(const CBoard* b, CMove* moves) nogil
+    void cboard_piece_array(const CBoard* b, unsigned char* out) nogil
+    int  cboard_is_check(const CBoard* b) nogil
+    int  cboard_is_capture(const CBoard* b, CMove mv) nogil
+    void movegen_init() nogil
+
+    int CMOVE_FROM(CMove m)
+    int CMOVE_TO(CMove m)
+    int CMOVE_PROMO(CMove m)
+    int CMOVE_FLAGS(CMove m)
+
+    int CMOVE_FLAG_CAPTURE
+    int CMOVE_FLAG_EP
+    int CMOVE_FLAG_CASTLE
+    int CMOVE_FLAG_PROMOTION
+
+# Re-declare the macros as inline cdef for Cython since macros aren't directly callable
+cdef inline int _cmove_from(CMove m):
+    return <int>(m & 0x3F)
+
+cdef inline int _cmove_to(CMove m):
+    return <int>((m >> 6) & 0x3F)
+
+cdef inline int _cmove_promo(CMove m):
+    return <int>((m >> 12) & 0xF)
+
+cdef inline int _cmove_flags(CMove m):
+    return <int>((m >> 16) & 0xF)
+
+cdef CBoard _cboard
+cdef uint64_t _bb14[14]
+
+cdef void _sync_cboard(object board):
+    """Sync python-chess board state into our CBoard struct."""
+    cdef int stm, ep_int
+    cdef unsigned char castle = 0
+
+    # Piece bitboards: white pawns..kings, black pawns..kings
+    _bb14[0]  = <uint64_t>board.pawns   & <uint64_t>board.occupied_co[1]  # white pawns
+    _bb14[1]  = <uint64_t>board.knights  & <uint64_t>board.occupied_co[1]  # white knights
+    _bb14[2]  = <uint64_t>board.bishops  & <uint64_t>board.occupied_co[1]  # white bishops
+    _bb14[3]  = <uint64_t>board.rooks    & <uint64_t>board.occupied_co[1]  # white rooks
+    _bb14[4]  = <uint64_t>board.queens   & <uint64_t>board.occupied_co[1]  # white queens
+    _bb14[5]  = <uint64_t>board.kings    & <uint64_t>board.occupied_co[1]  # white kings
+    _bb14[6]  = <uint64_t>board.pawns   & <uint64_t>board.occupied_co[0]  # black pawns
+    _bb14[7]  = <uint64_t>board.knights  & <uint64_t>board.occupied_co[0]  # black knights
+    _bb14[8]  = <uint64_t>board.bishops  & <uint64_t>board.occupied_co[0]  # black bishops
+    _bb14[9]  = <uint64_t>board.rooks    & <uint64_t>board.occupied_co[0]  # black rooks
+    _bb14[10] = <uint64_t>board.queens   & <uint64_t>board.occupied_co[0]  # black queens
+    _bb14[11] = <uint64_t>board.kings    & <uint64_t>board.occupied_co[0]  # black kings
+    _bb14[12] = <uint64_t>board.occupied_co[1]  # white occupied
+    _bb14[13] = <uint64_t>board.occupied_co[0]  # black occupied
+
+    stm = 0 if board.turn else 1
+    ep_int = board.ep_square if board.ep_square is not None else -1
+
+    cdef uint64_t cr = <uint64_t>(board.castling_rights)
+    if cr & CASTLING_WK: castle |= 1
+    if cr & CASTLING_WQ: castle |= 2
+    if cr & CASTLING_BK: castle |= 4
+    if cr & CASTLING_BQ: castle |= 8
+
+    cboard_from_bitboards(&_cboard, _bb14, stm, ep_int, castle)
+
+#  4) module‐level handle
 cdef NNUEHandle _nnue = NULL
 
 # —————————————————————————Probe/Store Helper————————————————————————————————
@@ -396,6 +474,22 @@ from libc.math cimport INFINITY
 
 cdef double MATE_SCORE = 100000.0
 
+# python-chess castling_rights bitmask: bit positions for rook squares
+# WK = H1 = bit 7, WQ = A1 = bit 0, BK = H8 = bit 63, BQ = A8 = bit 56
+cdef uint64_t CASTLING_WK = 1ULL << 7   # h1
+cdef uint64_t CASTLING_WQ = 1ULL << 0   # a1
+cdef uint64_t CASTLING_BK = 1ULL << 63  # h8
+cdef uint64_t CASTLING_BQ = 1ULL << 56  # a8
+
+cdef inline void _read_castling(object board,
+                                  bint *ck, bint *cq, bint *ck2, bint *cq2):
+    """Read all 4 castling rights from board.castling_rights bitmask in 1 attribute access."""
+    cdef uint64_t cr = <uint64_t>(board.castling_rights)
+    ck[0]  = (cr & CASTLING_WK) != 0
+    cq[0]  = (cr & CASTLING_WQ) != 0
+    ck2[0] = (cr & CASTLING_BK) != 0
+    cq2[0] = (cr & CASTLING_BQ) != 0
+
 # ——————————————————— History Heuristic Table ———————————————————————
 # Indexed by [from_square][to_square]. Quiet moves that cause beta
 # cutoffs get their score bumped by depth², so deeper cutoffs matter more.
@@ -473,8 +567,11 @@ cdef double quiesce(object board,
     """
     global tt_hits, tt_misses
 
-    if not board.legal_moves:
-        if board.is_check():
+    # Use C++ movegen for terminal check (avoids expensive python-chess legal_moves)
+    cdef CMove _terminal_buf[256]
+    _sync_cboard(board)
+    if cboard_legal_moves(&_cboard, _terminal_buf) == 0:
+        if cboard_is_check(&_cboard):
             return -(MATE_SCORE - tree_depth)
         else:
             return 0.0
@@ -526,21 +623,15 @@ cdef double quiesce(object board,
             captured = board.piece_at(mv.to_square)
         mover = board.piece_at(mv.from_square)
 
-        # Save pre-move state for incremental hash
-        ck = board.has_kingside_castling_rights(chess.WHITE)
-        cq = board.has_queenside_castling_rights(chess.WHITE)
-        ck2 = board.has_kingside_castling_rights(chess.BLACK)
-        cq2 = board.has_queenside_castling_rights(chess.BLACK)
+        # Save pre-move state for incremental hash (1 attr access vs 4 method calls)
+        _read_castling(board, &ck, &cq, &ck2, &cq2)
         old_ep = board.ep_square
 
         # do the capture
         board.push(mv)
-        acc.update(mv, captured)
+        acc.update(mv, captured, old_ep_square=old_ep)
         next_key = update_hash_full(key, mv, mover, captured,
                                      ck, cq, ck2, cq2, old_ep, board)
-
-        if not verify_hash(next_key, board):
-            next_key = compute_hash(board)
 
         # recurse with flipped colors and updated key
         score = -quiesce(board, acc, -beta, -alpha, ai_color, next_key, depth - 1, tree_depth + 1)
@@ -619,10 +710,11 @@ cpdef double minimax(object board,
         # for move ordering — it's still the best move found at this position.
         tt_move = tt_get_best_move(key)
 
-    # 2) Terminal — only check checkmate/stalemate, not draw claims
-    #    (draw claims can give false positives with fresh board copies)
-    if not board.legal_moves:
-        if board.is_check():
+    # 2) Terminal — use C++ movegen for fast legal move check
+    _sync_cboard(board)
+    cdef CMove _term_buf2[256]
+    if cboard_legal_moves(&_cboard, _term_buf2) == 0:
+        if cboard_is_check(&_cboard):
             actual_ply_count = required_depth - depth
             return -(MATE_SCORE - actual_ply_count)
         else:
@@ -649,19 +741,14 @@ cpdef double minimax(object board,
         and beta < INFINITY
         and _has_non_pawn_material(board, board.turn)):
         # Save pre-move state
-        ck = board.has_kingside_castling_rights(chess.WHITE)
-        cq = board.has_queenside_castling_rights(chess.WHITE)
-        ck2 = board.has_kingside_castling_rights(chess.BLACK)
-        cq2 = board.has_queenside_castling_rights(chess.BLACK)
+        _read_castling(board, &ck, &cq, &ck2, &cq2)
         old_ep = board.ep_square
 
         # Play a "null move" (pass turn) and search with reduced depth
         null_mv = chess.Move.null()
         board.push(null_mv)
-        acc.update(null_mv, None)
+        acc.update(null_mv, None, old_ep_square=old_ep)
         null_key = null_move_hash(key, ck, cq, ck2, cq2, old_ep, board)
-        if not verify_hash(null_key, board):
-            null_key = compute_hash(board)
         null_score = -minimax(board, acc,
                               depth - 1 - NMP_REDUCTION,
                               -beta, -beta + 1,
@@ -690,20 +777,13 @@ cpdef double minimax(object board,
         mover = board.piece_at(mv.from_square)
 
         # Save pre-move state for incremental hash
-        ck = board.has_kingside_castling_rights(chess.WHITE)
-        cq = board.has_queenside_castling_rights(chess.WHITE)
-        ck2 = board.has_kingside_castling_rights(chess.BLACK)
-        cq2 = board.has_queenside_castling_rights(chess.BLACK)
+        _read_castling(board, &ck, &cq, &ck2, &cq2)
         old_ep = board.ep_square
 
         board.push(mv)
-        acc.update(mv, captured)
+        acc.update(mv, captured, old_ep_square=old_ep)
         next_key = update_hash_full(key, mv, mover, captured,
                                      ck, cq, ck2, cq2, old_ep, board)
-
-        if not verify_hash(next_key, board):
-            # Hash is wrong, fall back to full recompute
-            next_key = compute_hash(board)
 
         is_promotion = mv.promotion is not None
         gives_check = board.is_check()
@@ -781,70 +861,96 @@ cpdef double minimax(object board,
             tt_store(key, depth, value, EXACT)
     return value
 
+cdef int PROMO_TO_CHESS[5]
+PROMO_TO_CHESS[0] = 0  # no promotion
+PROMO_TO_CHESS[1] = 2  # knight (CMove=1 → chess.KNIGHT=2)
+PROMO_TO_CHESS[2] = 3  # bishop (CMove=2 → chess.BISHOP=3)
+PROMO_TO_CHESS[3] = 4  # rook   (CMove=3 → chess.ROOK=4)
+PROMO_TO_CHESS[4] = 5  # queen  (CMove=4 → chess.QUEEN=5)
+
 cdef list order_moves(object board, object tt_move = None):
     """
-    Generates and scores all legal moves for `board`.
-    Returns a Python list of moves in descending score order (best first).
+    Generates and scores all legal moves for `board` using C++ movegen.
+    Returns a Python list of chess.Move in descending score order (best first).
 
     Priority tiers:
       1. TT best move          (score += 10_000_000)
       2. Captures by MVV/LVA   (score = 2000*victim - attacker)
       3. Quiet moves by history (score = history[from][to])
     """
-    cdef int us       = board.turn
-    cdef int them     = not us
-    cdef object mv, attacker, victim
-    cdef int from_sq, to_sq, a_val, v_val, score, ep_sq
+    cdef CMove c_moves[256]
+    cdef unsigned char pieces[64]
+    cdef int n_moves, i
+    cdef int from_sq, to_sq, flags, promo
+    cdef int a_pt, v_pt, a_val, v_val, score
+    cdef int tt_from = -1, tt_to = -1, tt_promo = 0
     cdef list scored = []
-    cdef dict piece_cache = {}
 
-    # Pre-cache all piece positions and identify captures (faster than repeated method calls)
-    for sq in range(64):
-        piece_cache[sq] = board.piece_at(sq)
+    # Sync python-chess board → CBoard and generate moves + piece array in C++
+    _sync_cboard(board)
+    n_moves = cboard_legal_moves(&_cboard, c_moves)
+    cboard_piece_array(&_cboard, pieces)
 
-    # 1) Loop through legal moves and score them
-    for mv in board.legal_moves:
-        from_sq = mv.from_square
-        to_sq   = mv.to_square
+    # Pre-extract TT move fields for fast comparison (avoid Python == per move)
+    if tt_move is not None:
+        tt_from = tt_move.from_square
+        tt_to = tt_move.to_square
+        tt_promo = tt_move.promotion if tt_move.promotion is not None else 0
 
-        # Attacker value (use cached piece)
-        attacker = piece_cache[from_sq]
-        a_val = PIECE_VAL[attacker.piece_type] if attacker else 0
+    for i in range(n_moves):
+        from_sq = _cmove_from(c_moves[i])
+        to_sq   = _cmove_to(c_moves[i])
+        flags   = _cmove_flags(c_moves[i])
+        promo   = _cmove_promo(c_moves[i])
 
-        # Victim value: check cached piece at destination (faster than is_capture call)
-        victim = piece_cache[to_sq]
-        if victim is not None:
-            # It's a capture if there's a piece at the destination
-            v_val = PIECE_VAL[victim.piece_type]
-        elif board.is_en_passant(mv):
-            # En passant: piece is on a different square
-            ep_sq = mv.to_square + (8 if us else -8)
-            victim = piece_cache[ep_sq]
-            v_val = PIECE_VAL[victim.piece_type] if victim else 0
-        else:
-            v_val = 0
+        # Attacker piece type from piece array: low 4 bits = piece_type
+        a_pt = pieces[from_sq] & 0xF
+        a_val = PIECE_VAL[a_pt] if a_pt else 0
+
+        # Victim scoring — use flags from C++ (no Python method calls)
+        v_val = 0
+        if flags & 1:  # CMOVE_FLAG_CAPTURE
+            if flags & 2:  # CMOVE_FLAG_EP
+                # En passant: captured pawn is behind target square
+                v_val = PIECE_VAL[1]  # pawn value
+            else:
+                v_pt = pieces[to_sq] & 0xF
+                v_val = PIECE_VAL[v_pt] if v_pt else 0
 
         if v_val > 0:
-            # Capture: MVV/LVA
             score = 2000 * v_val - a_val
         else:
-            # Quiet move: use history heuristic
             score = history[from_sq][to_sq]
 
         # Promotion bonus
-        if mv.promotion is not None:
-            score += PIECE_VAL[mv.promotion]
+        if flags & 8:  # CMOVE_FLAG_PROMOTION
+            score += PIECE_VAL[PROMO_TO_CHESS[promo]]
 
         # TT best move gets absolute priority
-        if tt_move is not None and mv == tt_move:
+        if (tt_from == from_sq and tt_to == to_sq
+            and (tt_promo == 0 or tt_promo == PROMO_TO_CHESS[promo])):
             score += 10000000
 
-        scored.append((mv, score))
+        scored.append((c_moves[i], score))
 
-    # 2) Final sort & return
+    # Sort by score descending
     scored.sort(key=lambda x: x[1], reverse=True)
-    return [m for m, _ in scored]
+
+    # Convert CMove → chess.Move
+    cdef list result = []
+    cdef CMove cm
+    cdef int rf, rt, rp, rfl
+    for cm, _ in scored:
+        rf = _cmove_from(cm)
+        rt = _cmove_to(cm)
+        rp = _cmove_promo(cm)
+        if rp:
+            result.append(chess.Move(rf, rt, promotion=PROMO_TO_CHESS[rp]))
+        else:
+            result.append(chess.Move(rf, rt))
+    return result
 
 # Allocate a 4M-entry table by default
 _init_zobrist_random()
 init_tt(1<<26)
+movegen_init()

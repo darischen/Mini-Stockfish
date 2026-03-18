@@ -78,13 +78,15 @@ class Accumulator:
 
         return self.idx0, self.idx1
 
-    def update(self, move: chess.Move, captured: chess.Piece = None):
+    def update(self, move: chess.Move, captured: chess.Piece = None, old_ep_square=None):
         """
         Update indices after the caller has already called board.push(move).
         `self.board` points to the same board, so it's already in post-move state.
 
         HalfKP index = king_sq * PIECES_PER_KING + piece_sq * NUM_NONKING + piece_type_offset
         Since piece_sq is encoded, every move changes the mover's index.
+
+        `old_ep_square` is the board's ep_square BEFORE the push (avoids pop/push round-trip).
         """
         assert self.board is not None, "Call init() before update()"
 
@@ -111,11 +113,11 @@ class Accumulator:
         from_sq = move.from_square
         to_sq = move.to_square
 
-        # Detect en passant: pop to pre-move state, check, re-push.
-        # The old heuristic was buggy (falsely triggered on regular pawn captures).
-        self.board.pop()
-        is_ep = self.board.is_en_passant(move)
-        self.board.push(move)
+        # Detect en passant using pre-push ep_square (avoids expensive pop/push round-trip)
+        is_ep = (old_ep_square is not None
+                 and to_sq == old_ep_square
+                 and mover is not None
+                 and mover.piece_type == chess.PAWN)
 
         if is_ep:
             # Captured pawn was behind the to_square (from mover's perspective)

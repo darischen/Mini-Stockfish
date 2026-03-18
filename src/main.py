@@ -75,7 +75,8 @@ class Main:
 
                     if dragger.dragging:
                         dragger.piece.clear_moves()
-                        board.calc_moves(dragger.piece, dragger.initial_row, dragger.initial_col, bool=True)
+                        board_row, board_col = game.screen_to_board(dragger.initial_row, dragger.initial_col)
+                        board.calc_moves(dragger.piece, board_row, board_col, bool=True)
                         dragger.update_mouse(event.pos)
                         game.show_bg(screen)
                         game.show_last_move(screen)
@@ -134,9 +135,10 @@ class Main:
                         released_row, released_col = game.screen_to_board(screen_row, screen_col)
 
                         dragger.piece.clear_moves()
-                        board.calc_moves(dragger.piece, dragger.initial_row, dragger.initial_col, bool=True)
+                        board_row, board_col = game.screen_to_board(dragger.initial_row, dragger.initial_col)
+                        board.calc_moves(dragger.piece, board_row, board_col, bool=True)
 
-                        initial = Square(dragger.initial_row, dragger.initial_col)
+                        initial = Square(board_row, board_col)
                         final = Square(released_row, released_col)
                         move = Move(initial, final)
 
@@ -160,7 +162,8 @@ class Main:
                                 game.promotion_modal.open(
                                     dragger.piece.color,
                                     released_row,
-                                    released_col
+                                    released_col,
+                                    game.board_flipped
                                 )
                                 dragger.undrag_piece()
                                 # Don't switch turns yet — wait for selection
