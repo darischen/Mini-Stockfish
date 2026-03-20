@@ -285,6 +285,8 @@ class ChessAI:
         # iterate depths 1..self.depth
         for depth in range(1, self.depth + 1):
             core_search.reset_counters()
+            core_search.clear_killers()
+            core_search.clear_counters()
             # Keep TT between depths — iterative deepening benefits from
             # shallower results (TT probe already checks depth >= required)
             bar = tqdm(desc=f"Depth {depth}", total=None)
@@ -359,7 +361,7 @@ class ChessAI:
                     if abs(val) >= 90000:
                         san_move = root_ref.san(uci)
                         if both_mates:
-                            print(f"    Better mate found: {san_move} eval={val:.0f} (faster than previous)")
+                            print(f"    Better mate found: {san_move} eval={val:.0f}")
                         else:
                             print(f"    First mate found: {san_move} eval={val:.0f}, continuing to find faster mate...")
 

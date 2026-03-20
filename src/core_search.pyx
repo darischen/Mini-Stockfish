@@ -497,6 +497,26 @@ cdef int history[64][64]
 
 cpdef void clear_history():
     memset(history, 0, 64 * 64 * sizeof(int))
+    clear_killers()
+    clear_counters()
+
+# ——————————————————— Killer Moves ———————————————————————————————————
+# Track the last 2 moves that caused cutoffs at each depth
+# Stores encoded move: (from_sq << 8) | to_sq
+# killer[depth][0] = most recent cutoff move at this depth
+# killer[depth][1] = second most recent cutoff move at this depth
+cdef int killer[64][2]  # [depth][killer_slot]
+
+cpdef void clear_killers():
+    memset(killer, 0, 64 * 2 * sizeof(int))
+
+# ——————————————————— Counter-Move Heuristic ———————————————————————
+# counter[prev_from][prev_to] = best move we found after opponent played from→to
+# Each cell stores [from_sq, to_sq] as a 16-bit encoded value
+cdef int counter[64][64]  # Stores best move to play after opponent's move
+
+cpdef void clear_counters():
+    memset(counter, 0, 64 * 64 * sizeof(int))
 
 # ——————————————————————————————————————————————————————————————————
 
@@ -527,6 +547,23 @@ cpdef void reset_tt_counters():
     global tt_hits, tt_misses
     tt_hits = 0
     tt_misses = 0
+
+# Per-depth node counters (for pruning rate measurement)
+cdef int nodes_visited_per_depth[64]
+cdef int nodes_pruned_per_depth[64]
+
+cpdef void init_node_counters():
+    """Initialize per-depth node counters."""
+    for i in range(64):
+        nodes_visited_per_depth[i] = 0
+        nodes_pruned_per_depth[i] = 0
+
+cpdef dict get_node_counters():
+    """Return per-depth node counters as a dict."""
+    return {
+        'nodes_visited': list(nodes_visited_per_depth),
+        'nodes_pruned': list(nodes_pruned_per_depth)
+    }
 
 cdef double static_eval(object board, object acc, str ai_color):
     """
@@ -674,7 +711,8 @@ cpdef double minimax(object board,
                      double beta,
                      str ai_color,
                      uint64_t key,
-                     int required_depth):
+                     int required_depth,
+                     object prev_move = None):
     """
     Negamax with alpha-beta, TT, null move pruning, and late move reduction.
     - `key` is the current zobrist hash for `board`.
@@ -682,6 +720,7 @@ cpdef double minimax(object board,
     - `required_depth` is the root iteration depth, passed unchanged to
       all children. TT entries are stored AND probed with this value,
       ensuring each iteration fully re-searches the tree.
+    - `prev_move` is the move that led to this position (for counter-move heuristic).
       Within a single iteration, TT reuse happens via matching keys
       (same position reached via different move orders).
     """
@@ -690,12 +729,15 @@ cpdef double minimax(object board,
     cdef object mv, captured
     cdef uint64_t next_key, null_key
     cdef char hit
-    cdef int moves_searched, reduced_depth
+    cdef int moves_searched, reduced_depth, actual_depth
     cdef bint is_capture, gives_check, is_promotion
     cdef bint in_check
 
     # Count nodes
     nodes_evaluated += 1
+    actual_depth = required_depth - depth
+    if actual_depth < 64:
+        nodes_visited_per_depth[actual_depth] += 1
 
     # 1) TT probe — use `depth` (remaining search depth).
     #    TT is cleared between iterations so no cross-iteration pollution.
@@ -754,18 +796,23 @@ cpdef double minimax(object board,
                               -beta, -beta + 1,
                               ai_color,
                               null_key,
-                              required_depth)
+                              required_depth,
+                              prev_move)
         board.pop()
         acc.rollback(null_mv, None)
 
         if null_score >= beta:
             branches_pruned += 1
+            if actual_depth < 64:
+                nodes_pruned_per_depth[actual_depth] += 1
             return beta
 
     # 4) Negamax loop with Late Move Reduction
     value = -INFINITY
     moves_searched = 0
-    for mv in order_moves(board, tt_move):
+    # Use required_depth - depth to get the actual search depth for killer/counter indexing
+    search_depth = required_depth - depth
+    for mv in order_moves(board, tt_move, search_depth, prev_move):
         is_capture = board.is_capture(mv)
 
         # For en passant, the captured pawn is not on to_sq
@@ -806,7 +853,8 @@ cpdef double minimax(object board,
                              -beta, -alpha,
                              ai_color,
                              next_key,
-                             required_depth)
+                             required_depth,
+                             mv)
             # If reduced search beats alpha, re-search at full depth
             if child > alpha:
                 child = -minimax(board, acc,
@@ -814,7 +862,8 @@ cpdef double minimax(object board,
                                  -beta, -alpha,
                                  ai_color,
                                  next_key,
-                                 required_depth)
+                                 required_depth,
+                                 mv)
         else:
             # Full depth search for important moves
             child = -minimax(board, acc,
@@ -822,7 +871,8 @@ cpdef double minimax(object board,
                              -beta, -alpha,
                              ai_color,
                              next_key,
-                             required_depth)
+                             required_depth,
+                             mv)
 
         board.pop()
         acc.rollback(mv, captured)
@@ -837,9 +887,26 @@ cpdef double minimax(object board,
 
         if alpha >= beta:
             branches_pruned += 1
-            # History: reward quiet moves that cause cutoffs
+            if actual_depth < 64:
+                nodes_pruned_per_depth[actual_depth] += 1
+            # Update history, killers, and counter-moves for quiet cutoff moves
             if not is_capture:
+                # History: reward quiet moves that cause cutoffs
                 history[mv.from_square][mv.to_square] += depth * depth
+
+                # Killer moves: track which moves caused cutoffs at this depth
+                if search_depth < 64:
+                    # Move killer[depth][1] → killer[depth][0], and add new killer
+                    killer[search_depth][1] = killer[search_depth][0]
+                    killer[search_depth][0] = (mv.from_square << 8) | mv.to_square
+
+                # Counter-move: update what move works well after opponent's prev_move
+                if prev_move is not None:
+                    prev_from = prev_move.from_square
+                    prev_to = prev_move.to_square
+                    if 0 <= prev_from < 64 and 0 <= prev_to < 64:
+                        counter[prev_from][prev_to] = (mv.from_square << 8) | mv.to_square
+
             if USE_TT:
                 tt_store(key, depth, value, LOWERBOUND,
                          mv.from_square, mv.to_square)
@@ -868,15 +935,17 @@ PROMO_TO_CHESS[2] = 3  # bishop (CMove=2 → chess.BISHOP=3)
 PROMO_TO_CHESS[3] = 4  # rook   (CMove=3 → chess.ROOK=4)
 PROMO_TO_CHESS[4] = 5  # queen  (CMove=4 → chess.QUEEN=5)
 
-cdef list order_moves(object board, object tt_move = None):
+cdef list order_moves(object board, object tt_move = None, int depth = 0, object prev_move = None):
     """
     Generates and scores all legal moves for `board` using C++ movegen.
     Returns a Python list of chess.Move in descending score order (best first).
 
     Priority tiers:
-      1. TT best move          (score += 10_000_000)
-      2. Captures by MVV/LVA   (score = 2000*victim - attacker)
-      3. Quiet moves by history (score = history[from][to])
+      1. TT best move              (score += 10_000_000)
+      2. Killer moves              (score += 5_000_000)
+      3. Counter-move              (score += 1_000_000)
+      4. Captures by MVV/LVA       (score = 2000*victim - attacker)
+      5. Quiet moves by history    (score = history[from][to])
     """
     cdef CMove c_moves[256]
     cdef unsigned char pieces[64]
@@ -884,7 +953,10 @@ cdef list order_moves(object board, object tt_move = None):
     cdef int from_sq, to_sq, flags, promo
     cdef int a_pt, v_pt, a_val, v_val, score
     cdef int tt_from = -1, tt_to = -1, tt_promo = 0
+    cdef int killer1_from = -1, killer1_to = -1, killer2_from = -1, killer2_to = -1
+    cdef int counter_move = -1, prev_from = -1, prev_to = -1
     cdef list scored = []
+    cdef int move_index_count = 0
 
     # Sync python-chess board → CBoard and generate moves + piece array in C++
     _sync_cboard(board)
@@ -896,6 +968,20 @@ cdef list order_moves(object board, object tt_move = None):
         tt_from = tt_move.from_square
         tt_to = tt_move.to_square
         tt_promo = tt_move.promotion if tt_move.promotion is not None else 0
+
+    # Pre-extract killer moves at this depth
+    if 0 <= depth < 64:
+        killer1_from = (killer[depth][0] >> 8) & 0xFF
+        killer1_to = killer[depth][0] & 0xFF
+        killer2_from = (killer[depth][1] >> 8) & 0xFF
+        killer2_to = killer[depth][1] & 0xFF
+
+    # Pre-extract previous move for counter-move heuristic
+    if prev_move is not None:
+        prev_from = prev_move.from_square
+        prev_to = prev_move.to_square
+        if 0 <= prev_from < 64 and 0 <= prev_to < 64:
+            counter_move = counter[prev_from][prev_to]
 
     for i in range(n_moves):
         from_sq = _cmove_from(c_moves[i])
@@ -920,7 +1006,21 @@ cdef list order_moves(object board, object tt_move = None):
         if v_val > 0:
             score = 2000 * v_val - a_val
         else:
+            # Quiet move: start with history heuristic
             score = history[from_sq][to_sq]
+
+            # Killer move bonus: moves that caused cutoffs at this depth
+            if (killer1_from == from_sq and killer1_to == to_sq):
+                score += 5000000
+            elif (killer2_from == from_sq and killer2_to == to_sq):
+                score += 4900000
+
+            # Counter-move bonus: responds well to opponent's last move
+            if counter_move != -1:
+                counter_from = (counter_move >> 8) & 0xFF
+                counter_to = counter_move & 0xFF
+                if (counter_from == from_sq and counter_to == to_sq):
+                    score += 1000000
 
         # Promotion bonus
         if flags & 8:  # CMOVE_FLAG_PROMOTION
@@ -944,10 +1044,12 @@ cdef list order_moves(object board, object tt_move = None):
         rf = _cmove_from(cm)
         rt = _cmove_to(cm)
         rp = _cmove_promo(cm)
+        move_obj = None
         if rp:
-            result.append(chess.Move(rf, rt, promotion=PROMO_TO_CHESS[rp]))
+            move_obj = chess.Move(rf, rt, promotion=PROMO_TO_CHESS[rp])
         else:
-            result.append(chess.Move(rf, rt))
+            move_obj = chess.Move(rf, rt)
+        result.append(move_obj)
     return result
 
 # Allocate a 4M-entry table by default

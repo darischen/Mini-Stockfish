@@ -138,7 +138,8 @@ class Game:
     def next_turn(self):
         # print (f"next_turn + {self.next_player}")
         self.next_player = 'white' if self.next_player == 'black' else 'black'
-        
+        self.board.turn = self.next_player  # Keep board.turn in sync for FEN generation
+
         self.board.update_position_history(self.next_player)
         
         if self.board.is_checkmate(self.next_player):

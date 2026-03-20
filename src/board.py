@@ -18,6 +18,7 @@ class Board:
         self.position_history = {}
         self.update_position_history('white')
         self.half_move_clock = 0
+        self.turn = 'white'  # Track whose turn it is for FEN generation
         self.chess_board = chess.Board()  # Keep synchronized chess board for SAN notation
         
     def board_signature(self, next_player):
@@ -754,5 +755,6 @@ class Board:
         self.position_history = {}
         self.half_move_clock = 0
         self.last_move = None
+        self.turn = 'white' if chess_board.turn == chess.WHITE else 'black'  # Sync turn from chess board
         self.chess_board = chess_board  # Store synchronized chess board
         self.update_position_history('white')
