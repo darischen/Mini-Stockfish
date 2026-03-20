@@ -17,15 +17,17 @@ class PromotionModal:
         self.color = None       # 'white' or 'black'
         self.col = 0            # file the pawn promoted on
         self.row = 0            # rank the pawn promoted to (0 or 7)
+        self.board_flipped = False  # whether the board is flipped
         self.rects = []         # list of (pygame.Rect, piece_class) for click detection
         self.close_rect = None  # pygame.Rect for the X button
 
-    def open(self, color, row, col):
+    def open(self, color, row, col, board_flipped=False):
         """Activate the modal for a promotion at (row, col)."""
         self.active = True
         self.color = color
         self.row = row
         self.col = col
+        self.board_flipped = board_flipped
 
     def close(self):
         """Deactivate the modal."""
@@ -46,19 +48,24 @@ class PromotionModal:
         overlay.fill((0, 0, 0, 80))
         surface.blit(overlay, (0, 0))
 
-        # Determine direction: white promotes at row 0 -> expand downward
-        #                       black promotes at row 7 -> expand upward
-        expanding_down = (self.row == 0)
+        # Transform board coordinates to screen coordinates when board is flipped
+        screen_row = (7 - self.row) if self.board_flipped else self.row
+        screen_col = (7 - self.col) if self.board_flipped else self.col
+
+        # Determine direction: expand downward if promotion is at top of screen
+        # When board is not flipped: white (row 0) is at top, expand down
+        # When board is flipped: white (row 0) is at bottom, expand up
+        expanding_down = (self.row == 0) if not self.board_flipped else (self.row == 7)
 
         # Modal dimensions
         modal_w = SQSIZE
         modal_h = SQSIZE * 4 + 30  # 4 piece slots + space for X button
-        modal_x = self.col * SQSIZE
+        modal_x = screen_col * SQSIZE
 
         if expanding_down:
-            modal_y = self.row * SQSIZE
+            modal_y = screen_row * SQSIZE
         else:
-            modal_y = (self.row + 1) * SQSIZE - modal_h
+            modal_y = (screen_row + 1) * SQSIZE - modal_h
 
         # Draw modal background
         modal_rect = pygame.Rect(modal_x, modal_y, modal_w, modal_h)

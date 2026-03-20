@@ -1,3 +1,4 @@
 C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/nnue_inference.dir
+C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/chess_movegen.dir
 C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/ALL_BUILD.dir
 C:/Users/daris/Desktop/School/Mini-Stockfish/src/nnue/build/CMakeFiles/ZERO_CHECK.dir
