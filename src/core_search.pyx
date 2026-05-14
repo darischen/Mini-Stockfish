@@ -696,6 +696,12 @@ cdef double quiesce(object board,
         if not board.is_capture(mv):
             continue
 
+        # SEE pruning: skip obviously losing captures in quiesce
+        # (these waste time and rarely change the eval since we can just stand pat)
+        if not board.is_en_passant(mv):
+            if see_capture(board, mv.from_square, mv.to_square) < 0:
+                continue
+
         # For en passant, the captured pawn is not on to_sq
         if board.is_en_passant(mv):
             ep_cap_sq2 = mv.to_square + (-8 if board.turn else 8)
@@ -983,6 +989,72 @@ PROMO_TO_CHESS[2] = 3  # bishop (CMove=2 → chess.BISHOP=3)
 PROMO_TO_CHESS[3] = 4  # rook   (CMove=3 → chess.ROOK=4)
 PROMO_TO_CHESS[4] = 5  # queen  (CMove=4 → chess.QUEEN=5)
 
+cdef int see_capture(object board, int from_sq, int to_sq):
+    """
+    Static Exchange Evaluation (SEE) for a capture move.
+    Returns net material balance: positive = winning capture, negative = losing.
+    Uses python-chess board.attackers() to find attackers.
+
+    Note: doesn't perfectly handle X-rays but catches most cases.
+    """
+    cdef object attacker = board.piece_at(from_sq)
+    cdef object victim = board.piece_at(to_sq)
+    cdef object piece
+
+    if attacker is None or victim is None:
+        return 0
+
+    cdef int attacker_pt = attacker.piece_type
+    cdef int victim_pt = victim.piece_type
+    cdef list gain = [PIECE_VAL[victim_pt]]
+    cdef int current_piece_val = PIECE_VAL[attacker_pt]
+    cdef set used = {from_sq}
+    cdef bint side = not attacker.color
+
+    cdef set attackers_remaining
+    cdef int sq, cheapest_sq, min_val, sq_val, cheapest_pt
+
+    while True:
+        # Convert SquareSet to Python set of ints, then filter out used
+        attackers_remaining = set(board.attackers(side, to_sq)) - used
+        if not attackers_remaining:
+            break
+
+        # Find cheapest attacker
+        cheapest_sq = -1
+        min_val = 999999
+        for sq in attackers_remaining:
+            piece = board.piece_at(sq)
+            if piece is None:
+                continue
+            sq_val = PIECE_VAL[piece.piece_type]
+            if sq_val < min_val:
+                min_val = sq_val
+                cheapest_sq = sq
+
+        if cheapest_sq == -1:
+            break
+
+        piece = board.piece_at(cheapest_sq)
+        cheapest_pt = piece.piece_type
+
+        # This side captures the piece on target
+        gain.append(current_piece_val - gain[len(gain) - 1])
+
+        current_piece_val = PIECE_VAL[cheapest_pt]
+        used.add(cheapest_sq)
+        side = not side
+
+    # Minimax in reverse: each side can choose to stop capturing
+    cdef int n
+    while len(gain) > 1:
+        n = len(gain)
+        if -gain[n - 2] < gain[n - 1]:
+            gain[n - 2] = -gain[n - 1]
+        gain.pop()
+
+    return gain[0]
+
 cdef list order_moves(object board, object tt_move = None, int depth = 0, object prev_move = None):
     """
     Generates and scores all legal moves for `board` using C++ movegen.
@@ -990,16 +1062,17 @@ cdef list order_moves(object board, object tt_move = None, int depth = 0, object
 
     Priority tiers:
       1. TT best move              (score += 10_000_000)
-      2. Killer moves              (score += 5_000_000)
-      3. Counter-move              (score += 1_000_000)
-      4. Captures by MVV/LVA       (score = 2000*victim - attacker)
+      2. Good captures (SEE >= 0)  (score = 8_000_000 + MVV/LVA)
+      3. Killer moves              (score += 5_000_000)
+      4. Counter-move              (score += 1_000_000)
       5. Quiet moves by history    (score = history[from][to])
+      6. Losing captures (SEE < 0) (score = SEE value, negative)
     """
     cdef CMove c_moves[256]
     cdef unsigned char pieces[64]
     cdef int n_moves, i
     cdef int from_sq, to_sq, flags, promo
-    cdef int a_pt, v_pt, a_val, v_val, score
+    cdef int a_pt, v_pt, a_val, v_val, score, see_val
     cdef int tt_from = -1, tt_to = -1, tt_promo = 0
     cdef int killer1_from = -1, killer1_to = -1, killer2_from = -1, killer2_to = -1
     cdef int counter_move = -1, prev_from = -1, prev_to = -1
@@ -1052,7 +1125,14 @@ cdef list order_moves(object board, object tt_move = None, int depth = 0, object
                 v_val = PIECE_VAL[v_pt] if v_pt else 0
 
         if v_val > 0:
-            score = 2000 * v_val - a_val
+            # SEE-based capture scoring: split into good/bad captures
+            see_val = see_capture(board, from_sq, to_sq)
+            if see_val >= 0:
+                # Good or equal capture: high priority, use MVV/LVA as tiebreaker
+                score = 8000000 + 2000 * v_val - a_val
+            else:
+                # Losing capture: order BELOW quiet moves (negative score)
+                score = see_val  # negative
         else:
             # Quiet move: start with history heuristic
             score = history[from_sq][to_sq]
