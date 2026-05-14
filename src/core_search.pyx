@@ -15,7 +15,7 @@ cpdef set_use_tt(bint flag):
     USE_TT = flag
 
 import chess
-from libc.math cimport INFINITY
+from libc.math cimport INFINITY, log
 
 cdef int[7] PIECE_VAL = [0, 100, 300, 310, 400, 900, 20000]
 
@@ -773,9 +773,10 @@ cpdef double minimax(object board,
     cdef object mv, captured
     cdef uint64_t next_key, null_key
     cdef char hit
-    cdef int moves_searched, reduced_depth, actual_depth
+    cdef int moves_searched, reduced_depth, actual_depth, reduction, nmp_R
     cdef bint is_capture, gives_check, is_promotion
     cdef bint in_check
+    cdef double lmr_r
 
     # Count nodes
     nodes_evaluated += 1
@@ -819,11 +820,12 @@ cpdef double minimax(object board,
     cdef object old_ep, mover
     cdef object best_mv = None
 
-    # ——— Null Move Pruning ———
+    # ——— Null Move Pruning (Ethereal-style dynamic reduction) ———
     # Skip if: in check, depth too shallow, no non-pawn material (zugzwang risk),
     # or beta is infinity (PV node with wide-open window — null move can't prune reliably)
+    nmp_R = 3 + depth // 4  # Dynamic reduction: deeper search → more reduction
     if (not in_check
-        and depth >= NMP_REDUCTION + 1
+        and depth >= nmp_R + 1
         and beta < INFINITY
         and _has_non_pawn_material(board, board.turn)):
         # Save pre-move state
@@ -836,7 +838,7 @@ cpdef double minimax(object board,
         acc.update(null_mv, None, old_ep_square=old_ep)
         null_key = null_move_hash(key, ck, cq, ck2, cq2, old_ep, board)
         null_score = -minimax(board, acc,
-                              depth - 1 - NMP_REDUCTION,
+                              depth - 1 - nmp_R,
                               -beta, -beta + 1,
                               ai_color,
                               null_key,
@@ -879,7 +881,7 @@ cpdef double minimax(object board,
         is_promotion = mv.promotion is not None
         gives_check = board.is_check()
 
-        # ——— Late Move Reduction ———
+        # ——— Late Move Reduction (Ethereal-style log formula) ———
         # After searching the first few moves at full depth, reduce later
         # quiet moves (non-captures, non-checks, non-promotions).
         if (moves_searched >= LMR_FULL_MOVES
@@ -888,12 +890,14 @@ cpdef double minimax(object board,
             and not gives_check
             and not is_promotion
             and not in_check):
-            # Search with reduced depth first
-            reduced_depth = depth - 2  # reduce by 1 extra ply
+            # Ethereal-style: r = 0.78 + ln(depth) * ln(moves_searched) / 2.47
+            lmr_r = 0.78 + log(<double>depth) * log(<double>moves_searched) / 2.47
+            reduction = <int>lmr_r
+            reduced_depth = depth - 1 - reduction
             if reduced_depth < 1:
                 reduced_depth = 1
             child = -minimax(board, acc,
-                             reduced_depth - 1,
+                             reduced_depth,
                              -beta, -alpha,
                              ai_color,
                              next_key,

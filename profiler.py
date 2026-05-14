@@ -15,10 +15,12 @@ sys.path.insert(0, os.path.join(script_dir, 'src'))
 os.chdir(os.path.join(script_dir, 'src'))
 
 def search_position():
-    """Run a search on a position."""
+    """Run iterative deepening search on a position (like ai.py)."""
     import chess
     from accumulator import Accumulator
     import core_search
+    import time
+    import math
 
     # Initialize
     core_search.set_use_nnue(True)
@@ -29,27 +31,82 @@ def search_position():
     for move_uci in ['e2e4', 'c7c5', 'g1f3', 'd7d6', 'f1e2', 'e7e6']:
         board.push(chess.Move.from_uci(move_uci))
 
-    acc = Accumulator()
-    acc.init(board)
-
-    print(f"\nSearching position: {board.fen()[:40]}...")
-    print(f"Side to move: {['White', 'Black'][not board.turn]}\n")
-
-    # Run search depth 6
-    root_hash = core_search.compute_hash(board)
+    root_fen = board.fen()
     ai_color = 'white' if board.turn == chess.WHITE else 'black'
 
-    result = core_search.minimax(
-        board, acc,
-        depth=10,
-        alpha=float('-inf'),
-        beta=float('inf'),
-        ai_color=ai_color,
-        key=root_hash,
-        required_depth=10
-    )
+    print(f"\nSearching position: {root_fen[:40]}...")
+    print(f"Side to move: {['White', 'Black'][not board.turn]}\n")
 
-    print(f"Result: {result:.4f}\n")
+    # Clear TT and start iterative deepening
+    core_search.reset_tt_counters()
+    core_search.clear_tt()
+    core_search.clear_history()
+
+    t0 = time.perf_counter()
+
+    # Iterative deepening: depths 1 through 11 (to reach depth=10 search)
+    # Match ai.py logic: for depth in range(1, self.depth + 1), call minimax(..., depth - 1, ...)
+    search_depth = 11
+    best_move = None
+    best_eval = -math.inf
+
+    for depth in range(1, search_depth + 1):
+        core_search.reset_counters()
+        core_search.clear_killers()
+        # Keep TT between depths — that's the whole point of iterative deepening
+
+        root_board = chess.Board(root_fen)
+        root_board.turn = chess.WHITE if ai_color == 'white' else chess.BLACK
+
+        alpha = -math.inf
+        for uci in root_board.legal_moves:
+            root_board.push(uci)
+            acc = Accumulator()
+            acc.init(root_board)
+
+            root_key = core_search.compute_hash(root_board)
+
+            # Negamax: negate child score
+            val = -core_search.minimax(
+                root_board, acc,
+                depth - 1,
+                -math.inf, -alpha,
+                ai_color,
+                root_key,
+                depth
+            )
+
+            root_board.pop()
+
+            if val > alpha:
+                alpha = val
+                best_move = uci
+
+        best_eval = alpha
+
+        # Print per-depth stats
+        tt_h = core_search.get_tt_hits()
+        tt_m = core_search.get_tt_misses()
+        tt_total = tt_h + tt_m
+        tt_pct = (100.0 * tt_h / tt_total) if tt_total > 0 else 0.0
+        nodes = core_search.get_nodes_evaluated()
+        pruned = core_search.get_branches_pruned()
+
+        print(f"Depth {depth:2d}: eval={best_eval:7.4f}  nodes={nodes:8,}  pruned={pruned:7,}  TT: {tt_pct:5.1f}%")
+
+    elapsed = time.perf_counter() - t0
+
+    print(f"\nTotal time: {elapsed:.3f}s")
+
+    # Final TT stats
+    tt_hits = core_search.get_tt_hits()
+    tt_misses = core_search.get_tt_misses()
+    total_probes = tt_hits + tt_misses
+    tt_hitrate = (tt_hits / total_probes * 100) if total_probes > 0 else 0
+
+    print(f"Final eval: {best_eval:.4f}")
+    print(f"TT probes: {total_probes:,} (hits: {tt_hits:,}, misses: {tt_misses:,})")
+    print(f"TT hit rate: {tt_hitrate:.1f}%")
 
 def profile_recompute_bottleneck():
     """Profile what's expensive in _recompute: FEN parsing or embedding summing."""
