@@ -5,7 +5,8 @@ import os
 import torch
 import chess
 from numba import jit
-from nnue.halfkp import halfkp_indices_for_fen, piece_to_idx, NUM_NONKING, PIECES_PER_KING
+from nnue.halfkp import piece_to_idx, NUM_NONKING, PIECES_PER_KING
+import core_search
 
 PAD_LEN = 30  # match TorchScript tracing pad length
 
@@ -94,7 +95,7 @@ class Accumulator:
         """
         self.board = board
         self._stack = []
-        raw0, raw1 = halfkp_indices_for_fen(board.fen())
+        raw0, raw1 = core_search.halfkp_indices_for_board(board)
         self.idx0 = self._pad(raw0)
         self.idx1 = self._pad(raw1)
 
@@ -210,7 +211,7 @@ class Accumulator:
 
     def _recompute(self):
         """Full recompute of indices and hidden activations from current board state."""
-        raw0, raw1 = halfkp_indices_for_fen(self.board.fen())
+        raw0, raw1 = core_search.halfkp_indices_for_board(self.board)
         self.idx0 = self._pad(raw0)
         self.idx1 = self._pad(raw1)
         w = _load_weights()

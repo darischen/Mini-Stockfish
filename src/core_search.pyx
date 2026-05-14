@@ -19,6 +19,50 @@ from libc.math cimport INFINITY
 
 cdef int[7] PIECE_VAL = [0, 100, 300, 310, 400, 900, 20000]
 
+# HalfKP encoding constants (from halfkp.py)
+cdef int NUM_NONKING = 10
+cdef int PIECES_PER_KING = 64 * NUM_NONKING  # 640
+
+# Map (color, piece_type) → offset
+cdef dict _piece_to_idx = {
+    (True,  chess.PAWN):   0,
+    (True,  chess.KNIGHT): 1,
+    (True,  chess.BISHOP): 2,
+    (True,  chess.ROOK):   3,
+    (True,  chess.QUEEN):  4,
+    (False, chess.PAWN):   5,
+    (False, chess.KNIGHT): 6,
+    (False, chess.BISHOP): 7,
+    (False, chess.ROOK):   8,
+    (False, chess.QUEEN):  9,
+}
+
+cpdef tuple halfkp_indices_for_board(object board):
+    """Compute HalfKP indices directly from board object (no FEN parsing).
+    Returns (indices_view0, indices_view1) lists."""
+    cdef list idx0 = []
+    cdef list idx1 = []
+    cdef int king_sq
+    cdef int sq
+    cdef object piece
+    cdef int offset
+    cdef int idx
+
+    # View 0: white king perspective, View 1: black king perspective
+    for view in (0, 1):
+        king_sq = board.king(bool(view))
+        for sq in range(64):
+            piece = board.piece_at(sq)
+            if piece and piece.piece_type != chess.KING:
+                offset = _piece_to_idx[(piece.color, piece.piece_type)]
+                idx = king_sq * PIECES_PER_KING + sq * NUM_NONKING + offset
+                if view == 0:
+                    idx0.append(idx)
+                else:
+                    idx1.append(idx)
+
+    return idx0, idx1
+
 cpdef bint verify_hash(uint64_t h_incremental, object board):
     """Debug: verify incremental hash matches full recompute."""
     cdef uint64_t h_full = compute_hash(board)
@@ -469,7 +513,7 @@ cpdef double nnue_eval_halfkp_py(object idx0_arr, object idx1_arr):
 
 import cython
 from chess import Board, Move
-from accumulator import Accumulator
+# from accumulator import Accumulator  # Avoid circular import; not used here
 from libc.math cimport INFINITY
 
 cdef double MATE_SCORE = 100000.0
