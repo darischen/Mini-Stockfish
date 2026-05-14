@@ -20,6 +20,23 @@ def evaluate_jit(hidden0, hidden1, fc2_w, fc2_b, fc3_w, fc3_b, out_w, out_b):
 	out = out_w @ x + out_b
 	return float(out[0])
 
+@jit(nopython=True)
+def update_view_jit(idx_arr, hidden, emb_w, old_cap_idx, old_idx, new_idx):
+	"""Modify hidden and idx_arr in-place for one view. No return — arrays mutated directly."""
+	if old_cap_idx >= 0:
+		hidden -= emb_w[old_cap_idx]
+		hidden += emb_w[0]
+		for i in range(len(idx_arr)):
+			if idx_arr[i] == old_cap_idx:
+				idx_arr[i] = 0
+				break
+	hidden -= emb_w[old_idx]
+	hidden += emb_w[new_idx]
+	for i in range(len(idx_arr)):
+		if idx_arr[i] == old_idx:
+			idx_arr[i] = new_idx
+			break
+
 # --- Module-level weight cache (loaded once) ---
 _weights = None
 
@@ -141,42 +158,30 @@ class Accumulator:
             cap_sq = to_sq
 
         w = _load_weights()
-        emb_weights = [w['emb0'], w['emb1']]
-        hiddens = [self.hidden0, self.hidden1]
+        mover_key = (mover.color, mover.piece_type)
 
         # For each view (view 0 = white king perspective, view 1 = black king perspective):
-        for view_idx, view_arr in enumerate([self.idx0, self.idx1]):
+        for view_idx, view_arr, hidden, emb_w in (
+            (0, self.idx0, self.hidden0, w['emb0']),
+            (1, self.idx1, self.hidden1, w['emb1']),
+        ):
             king_sq = self.board.king(bool(view_idx))
-            emb_w = emb_weights[view_idx]
-            hidden = hiddens[view_idx]
 
-            # 1) Remove captured piece's index (if capture)
+            # Resolve capture index (-1 = no capture)
+            old_cap_idx = -1
             if captured and captured.piece_type != chess.KING:
                 cap_key = (captured.color, captured.piece_type)
                 if cap_key in piece_to_idx:
                     old_cap_idx = king_sq * PIECES_PER_KING + cap_sq * NUM_NONKING + piece_to_idx[cap_key]
-                    # Update hidden: swap from captured embedding to padding embedding (0)
-                    hidden -= emb_w[old_cap_idx]
-                    hidden += emb_w[0]
-                    # Update index array (set to 0 = padding)
-                    mask = (view_arr == old_cap_idx)
-                    positions = np.where(mask)[0]
-                    if len(positions) > 0:
-                        view_arr[positions[0]] = 0
 
-            # 2) Update mover's index: remove old (from_sq), add new (to_sq)
-            mover_key = (mover.color, mover.piece_type)
+            # Resolve mover indices and dispatch to JIT
             if mover_key in piece_to_idx:
                 old_idx = king_sq * PIECES_PER_KING + from_sq * NUM_NONKING + piece_to_idx[mover_key]
                 new_idx = king_sq * PIECES_PER_KING + to_sq * NUM_NONKING + piece_to_idx[mover_key]
-                # Update hidden: subtract old position, add new position
-                hidden -= emb_w[old_idx]
-                hidden += emb_w[new_idx]
-                # Update index array
-                mask = (view_arr == old_idx)
-                positions = np.where(mask)[0]
-                if len(positions) > 0:
-                    view_arr[positions[0]] = new_idx
+                update_view_jit(view_arr, hidden, emb_w, old_cap_idx, old_idx, new_idx)
+            elif old_cap_idx >= 0:
+                # Capture only (mover not in piece_to_idx — shouldn't happen, but be safe)
+                update_view_jit(view_arr, hidden, emb_w, old_cap_idx, 0, 0)
 
         return self.idx0, self.idx1
 
