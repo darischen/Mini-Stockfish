@@ -50,6 +50,7 @@ def search_position():
     best_move = None
     best_eval = -math.inf
 
+    last_finite_eval = None
     for depth in range(1, search_depth + 1):
         core_search.reset_counters()
         core_search.clear_killers()
@@ -57,32 +58,73 @@ def search_position():
 
         root_board = chess.Board(root_fen)
         root_board.turn = chess.WHITE if ai_color == 'white' else chess.BLACK
+        moves = list(root_board.legal_moves)
 
-        alpha = -math.inf
-        for uci in root_board.legal_moves:
-            root_board.push(uci)
-            acc = Accumulator()
-            acc.init(root_board)
+        # ——— Aspiration Windows ———
+        asp_delta = 0.5
+        if (depth >= 3
+            and last_finite_eval is not None
+            and not math.isinf(last_finite_eval)
+            and abs(last_finite_eval) < 90000):
+            asp_alpha = last_finite_eval - asp_delta
+            asp_beta = last_finite_eval + asp_delta
+        else:
+            asp_alpha = -math.inf
+            asp_beta = math.inf
 
-            root_key = core_search.compute_hash(root_board)
+        asp_attempts = 0
+        while True:
+            alpha = asp_alpha
+            failed_high = False
 
-            # Negamax: negate child score
-            val = -core_search.minimax(
-                root_board, acc,
-                depth - 1,
-                -math.inf, -alpha,
-                ai_color,
-                root_key,
-                depth
-            )
+            for uci in moves:
+                root_board.push(uci)
+                acc = Accumulator()
+                acc.init(root_board)
 
-            root_board.pop()
+                root_key = core_search.compute_hash(root_board)
 
-            if val > alpha:
-                alpha = val
-                best_move = uci
+                # Negamax: negate child score, use aspiration window
+                val = -core_search.minimax(
+                    root_board, acc,
+                    depth - 1,
+                    -asp_beta, -alpha,
+                    ai_color,
+                    root_key,
+                    depth
+                )
+
+                root_board.pop()
+
+                if val > alpha:
+                    alpha = val
+                    best_move = uci
+
+                if alpha >= asp_beta:
+                    failed_high = True
+                    break
+
+            asp_attempts += 1
+            if not math.isinf(asp_alpha) and alpha <= asp_alpha:
+                asp_delta *= 4
+                if asp_attempts >= 2:
+                    asp_alpha = -math.inf
+                else:
+                    asp_alpha = last_finite_eval - asp_delta
+                continue
+            elif failed_high or (not math.isinf(asp_beta) and alpha >= asp_beta):
+                asp_delta *= 4
+                if asp_attempts >= 2:
+                    asp_beta = math.inf
+                else:
+                    asp_beta = last_finite_eval + asp_delta
+                continue
+            else:
+                break
 
         best_eval = alpha
+        if not math.isinf(best_eval) and abs(best_eval) < 90000:
+            last_finite_eval = best_eval
 
         # Print per-depth stats
         tt_h = core_search.get_tt_hits()

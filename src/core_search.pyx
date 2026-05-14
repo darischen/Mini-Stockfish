@@ -692,6 +692,10 @@ cdef double quiesce(object board,
     cdef double score
     cdef bint ck, cq, ck2, cq2
     cdef object old_ep
+    # Cache piece array once for SEE pruning (avoids per-call sync + piece_at)
+    cdef unsigned char qpieces[64]
+    _sync_cboard(board)
+    cboard_piece_array(&_cboard, qpieces)
     for mv in order_moves(board):
         if not board.is_capture(mv):
             continue
@@ -699,7 +703,7 @@ cdef double quiesce(object board,
         # SEE pruning: skip obviously losing captures in quiesce
         # (these waste time and rarely change the eval since we can just stand pat)
         if not board.is_en_passant(mv):
-            if see_capture(board, mv.from_square, mv.to_square) < 0:
+            if see_capture(board, qpieces, mv.from_square, mv.to_square) < 0:
                 continue
 
         # For en passant, the captured pawn is not on to_sq
@@ -989,45 +993,51 @@ PROMO_TO_CHESS[2] = 3  # bishop (CMove=2 → chess.BISHOP=3)
 PROMO_TO_CHESS[3] = 4  # rook   (CMove=3 → chess.ROOK=4)
 PROMO_TO_CHESS[4] = 5  # queen  (CMove=4 → chess.QUEEN=5)
 
-cdef int see_capture(object board, int from_sq, int to_sq):
+cdef int see_capture(object board, unsigned char *pieces, int from_sq, int to_sq):
     """
     Static Exchange Evaluation (SEE) for a capture move.
     Returns net material balance: positive = winning capture, negative = losing.
-    Uses python-chess board.attackers() to find attackers.
+    Uses cached `pieces` array (low 4 bits = piece_type, high bit = color)
+    to avoid expensive board.piece_at() calls.
 
     Note: doesn't perfectly handle X-rays but catches most cases.
     """
-    cdef object attacker = board.piece_at(from_sq)
-    cdef object victim = board.piece_at(to_sq)
-    cdef object piece
+    cdef unsigned char attacker_byte = pieces[from_sq]
+    cdef unsigned char victim_byte = pieces[to_sq]
+    cdef int attacker_pt = attacker_byte & 0xF
+    cdef int victim_pt = victim_byte & 0xF
 
-    if attacker is None or victim is None:
+    if attacker_pt == 0 or victim_pt == 0:
         return 0
 
-    cdef int attacker_pt = attacker.piece_type
-    cdef int victim_pt = victim.piece_type
     cdef list gain = [PIECE_VAL[victim_pt]]
     cdef int current_piece_val = PIECE_VAL[attacker_pt]
     cdef set used = {from_sq}
-    cdef bint side = not attacker.color
+    # Encoding: byte = (cpp_color << 4) | piece_type
+    # C++ convention: 0=white, 1=black ; python-chess: True=white, False=black
+    # attacker_color_pychess = not bool((byte >> 4) & 1)
+    # side (opponent in py-chess) = bool((byte >> 4) & 1)
+    cdef bint side = bool((attacker_byte >> 4) & 1)
 
     cdef set attackers_remaining
     cdef int sq, cheapest_sq, min_val, sq_val, cheapest_pt
+    cdef unsigned char sq_byte
 
     while True:
-        # Convert SquareSet to Python set of ints, then filter out used
+        # board.attackers() is still needed (python-chess bitboard lookup)
         attackers_remaining = set(board.attackers(side, to_sq)) - used
         if not attackers_remaining:
             break
 
-        # Find cheapest attacker
+        # Find cheapest attacker using cached piece array
         cheapest_sq = -1
         min_val = 999999
         for sq in attackers_remaining:
-            piece = board.piece_at(sq)
-            if piece is None:
+            sq_byte = pieces[sq]
+            cheapest_pt = sq_byte & 0xF
+            if cheapest_pt == 0:
                 continue
-            sq_val = PIECE_VAL[piece.piece_type]
+            sq_val = PIECE_VAL[cheapest_pt]
             if sq_val < min_val:
                 min_val = sq_val
                 cheapest_sq = sq
@@ -1035,8 +1045,7 @@ cdef int see_capture(object board, int from_sq, int to_sq):
         if cheapest_sq == -1:
             break
 
-        piece = board.piece_at(cheapest_sq)
-        cheapest_pt = piece.piece_type
+        cheapest_pt = pieces[cheapest_sq] & 0xF
 
         # This side captures the piece on target
         gain.append(current_piece_val - gain[len(gain) - 1])
@@ -1126,7 +1135,8 @@ cdef list order_moves(object board, object tt_move = None, int depth = 0, object
 
         if v_val > 0:
             # SEE-based capture scoring: split into good/bad captures
-            see_val = see_capture(board, from_sq, to_sq)
+            # Pass cached pieces array to avoid expensive board.piece_at() calls
+            see_val = see_capture(board, pieces, from_sq, to_sq)
             if see_val >= 0:
                 # Good or equal capture: high priority, use MVV/LVA as tiebreaker
                 score = 8000000 + 2000 * v_val - a_val

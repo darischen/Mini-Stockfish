@@ -305,13 +305,6 @@ class ChessAI:
                 moves.remove(previous_best_move)
                 moves = [previous_best_move] + moves
 
-            # Sequential root search with proper alpha-beta bounds.
-            # In negamax, we negate the child's value so the root always
-            # maximizes. After evaluating the first (hopefully best) move,
-            # alpha tightens and subsequent moves get pruned quickly.
-            alpha = -math.inf
-            current_best = moves[0] if moves else None
-
             # Compute root hash once (same board state for all root moves)
             root_ref = chess.Board(root_fen)
             root_ref.turn = chess.WHITE if color == 'white' else chess.BLACK
@@ -322,48 +315,103 @@ class ChessAI:
             root_cq2 = root_ref.has_queenside_castling_rights(chess.BLACK)
             root_ep = root_ref.ep_square
 
-            for uci in moves:
-                b = chess.Board(root_fen)
-                b.turn = chess.WHITE if color == 'white' else chess.BLACK
-                acc = Accumulator(); acc.init(b)
-                captured = b.piece_at(uci.to_square)
-                mover = b.piece_at(uci.from_square)
+            # ——— Aspiration Windows ———
+            # For depth >= 3 with a finite previous eval, narrow the search window
+            # around the previous depth's eval. On fail-high/fail-low, widen and retry.
+            asp_delta = 0.5  # 50cp initial window radius
+            if (depth >= 3
+                and last_finite_eval is not None
+                and not math.isinf(last_finite_eval)
+                and abs(last_finite_eval) < 90000):
+                asp_alpha = last_finite_eval - asp_delta
+                asp_beta = last_finite_eval + asp_delta
+            else:
+                # Shallow depth or no prev eval: full window
+                asp_alpha = -math.inf
+                asp_beta = math.inf
 
-                b.push(uci); acc.update(uci, captured)
-                root_key = core_search.update_hash_full(
-                    pre_hash, uci, mover, captured,
-                    root_ck, root_cq, root_ck2, root_cq2, root_ep, b)
+            asp_attempts = 0
+            while True:
+                # Sequential root search with proper alpha-beta bounds.
+                # In negamax, we negate the child's value so the root always
+                # maximizes. After evaluating the first (hopefully best) move,
+                # alpha tightens and subsequent moves get pruned quickly.
+                alpha = asp_alpha
+                current_best = moves[0] if moves else None
+                failed_high = False
 
-                # Negamax: negate child so we always maximize at root
-                val = -minimax(b, acc,
-                               depth - 1,
-                               -math.inf, -alpha,
-                               color,
-                               root_key,
-                               depth)
+                for uci in moves:
+                    b = chess.Board(root_fen)
+                    b.turn = chess.WHITE if color == 'white' else chess.BLACK
+                    acc = Accumulator(); acc.init(b)
+                    captured = b.piece_at(uci.to_square)
+                    mover = b.piece_at(uci.from_square)
 
-                # Update progress bar
-                nodes_after = core_search.get_nodes_evaluated()
-                delta = nodes_after - nodes_before
-                nodes_before = nodes_after
-                bar.update(delta)
-                bar.set_postfix({
-                    'nodes': nodes_after,
-                    'pruned': core_search.get_branches_pruned()
-                })
+                    b.push(uci); acc.update(uci, captured)
+                    root_key = core_search.update_hash_full(
+                        pre_hash, uci, mover, captured,
+                        root_ck, root_cq, root_ck2, root_cq2, root_ep, b)
 
-                # Check if both are mate scores (>= 90000 means mate within horizon)
-                both_mates = abs(val) >= 90000 and abs(alpha) >= 90000
+                    # Negamax: negate child so we always maximize at root
+                    # Pass -asp_beta as child's alpha (clamps to aspiration window)
+                    val = -minimax(b, acc,
+                                   depth - 1,
+                                   -asp_beta, -alpha,
+                                   color,
+                                   root_key,
+                                   depth)
 
-                if val > alpha:
-                    alpha = val
-                    current_best = uci
-                    if abs(val) >= 90000:
-                        san_move = root_ref.san(uci)
-                        if both_mates:
-                            print(f"    Better mate found: {san_move} eval={val:.0f}")
-                        else:
-                            print(f"    First mate found: {san_move} eval={val:.0f}, continuing to find faster mate...")
+                    # Update progress bar
+                    nodes_after = core_search.get_nodes_evaluated()
+                    delta = nodes_after - nodes_before
+                    nodes_before = nodes_after
+                    bar.update(delta)
+                    bar.set_postfix({
+                        'nodes': nodes_after,
+                        'pruned': core_search.get_branches_pruned()
+                    })
+
+                    # Check if both are mate scores (>= 90000 means mate within horizon)
+                    both_mates = abs(val) >= 90000 and abs(alpha) >= 90000
+
+                    if val > alpha:
+                        alpha = val
+                        current_best = uci
+                        if abs(val) >= 90000:
+                            san_move = root_ref.san(uci)
+                            if both_mates:
+                                print(f"    Better mate found: {san_move} eval={val:.0f}")
+                            else:
+                                print(f"    First mate found: {san_move} eval={val:.0f}, continuing to find faster mate...")
+
+                    # Beta cutoff at root: fail high
+                    if alpha >= asp_beta:
+                        failed_high = True
+                        break
+
+                # Aspiration result check
+                asp_attempts += 1
+                if not math.isinf(asp_alpha) and alpha <= asp_alpha:
+                    # Fail low: widen alpha
+                    asp_delta *= 4
+                    if asp_attempts >= 2:
+                        asp_alpha = -math.inf
+                    else:
+                        asp_alpha = last_finite_eval - asp_delta
+                    print(f"    Aspiration fail-low at depth {depth}, widening to ({asp_alpha:.2f}, {asp_beta:.2f})")
+                    continue
+                elif failed_high or (not math.isinf(asp_beta) and alpha >= asp_beta):
+                    # Fail high: widen beta
+                    asp_delta *= 4
+                    if asp_attempts >= 2:
+                        asp_beta = math.inf
+                    else:
+                        asp_beta = last_finite_eval + asp_delta
+                    print(f"    Aspiration fail-high at depth {depth}, widening to ({asp_alpha:.2f}, {asp_beta:.2f})")
+                    continue
+                else:
+                    # Within window
+                    break
 
             bar.close()
             best_move, best_eval = current_best, alpha
