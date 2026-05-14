@@ -4,9 +4,21 @@ import numpy as np
 import os
 import torch
 import chess
+from numba import jit
 from nnue.halfkp import halfkp_indices_for_fen, piece_to_idx, NUM_NONKING, PIECES_PER_KING
 
 PAD_LEN = 30  # match TorchScript tracing pad length
+
+@jit(nopython=True)
+def evaluate_jit(hidden0, hidden1, fc2_w, fc2_b, fc3_w, fc3_b, out_w, out_b):
+	"""JIT-compiled MLP evaluation on cached hidden activations."""
+	h = np.concatenate((np.maximum(hidden0, 0), np.maximum(hidden1, 0)))
+	x = fc2_w @ h + fc2_b
+	x = np.maximum(x, 0)
+	x = fc3_w @ x + fc3_b
+	x = np.maximum(x, 0)
+	out = out_w @ x + out_b
+	return float(out[0])
 
 # --- Module-level weight cache (loaded once) ---
 _weights = None
@@ -186,16 +198,10 @@ class Accumulator:
         Computation: ~135k ops vs ~921k for full forward pass.
         """
         w = _load_weights()
-        # Clamp (ReLU on accumulated sums, matching model's forward())
-        h = np.concatenate([np.maximum(self.hidden0, 0),
-                            np.maximum(self.hidden1, 0)])
-        # MLP: fc2 -> relu -> fc3 -> relu -> fc_out
-        x = w['fc2_w'] @ h + w['fc2_b']
-        np.maximum(x, 0, out=x)  # relu in-place
-        x = w['fc3_w'] @ x + w['fc3_b']
-        np.maximum(x, 0, out=x)  # relu in-place
-        out = w['out_w'] @ x + w['out_b']
-        return float(out[0])
+        return evaluate_jit(self.hidden0, self.hidden1,
+                           w['fc2_w'], w['fc2_b'],
+                           w['fc3_w'], w['fc3_b'],
+                           w['out_w'], w['out_b'])
 
     def _recompute(self):
         """Full recompute of indices and hidden activations from current board state."""
