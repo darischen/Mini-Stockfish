@@ -435,17 +435,8 @@
             transform: d3.zoomIdentity
         };
 
-        // Layer colors
-        const layerColors = {
-            'core': '#ff6b6b',
-            'search': '#4ecdc4',
-            'move_gen': '#45b7d1',
-            'eval': '#96ceb4',
-            'nnue': '#ffeaa7',
-            'utils': '#dda15e',
-            'bitboard': '#bc6c25',
-            'other': '#808080'
-        };
+        // Layer colors (will be populated from JSON data)
+        let layerColors = {};
 
         // Initialize visualization
         async function initVisualization() {
@@ -453,6 +444,22 @@
                 // Load data
                 const response = await fetch('architecture.json');
                 state.data = await response.json();
+
+                // Build layer color map from JSON data
+                if (state.data.nodeLink && state.data.nodeLink.layers) {
+                    state.data.nodeLink.layers.forEach(layer => {
+                        layerColors[layer.id] = layer.color;
+                    });
+                }
+                // Fallback for any missing layers
+                const defaultColor = '#808080';
+                const allLayers = new Set();
+                state.data.nodeLink.nodes.forEach(n => allLayers.add(n.layer || 'other'));
+                allLayers.forEach(layer => {
+                    if (!layerColors[layer]) {
+                        layerColors[layer] = defaultColor;
+                    }
+                });
 
                 // Initialize UI
                 initLegend();
