@@ -1,0 +1,567 @@
+{
+  "metadata": {
+    "project": "Mini-Stockfish",
+    "version": "1.0",
+    "generated": "2026-05-15",
+    "description": "Chess engine with NNUE neural network evaluation"
+  },
+  "layers": [
+    {
+      "id": "ui",
+      "name": "UI Layer",
+      "color": "#ADD8E6",
+      "description": "User interface and game interaction"
+    },
+    {
+      "id": "game_logic",
+      "name": "Game Logic Layer",
+      "color": "#90EE90",
+      "description": "Chess rules and board representation"
+    },
+    {
+      "id": "search",
+      "name": "Search Engine Layer",
+      "color": "#FFA500",
+      "description": "Minimax search with alpha-beta pruning"
+    },
+    {
+      "id": "neural",
+      "name": "Neural Network Layer",
+      "color": "#DDA0DD",
+      "description": "NNUE evaluation and training"
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities & Preprocessing",
+      "color": "#D3D3D3",
+      "description": "Helper modules and data processing"
+    }
+  ],
+  "components": [
+    {
+      "id": "game",
+      "name": "Game Components",
+      "layers": [
+        "ui",
+        "game_logic"
+      ],
+      "description": "Game state, board, pieces, and user interaction"
+    },
+    {
+      "id": "ai_engine",
+      "name": "AI Engine",
+      "layers": [
+        "search"
+      ],
+      "description": "Minimax search, move ordering, and pruning"
+    },
+    {
+      "id": "neural_network",
+      "name": "Neural Network",
+      "layers": [
+        "neural"
+      ],
+      "description": "NNUE training and evaluation"
+    },
+    {
+      "id": "utilities",
+      "name": "Utilities",
+      "layers": [
+        "utilities"
+      ],
+      "description": "Configuration, preprocessing, and helper modules"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "ai",
+      "name": "ai",
+      "file": "src/ai.py",
+      "layer": "search",
+      "component": "ai_engine",
+      "classes": [
+        "ChessAI"
+      ],
+      "description": "Chess AI engine with iterative deepening, alpha-beta pruning, transposition tables, aspiration windows, and NNUE evaluation. Handles opening book, endgame tablebases, and move selection.",
+      "imports_count": 5,
+      "imported_by_count": 1
+    },
+    {
+      "id": "board",
+      "name": "board",
+      "file": "src/board.py",
+      "layer": "core",
+      "component": "board_state",
+      "classes": [
+        "Board"
+      ],
+      "description": "Chess board representation with piece placement, move generation, legal move validation, check detection, castling, en passant, and position history tracking.",
+      "imports_count": 6,
+      "imported_by_count": 1
+    },
+    {
+      "id": "move",
+      "name": "move",
+      "file": "src/move.py",
+      "layer": "core",
+      "component": "move_representation",
+      "classes": [
+        "Move"
+      ],
+      "description": "Move class representing chess moves with initial and final squares, including algebraic notation conversion.",
+      "imports_count": 0,
+      "imported_by_count": 4
+    },
+    {
+      "id": "piece",
+      "name": "piece",
+      "file": "src/piece.py",
+      "layer": "core",
+      "component": "piece_types",
+      "classes": [
+        "Piece",
+        "Pawn",
+        "Knight",
+        "Bishop",
+        "Rook",
+        "Queen",
+        "King"
+      ],
+      "description": "Chess piece classes with texture management and move list tracking. Includes all 6 piece types with color and value properties.",
+      "imports_count": 0,
+      "imported_by_count": 4
+    },
+    {
+      "id": "square",
+      "name": "square",
+      "file": "src/square.py",
+      "layer": "core",
+      "component": "board_square",
+      "classes": [
+        "Square"
+      ],
+      "description": "Board square representation with coordinates, piece tracking, and utility methods for square validation and alpha notation.",
+      "imports_count": 0,
+      "imported_by_count": 5
+    },
+    {
+      "id": "color",
+      "name": "color",
+      "file": "src/color.py",
+      "layer": "ui",
+      "component": "color_scheme",
+      "classes": [
+        "Color"
+      ],
+      "description": "Color pair class for light/dark theme colors used in the GUI.",
+      "imports_count": 0,
+      "imported_by_count": 2
+    },
+    {
+      "id": "const",
+      "name": "const",
+      "file": "src/const.py",
+      "layer": "core",
+      "component": "constants",
+      "classes": [],
+      "description": "Global constants for screen dimensions, board size, and square size used throughout the application.",
+      "imports_count": 0,
+      "imported_by_count": 5
+    },
+    {
+      "id": "bitboard",
+      "name": "bitboard",
+      "file": "src/bitboard.py",
+      "layer": "core",
+      "component": "bitboard_utils",
+      "classes": [],
+      "description": "Bitboard utilities for efficient board representation, including square distance precomputation, sliding move generation for rooks and bishops, and psuedo-attacks for knights and kings.",
+      "imports_count": 0,
+      "imported_by_count": 1
+    },
+    {
+      "id": "accumulator",
+      "name": "accumulator",
+      "file": "src/accumulator.py",
+      "layer": "nnue",
+      "component": "feature_accumulation",
+      "classes": [
+        "Accumulator"
+      ],
+      "description": "HalfKP feature accumulator for incremental NNUE updates. Maintains indexed feature arrays and cached hidden activations with stack-based rollback support.",
+      "imports_count": 2,
+      "imported_by_count": 1
+    },
+    {
+      "id": "core_search",
+      "name": "core_search",
+      "file": "src/core_search.pyx",
+      "layer": "search",
+      "component": "search_algorithm",
+      "classes": [],
+      "description": "Cython-optimized minimax search with alpha-beta pruning, transposition tables, killer moves, history heuristics, SEE-based move ordering, and NNUE evaluation integration.",
+      "imports_count": 1,
+      "imported_by_count": 2
+    },
+    {
+      "id": "main",
+      "name": "main",
+      "file": "src/main.py",
+      "layer": "ui",
+      "component": "application_entry",
+      "classes": [
+        "Main"
+      ],
+      "description": "Main application class handling the pygame event loop, mouse interactions, piece dragging, promotion modals, and AI move selection.",
+      "imports_count": 6,
+      "imported_by_count": 0
+    },
+    {
+      "id": "game",
+      "name": "game",
+      "file": "src/game.py",
+      "layer": "ui",
+      "component": "game_state",
+      "classes": [
+        "Game"
+      ],
+      "description": "Game state manager handling turn tracking, move history with undo/redo, board display, hover effects, last move highlighting, and game over detection.",
+      "imports_count": 6,
+      "imported_by_count": 1
+    },
+    {
+      "id": "dragger",
+      "name": "dragger",
+      "file": "src/dragger.py",
+      "layer": "ui",
+      "component": "piece_interaction",
+      "classes": [
+        "Dragger"
+      ],
+      "description": "Piece dragging logic managing mouse position tracking and piece visual updates during drag operations.",
+      "imports_count": 1,
+      "imported_by_count": 2
+    },
+    {
+      "id": "config",
+      "name": "config",
+      "file": "src/config.py",
+      "layer": "ui",
+      "component": "configuration",
+      "classes": [
+        "Config"
+      ],
+      "description": "Configuration system managing themes, fonts, and sound effects for the chess GUI.",
+      "imports_count": 2,
+      "imported_by_count": 2
+    },
+    {
+      "id": "theme",
+      "name": "theme",
+      "file": "src/theme.py",
+      "layer": "ui",
+      "component": "visual_theme",
+      "classes": [
+        "Theme"
+      ],
+      "description": "Theme class defining color schemes for board background, move highlighting, and last move traces.",
+      "imports_count": 1,
+      "imported_by_count": 1
+    },
+    {
+      "id": "sound",
+      "name": "sound",
+      "file": "src/sound.py",
+      "layer": "ui",
+      "component": "audio_effects",
+      "classes": [
+        "Sound"
+      ],
+      "description": "Sound effect wrapper using pygame mixer for playing chess-related audio cues.",
+      "imports_count": 0,
+      "imported_by_count": 2
+    },
+    {
+      "id": "promotion",
+      "name": "promotion",
+      "file": "src/promotion.py",
+      "layer": "ui",
+      "component": "pawn_promotion",
+      "classes": [
+        "PromotionModal"
+      ],
+      "description": "Promotion modal dialog for pawn promotion with piece selection UI displayed as a vertical dropdown.",
+      "imports_count": 2,
+      "imported_by_count": 1
+    },
+    {
+      "id": "nnue_train",
+      "name": "nnue_train",
+      "file": "src/nnue/nnue_train.py",
+      "layer": "nnue",
+      "component": "model_training",
+      "classes": [],
+      "description": "NNUE model training utilities including evaluation parsing, feature extraction, and dataset handling with mate score normalization.",
+      "imports_count": 0,
+      "imported_by_count": 0
+    },
+    {
+      "id": "halfkp",
+      "name": "halfkp",
+      "file": "src/nnue/halfkp.py",
+      "layer": "nnue",
+      "component": "nnue_model",
+      "classes": [
+        "HalfKP_NNUE",
+        "ChessDatasetHalfKP"
+      ],
+      "description": "HalfKP NNUE neural network implementation with dual-perspective input (white and black king), embedding layers, and evaluation output. Includes dataset handling with efficient chunk-based caching.",
+      "imports_count": 0,
+      "imported_by_count": 2
+    },
+    {
+      "id": "check_model",
+      "name": "check_model",
+      "file": "src/nnue/check_model.py",
+      "layer": "nnue",
+      "component": "model_validation",
+      "classes": [],
+      "description": "Model validation utility for inspecting PyTorch checkpoint structure and verifying saved weights.",
+      "imports_count": 0,
+      "imported_by_count": 0
+    },
+    {
+      "id": "evaluate_model",
+      "name": "evaluate_model",
+      "file": "src/nnue/evaluate_model.py",
+      "layer": "nnue",
+      "component": "model_evaluation",
+      "classes": [],
+      "description": "Model evaluation script for testing trained NNUE models on test dataset with loss metrics.",
+      "imports_count": 1,
+      "imported_by_count": 0
+    },
+    {
+      "id": "preprocess",
+      "name": "preprocess",
+      "file": "src/book/preprocess.py",
+      "layer": "data",
+      "component": "opening_book",
+      "classes": [],
+      "description": "Opening book preprocessing script that analyzes PGN/TSV files using Stockfish, computes Zobrist hashes, and generates book.json with position evaluations.",
+      "imports_count": 0,
+      "imported_by_count": 0
+    },
+    {
+      "id": "pgn_preprocess",
+      "name": "pgn_preprocess",
+      "file": "src/endgame/pgn_preprocess.py",
+      "layer": "data",
+      "component": "endgame_data",
+      "classes": [],
+      "description": "Endgame tablebase preprocessing converting PGN endgame data to JSON format with WDL (Win/Draw/Loss) and DTZ (Distance To Zeroing) information.",
+      "imports_count": 0,
+      "imported_by_count": 0
+    }
+  ],
+  "edges": [
+    {
+      "source": "ai",
+      "target": "bitboard",
+      "type": "import",
+      "description": "ai imports bitboard"
+    },
+    {
+      "source": "ai",
+      "target": "move",
+      "type": "import",
+      "description": "ai imports move"
+    },
+    {
+      "source": "ai",
+      "target": "square",
+      "type": "import",
+      "description": "ai imports square"
+    },
+    {
+      "source": "ai",
+      "target": "accumulator",
+      "type": "import",
+      "description": "ai imports accumulator"
+    },
+    {
+      "source": "ai",
+      "target": "core_search",
+      "type": "import",
+      "description": "ai imports core_search"
+    },
+    {
+      "source": "board",
+      "target": "const",
+      "type": "import",
+      "description": "board imports const"
+    },
+    {
+      "source": "board",
+      "target": "square",
+      "type": "import",
+      "description": "board imports square"
+    },
+    {
+      "source": "board",
+      "target": "piece",
+      "type": "import",
+      "description": "board imports piece"
+    },
+    {
+      "source": "board",
+      "target": "move",
+      "type": "import",
+      "description": "board imports move"
+    },
+    {
+      "source": "board",
+      "target": "sound",
+      "type": "import",
+      "description": "board imports sound"
+    },
+    {
+      "source": "board",
+      "target": "config",
+      "type": "import",
+      "description": "board imports config"
+    },
+    {
+      "source": "accumulator",
+      "target": "core_search",
+      "type": "import",
+      "description": "accumulator imports core_search"
+    },
+    {
+      "source": "accumulator",
+      "target": "halfkp",
+      "type": "import",
+      "description": "accumulator imports halfkp"
+    },
+    {
+      "source": "core_search",
+      "target": "chess",
+      "type": "import",
+      "description": "core_search imports chess"
+    },
+    {
+      "source": "main",
+      "target": "const",
+      "type": "import",
+      "description": "main imports const"
+    },
+    {
+      "source": "main",
+      "target": "game",
+      "type": "import",
+      "description": "main imports game"
+    },
+    {
+      "source": "main",
+      "target": "move",
+      "type": "import",
+      "description": "main imports move"
+    },
+    {
+      "source": "main",
+      "target": "square",
+      "type": "import",
+      "description": "main imports square"
+    },
+    {
+      "source": "main",
+      "target": "piece",
+      "type": "import",
+      "description": "main imports piece"
+    },
+    {
+      "source": "main",
+      "target": "ai",
+      "type": "import",
+      "description": "main imports ai"
+    },
+    {
+      "source": "game",
+      "target": "const",
+      "type": "import",
+      "description": "game imports const"
+    },
+    {
+      "source": "game",
+      "target": "board",
+      "type": "import",
+      "description": "game imports board"
+    },
+    {
+      "source": "game",
+      "target": "dragger",
+      "type": "import",
+      "description": "game imports dragger"
+    },
+    {
+      "source": "game",
+      "target": "square",
+      "type": "import",
+      "description": "game imports square"
+    },
+    {
+      "source": "game",
+      "target": "config",
+      "type": "import",
+      "description": "game imports config"
+    },
+    {
+      "source": "game",
+      "target": "promotion",
+      "type": "import",
+      "description": "game imports promotion"
+    },
+    {
+      "source": "dragger",
+      "target": "const",
+      "type": "import",
+      "description": "dragger imports const"
+    },
+    {
+      "source": "config",
+      "target": "sound",
+      "type": "import",
+      "description": "config imports sound"
+    },
+    {
+      "source": "config",
+      "target": "theme",
+      "type": "import",
+      "description": "config imports theme"
+    },
+    {
+      "source": "theme",
+      "target": "color",
+      "type": "import",
+      "description": "theme imports color"
+    },
+    {
+      "source": "promotion",
+      "target": "const",
+      "type": "import",
+      "description": "promotion imports const"
+    },
+    {
+      "source": "promotion",
+      "target": "piece",
+      "type": "import",
+      "description": "promotion imports piece"
+    },
+    {
+      "source": "evaluate_model",
+      "target": "halfkp",
+      "type": "import",
+      "description": "evaluate_model imports halfkp"
+    }
+  ]
+}
