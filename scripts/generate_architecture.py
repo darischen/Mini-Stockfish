@@ -10,19 +10,25 @@ modules = data['modules']
 # Define layers with metadata
 layers = [
     {"id": "ui", "name": "UI Layer", "color": "#ADD8E6", "description": "User interface and game interaction"},
-    {"id": "game_logic", "name": "Game Logic Layer", "color": "#90EE90", "description": "Chess rules and board representation"},
+    {"id": "core", "name": "Core Game Logic Layer", "color": "#90EE90", "description": "Chess rules and board representation"},
     {"id": "search", "name": "Search Engine Layer", "color": "#FFA500", "description": "Minimax search with alpha-beta pruning"},
-    {"id": "neural", "name": "Neural Network Layer", "color": "#DDA0DD", "description": "NNUE evaluation and training"},
-    {"id": "utilities", "name": "Utilities & Preprocessing", "color": "#D3D3D3", "description": "Helper modules and data processing"},
+    {"id": "nnue", "name": "Neural Network Layer", "color": "#DDA0DD", "description": "NNUE evaluation and training"},
+    {"id": "data", "name": "Data Processing Layer", "color": "#D3D3D3", "description": "Data preprocessing and helper modules"},
 ]
 
-# Define components
-components = [
-    {"id": "game", "name": "Game Components", "layers": ["ui", "game_logic"], "description": "Game state, board, pieces, and user interaction"},
-    {"id": "ai_engine", "name": "AI Engine", "layers": ["search"], "description": "Minimax search, move ordering, and pruning"},
-    {"id": "neural_network", "name": "Neural Network", "layers": ["neural"], "description": "NNUE training and evaluation"},
-    {"id": "utilities", "name": "Utilities", "layers": ["utilities"], "description": "Configuration, preprocessing, and helper modules"},
-]
+# Build unique components from modules
+component_ids = set(module["component"] for module in modules)
+components = []
+for comp_id in sorted(component_ids):
+    # Find the first module with this component to get description
+    comp_modules = [m for m in modules if m["component"] == comp_id]
+    comp_layer = comp_modules[0]["layer"] if comp_modules else "unknown"
+    components.append({
+        "id": comp_id,
+        "name": " ".join(word.capitalize() for word in comp_id.replace("_", " ").split()),
+        "layers": [comp_layer],
+        "description": f"{comp_id} component modules"
+    })
 
 # Build nodes from modules
 nodes = []
@@ -81,12 +87,16 @@ for module in modules:
 layer_map = {layer["id"]: layer for layer in layers}
 component_map = {comp["id"]: comp for comp in components}
 
+# Get all unique layer IDs from modules and sort them
+actual_layer_ids = sorted(set(module["layer"] for module in modules))
+
 # Build hierarchical structure
-for layer_id in ["ui", "game_logic", "search", "neural", "utilities"]:
-    if layer_id not in layer_map:
+for layer_id in actual_layer_ids:
+    layer_data = layer_map.get(layer_id)
+    if not layer_data:
+        # Skip layers not in the predefined layer list
         continue
 
-    layer_data = layer_map[layer_id]
     layer_modules = modules_by_layer.get(layer_id, [])
 
     # Group modules by component

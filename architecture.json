@@ -14,8 +14,8 @@
         "description": "User interface and game interaction"
       },
       {
-        "id": "game_logic",
-        "name": "Game Logic Layer",
+        "id": "core",
+        "name": "Core Game Logic Layer",
         "color": "#90EE90",
         "description": "Chess rules and board representation"
       },
@@ -26,51 +26,202 @@
         "description": "Minimax search with alpha-beta pruning"
       },
       {
-        "id": "neural",
+        "id": "nnue",
         "name": "Neural Network Layer",
         "color": "#DDA0DD",
         "description": "NNUE evaluation and training"
       },
       {
-        "id": "utilities",
-        "name": "Utilities & Preprocessing",
+        "id": "data",
+        "name": "Data Processing Layer",
         "color": "#D3D3D3",
-        "description": "Helper modules and data processing"
+        "description": "Data preprocessing and helper modules"
       }
     ],
     "components": [
       {
-        "id": "game",
-        "name": "Game Components",
-        "layers": [
-          "ui",
-          "game_logic"
-        ],
-        "description": "Game state, board, pieces, and user interaction"
-      },
-      {
         "id": "ai_engine",
-        "name": "AI Engine",
+        "name": "Ai Engine",
         "layers": [
           "search"
         ],
-        "description": "Minimax search, move ordering, and pruning"
+        "description": "ai_engine component modules"
       },
       {
-        "id": "neural_network",
-        "name": "Neural Network",
+        "id": "application_entry",
+        "name": "Application Entry",
         "layers": [
-          "neural"
+          "ui"
         ],
-        "description": "NNUE training and evaluation"
+        "description": "application_entry component modules"
       },
       {
-        "id": "utilities",
-        "name": "Utilities",
+        "id": "audio_effects",
+        "name": "Audio Effects",
         "layers": [
-          "utilities"
+          "ui"
         ],
-        "description": "Configuration, preprocessing, and helper modules"
+        "description": "audio_effects component modules"
+      },
+      {
+        "id": "bitboard_utils",
+        "name": "Bitboard Utils",
+        "layers": [
+          "core"
+        ],
+        "description": "bitboard_utils component modules"
+      },
+      {
+        "id": "board_square",
+        "name": "Board Square",
+        "layers": [
+          "core"
+        ],
+        "description": "board_square component modules"
+      },
+      {
+        "id": "board_state",
+        "name": "Board State",
+        "layers": [
+          "core"
+        ],
+        "description": "board_state component modules"
+      },
+      {
+        "id": "color_scheme",
+        "name": "Color Scheme",
+        "layers": [
+          "ui"
+        ],
+        "description": "color_scheme component modules"
+      },
+      {
+        "id": "configuration",
+        "name": "Configuration",
+        "layers": [
+          "ui"
+        ],
+        "description": "configuration component modules"
+      },
+      {
+        "id": "constants",
+        "name": "Constants",
+        "layers": [
+          "core"
+        ],
+        "description": "constants component modules"
+      },
+      {
+        "id": "endgame_data",
+        "name": "Endgame Data",
+        "layers": [
+          "data"
+        ],
+        "description": "endgame_data component modules"
+      },
+      {
+        "id": "feature_accumulation",
+        "name": "Feature Accumulation",
+        "layers": [
+          "nnue"
+        ],
+        "description": "feature_accumulation component modules"
+      },
+      {
+        "id": "game_state",
+        "name": "Game State",
+        "layers": [
+          "ui"
+        ],
+        "description": "game_state component modules"
+      },
+      {
+        "id": "model_evaluation",
+        "name": "Model Evaluation",
+        "layers": [
+          "nnue"
+        ],
+        "description": "model_evaluation component modules"
+      },
+      {
+        "id": "model_training",
+        "name": "Model Training",
+        "layers": [
+          "nnue"
+        ],
+        "description": "model_training component modules"
+      },
+      {
+        "id": "model_validation",
+        "name": "Model Validation",
+        "layers": [
+          "nnue"
+        ],
+        "description": "model_validation component modules"
+      },
+      {
+        "id": "move_representation",
+        "name": "Move Representation",
+        "layers": [
+          "core"
+        ],
+        "description": "move_representation component modules"
+      },
+      {
+        "id": "nnue_model",
+        "name": "Nnue Model",
+        "layers": [
+          "nnue"
+        ],
+        "description": "nnue_model component modules"
+      },
+      {
+        "id": "opening_book",
+        "name": "Opening Book",
+        "layers": [
+          "data"
+        ],
+        "description": "opening_book component modules"
+      },
+      {
+        "id": "pawn_promotion",
+        "name": "Pawn Promotion",
+        "layers": [
+          "ui"
+        ],
+        "description": "pawn_promotion component modules"
+      },
+      {
+        "id": "piece_interaction",
+        "name": "Piece Interaction",
+        "layers": [
+          "ui"
+        ],
+        "description": "piece_interaction component modules"
+      },
+      {
+        "id": "piece_types",
+        "name": "Piece Types",
+        "layers": [
+          "core"
+        ],
+        "description": "piece_types component modules"
+      },
+      {
+        "id": "search_algorithm",
+        "name": "Search Algorithm",
+        "layers": [
+          "search"
+        ],
+        "description": "search_algorithm component modules"
+      },
+      {
+        "id": "visual_theme",
+        "name": "Visual Theme",
+        "layers": [
+          "ui"
+        ],
+        "description": "visual_theme component modules"
       }
     ],
     "nodes": [
@@ -571,16 +722,225 @@
     "description": "Chess engine with NNUE neural network evaluation",
     "layers": [
       {
-        "name": "UI Layer",
-        "id": "ui",
-        "description": "User interface and game interaction",
-        "components": []
+        "name": "Core Game Logic Layer",
+        "id": "core",
+        "description": "Chess rules and board representation",
+        "components": [
+          {
+            "name": "Board State",
+            "id": "board_state",
+            "modules": [
+              {
+                "name": "board",
+                "path": "src/board.py",
+                "classes": [
+                  "Board"
+                ],
+                "dependencies": [
+                  "const",
+                  "square",
+                  "piece",
+                  "move",
+                  "sound",
+                  "config"
+                ],
+                "description": "Chess board representation with piece placement, move generation, legal move validation, check detection, castling, en passant, and position history tracking."
+              }
+            ]
+          },
+          {
+            "name": "Move Representation",
+            "id": "move_representation",
+            "modules": [
+              {
+                "name": "move",
+                "path": "src/move.py",
+                "classes": [
+                  "Move"
+                ],
+                "dependencies": [],
+                "description": "Move class representing chess moves with initial and final squares, including algebraic notation conversion."
+              }
+            ]
+          },
+          {
+            "name": "Piece Types",
+            "id": "piece_types",
+            "modules": [
+              {
+                "name": "piece",
+                "path": "src/piece.py",
+                "classes": [
+                  "Piece",
+                  "Pawn",
+                  "Knight",
+                  "Bishop",
+                  "Rook",
+                  "Queen",
+                  "King"
+                ],
+                "dependencies": [],
+                "description": "Chess piece classes with texture management and move list tracking. Includes all 6 piece types with color and value properties."
+              }
+            ]
+          },
+          {
+            "name": "Board Square",
+            "id": "board_square",
+            "modules": [
+              {
+                "name": "square",
+                "path": "src/square.py",
+                "classes": [
+                  "Square"
+                ],
+                "dependencies": [],
+                "description": "Board square representation with coordinates, piece tracking, and utility methods for square validation and alpha notation."
+              }
+            ]
+          },
+          {
+            "name": "Constants",
+            "id": "constants",
+            "modules": [
+              {
+                "name": "const",
+                "path": "src/const.py",
+                "classes": [],
+                "dependencies": [],
+                "description": "Global constants for screen dimensions, board size, and square size used throughout the application."
+              }
+            ]
+          },
+          {
+            "name": "Bitboard Utils",
+            "id": "bitboard_utils",
+            "modules": [
+              {
+                "name": "bitboard",
+                "path": "src/bitboard.py",
+                "classes": [],
+                "dependencies": [],
+                "description": "Bitboard utilities for efficient board representation, including square distance precomputation, sliding move generation for rooks and bishops, and psuedo-attacks for knights and kings."
+              }
+            ]
+          }
+        ]
       },
       {
-        "name": "Game Logic Layer",
-        "id": "game_logic",
-        "description": "Chess rules and board representation",
-        "components": []
+        "name": "Data Processing Layer",
+        "id": "data",
+        "description": "Data preprocessing and helper modules",
+        "components": [
+          {
+            "name": "Opening Book",
+            "id": "opening_book",
+            "modules": [
+              {
+                "name": "preprocess",
+                "path": "src/book/preprocess.py",
+                "classes": [],
+                "dependencies": [],
+                "description": "Opening book preprocessing script that analyzes PGN/TSV files using Stockfish, computes Zobrist hashes, and generates book.json with position evaluations."
+              }
+            ]
+          },
+          {
+            "name": "Endgame Data",
+            "id": "endgame_data",
+            "modules": [
+              {
+                "name": "pgn_preprocess",
+                "path": "src/endgame/pgn_preprocess.py",
+                "classes": [],
+                "dependencies": [],
+                "description": "Endgame tablebase preprocessing converting PGN endgame data to JSON format with WDL (Win/Draw/Loss) and DTZ (Distance To Zeroing) information."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Neural Network Layer",
+        "id": "nnue",
+        "description": "NNUE evaluation and training",
+        "components": [
+          {
+            "name": "Feature Accumulation",
+            "id": "feature_accumulation",
+            "modules": [
+              {
+                "name": "accumulator",
+                "path": "src/accumulator.py",
+                "classes": [
+                  "Accumulator"
+                ],
+                "dependencies": [
+                  "core_search",
+                  "halfkp"
+                ],
+                "description": "HalfKP feature accumulator for incremental NNUE updates. Maintains indexed feature arrays and cached hidden activations with stack-based rollback support."
+              }
+            ]
+          },
+          {
+            "name": "Model Training",
+            "id": "model_training",
+            "modules": [
+              {
+                "name": "nnue_train",
+                "path": "src/nnue/nnue_train.py",
+                "classes": [],
+                "dependencies": [],
+                "description": "NNUE model training utilities including evaluation parsing, feature extraction, and dataset handling with mate score normalization."
+              }
+            ]
+          },
+          {
+            "name": "Nnue Model",
+            "id": "nnue_model",
+            "modules": [
+              {
+                "name": "halfkp",
+                "path": "src/nnue/halfkp.py",
+                "classes": [
+                  "HalfKP_NNUE",
+                  "ChessDatasetHalfKP"
+                ],
+                "dependencies": [],
+                "description": "HalfKP NNUE neural network implementation with dual-perspective input (white and black king), embedding layers, and evaluation output. Includes dataset handling with efficient chunk-based caching."
+              }
+            ]
+          },
+          {
+            "name": "Model Validation",
+            "id": "model_validation",
+            "modules": [
+              {
+                "name": "check_model",
+                "path": "src/nnue/check_model.py",
+                "classes": [],
+                "dependencies": [],
+                "description": "Model validation utility for inspecting PyTorch checkpoint structure and verifying saved weights."
+              }
+            ]
+          },
+          {
+            "name": "Model Evaluation",
+            "id": "model_evaluation",
+            "modules": [
+              {
+                "name": "evaluate_model",
+                "path": "src/nnue/evaluate_model.py",
+                "classes": [],
+                "dependencies": [
+                  "halfkp"
+                ],
+                "description": "Model evaluation script for testing trained NNUE models on test dataset with loss metrics."
+              }
+            ]
+          }
+        ]
       },
       {
         "name": "Search Engine Layer",
@@ -588,7 +948,7 @@
         "description": "Minimax search with alpha-beta pruning",
         "components": [
           {
-            "name": "AI Engine",
+            "name": "Ai Engine",
             "id": "ai_engine",
             "modules": [
               {
@@ -607,20 +967,174 @@
                 "description": "Chess AI engine with iterative deepening, alpha-beta pruning, transposition tables, aspiration windows, and NNUE evaluation. Handles opening book, endgame tablebases, and move selection."
               }
             ]
+          },
+          {
+            "name": "Search Algorithm",
+            "id": "search_algorithm",
+            "modules": [
+              {
+                "name": "core_search",
+                "path": "src/core_search.pyx",
+                "classes": [],
+                "dependencies": [
+                  "chess"
+                ],
+                "description": "Cython-optimized minimax search with alpha-beta pruning, transposition tables, killer moves, history heuristics, SEE-based move ordering, and NNUE evaluation integration."
+              }
+            ]
           }
         ]
       },
       {
-        "name": "Neural Network Layer",
-        "id": "neural",
-        "description": "NNUE evaluation and training",
-        "components": []
-      },
-      {
-        "name": "Utilities & Preprocessing",
-        "id": "utilities",
-        "description": "Helper modules and data processing",
-        "components": []
+        "name": "UI Layer",
+        "id": "ui",
+        "description": "User interface and game interaction",
+        "components": [
+          {
+            "name": "Color Scheme",
+            "id": "color_scheme",
+            "modules": [
+              {
+                "name": "color",
+                "path": "src/color.py",
+                "classes": [
+                  "Color"
+                ],
+                "dependencies": [],
+                "description": "Color pair class for light/dark theme colors used in the GUI."
+              }
+            ]
+          },
+          {
+            "name": "Application Entry",
+            "id": "application_entry",
+            "modules": [
+              {
+                "name": "main",
+                "path": "src/main.py",
+                "classes": [
+                  "Main"
+                ],
+                "dependencies": [
+                  "const",
+                  "game",
+                  "move",
+                  "square",
+                  "piece",
+                  "ai"
+                ],
+                "description": "Main application class handling the pygame event loop, mouse interactions, piece dragging, promotion modals, and AI move selection."
+              }
+            ]
+          },
+          {
+            "name": "Game State",
+            "id": "game_state",
+            "modules": [
+              {
+                "name": "game",
+                "path": "src/game.py",
+                "classes": [
+                  "Game"
+                ],
+                "dependencies": [
+                  "const",
+                  "board",
+                  "dragger",
+                  "square",
+                  "config",
+                  "promotion"
+                ],
+                "description": "Game state manager handling turn tracking, move history with undo/redo, board display, hover effects, last move highlighting, and game over detection."
+              }
+            ]
+          },
+          {
+            "name": "Piece Interaction",
+            "id": "piece_interaction",
+            "modules": [
+              {
+                "name": "dragger",
+                "path": "src/dragger.py",
+                "classes": [
+                  "Dragger"
+                ],
+                "dependencies": [
+                  "const"
+                ],
+                "description": "Piece dragging logic managing mouse position tracking and piece visual updates during drag operations."
+              }
+            ]
+          },
+          {
+            "name": "Configuration",
+            "id": "configuration",
+            "modules": [
+              {
+                "name": "config",
+                "path": "src/config.py",
+                "classes": [
+                  "Config"
+                ],
+                "dependencies": [
+                  "sound",
+                  "theme"
+                ],
+                "description": "Configuration system managing themes, fonts, and sound effects for the chess GUI."
+              }
+            ]
+          },
+          {
+            "name": "Visual Theme",
+            "id": "visual_theme",
+            "modules": [
+              {
+                "name": "theme",
+                "path": "src/theme.py",
+                "classes": [
+                  "Theme"
+                ],
+                "dependencies": [
+                  "color"
+                ],
+                "description": "Theme class defining color schemes for board background, move highlighting, and last move traces."
+              }
+            ]
+          },
+          {
+            "name": "Audio Effects",
+            "id": "audio_effects",
+            "modules": [
+              {
+                "name": "sound",
+                "path": "src/sound.py",
+                "classes": [
+                  "Sound"
+                ],
+                "dependencies": [],
+                "description": "Sound effect wrapper using pygame mixer for playing chess-related audio cues."
+              }
+            ]
+          },
+          {
+            "name": "Pawn Promotion",
+            "id": "pawn_promotion",
+            "modules": [
+              {
+                "name": "promotion",
+                "path": "src/promotion.py",
+                "classes": [
+                  "PromotionModal"
+                ],
+                "dependencies": [
+                  "const",
+                  "piece"
+                ],
+                "description": "Promotion modal dialog for pawn promotion with piece selection UI displayed as a vertical dropdown."
+              }
+            ]
+          }
+        ]
       }
     ]
   }
