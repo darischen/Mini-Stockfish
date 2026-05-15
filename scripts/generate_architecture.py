@@ -133,13 +133,6 @@ for layer_id in actual_layer_ids:
 
         layer_entry["components"].append(component_entry)
 
-    # Handle modules from other layers (like core, data, etc) that have this layer
-    other_layer_modules = [m for m in modules if m["layer"] not in layer_map]
-    for module in other_layer_modules:
-        if layer_id in module.get("layers", []):
-            if not any(m["id"] == module["id"] for m in layer_modules):
-                modules_by_layer[layer_id].append(module)
-
     hierarchical_json["layers"].append(layer_entry)
 
 # Write both formats to the same file
