@@ -31,7 +31,7 @@
       "classes": ["Move"],
       "description": "Move class representing chess moves with initial and final squares, including algebraic notation conversion.",
       "imports": [],
-      "imported_by": ["board", "game", "ai"]
+      "imported_by": ["board", "game", "ai", "main"]
     },
     {
       "id": "piece",
@@ -42,7 +42,7 @@
       "classes": ["Piece", "Pawn", "Knight", "Bishop", "Rook", "Queen", "King"],
       "description": "Chess piece classes with texture management and move list tracking. Includes all 6 piece types with color and value properties.",
       "imports": [],
-      "imported_by": ["board", "game", "main"]
+      "imported_by": ["board", "game", "main", "promotion"]
     },
     {
       "id": "square",
@@ -53,7 +53,7 @@
       "classes": ["Square"],
       "description": "Board square representation with coordinates, piece tracking, and utility methods for square validation and alpha notation.",
       "imports": [],
-      "imported_by": ["board", "game", "move"]
+      "imported_by": ["board", "game", "move", "ai", "main"]
     },
     {
       "id": "color",
@@ -108,7 +108,7 @@
       "classes": [],
       "description": "Cython-optimized minimax search with alpha-beta pruning, transposition tables, killer moves, history heuristics, SEE-based move ordering, and NNUE evaluation integration.",
       "imports": ["chess"],
-      "imported_by": ["ai"]
+      "imported_by": ["ai", "accumulator"]
     },
     {
       "id": "main",
