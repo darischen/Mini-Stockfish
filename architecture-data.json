@@ -9,7 +9,7 @@
       "classes": ["ChessAI"],
       "description": "Chess AI engine with iterative deepening, alpha-beta pruning, transposition tables, aspiration windows, and NNUE evaluation. Handles opening book, endgame tablebases, and move selection.",
       "imports": ["bitboard", "move", "square", "accumulator", "core_search"],
-      "imported_by": ["main", "game"]
+      "imported_by": ["main"]
     },
     {
       "id": "board",
@@ -20,7 +20,7 @@
       "classes": ["Board"],
       "description": "Chess board representation with piece placement, move generation, legal move validation, check detection, castling, en passant, and position history tracking.",
       "imports": ["const", "square", "piece", "move", "sound", "config"],
-      "imported_by": ["game", "main", "ai"]
+      "imported_by": ["game"]
     },
     {
       "id": "move",
@@ -96,7 +96,7 @@
       "component": "feature_accumulation",
       "classes": ["Accumulator"],
       "description": "HalfKP feature accumulator for incremental NNUE updates. Maintains indexed feature arrays and cached hidden activations with stack-based rollback support.",
-      "imports": ["core_search"],
+      "imports": ["core_search", "halfkp"],
       "imported_by": ["ai"]
     },
     {
