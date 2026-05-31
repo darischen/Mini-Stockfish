@@ -245,9 +245,6 @@ Mini-Stockfish/
 │   ├── setup.py             # Cython compilation script
 │   ├── requirements.txt      # Python dependencies
 │   └── test_movegen.py      # Move generation tests
-├── docs/
-│   ├── architecture-map.html # Interactive architecture visualization
-│   └── architecture.json    # Architecture data
 ├── README.md
 └── .claude/                 # Claude Code configuration
 
@@ -270,13 +267,6 @@ python test_movegen.py
 ```
 
 Validates legal move generation and piece movement.
-
-### Architecture Visualization
-Open `docs/architecture.html` in a web browser to see:
-- Interactive dependency graph of all modules
-- Layer-based filtering (UI, Game Logic, Search, Neural Network)
-- Component grouping and relationships
-- Module descriptions and cross-references
 
 ### Memory Files
 The project tracks implementation notes in:
