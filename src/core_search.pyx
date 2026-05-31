@@ -748,9 +748,6 @@ cdef bint _has_non_pawn_material(object board, bint side):
             return True
     return False
 
-# Null move pruning depth reduction
-cdef int NMP_REDUCTION = 2
-
 # LMR: how many full-depth moves before reducing
 cdef int LMR_FULL_MOVES = 2
 # LMR: minimum depth to apply reduction

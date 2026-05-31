@@ -322,9 +322,9 @@ class ChessAI:
             if (depth >= 3
                 and last_finite_eval is not None
                 and not math.isinf(last_finite_eval)
-                and abs(last_finite_eval) < 90000):
-                asp_alpha = last_finite_eval - asp_delta
-                asp_beta = last_finite_eval + asp_delta
+                and abs(last_finite_eval) < 100000):
+                asp_alpha = -math.inf # last_finite_eval - asp_delta
+                asp_beta = math.inf # last_finite_eval + asp_delta
             else:
                 # Shallow depth or no prev eval: full window
                 asp_alpha = -math.inf
@@ -371,13 +371,13 @@ class ChessAI:
                         'pruned': core_search.get_branches_pruned()
                     })
 
-                    # Check if both are mate scores (>= 90000 means mate within horizon)
-                    both_mates = abs(val) >= 90000 and abs(alpha) >= 90000
+                    # Check if both are mate scores (>= 100000 means mate within horizon)
+                    both_mates = abs(val) >= 100000 and abs(alpha) >= 100000
 
                     if val > alpha:
                         alpha = val
                         current_best = uci
-                        if abs(val) >= 90000:
+                        if abs(val) >= 100000:
                             san_move = root_ref.san(uci)
                             if both_mates:
                                 print(f"    Better mate found: {san_move} eval={val:.0f}")
@@ -421,7 +421,7 @@ class ChessAI:
                 previous_best_move = best_move
 
             # Save this depth's result if eval is finite and not a mate score
-            if not math.isinf(best_eval) and abs(best_eval) < 90000:
+            if not math.isinf(best_eval) and abs(best_eval) < 100000:
                 last_finite_move = best_move
                 last_finite_eval = best_eval
                 last_finite_depth = depth

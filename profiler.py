@@ -65,7 +65,7 @@ def search_position():
         if (depth >= 3
             and last_finite_eval is not None
             and not math.isinf(last_finite_eval)
-            and abs(last_finite_eval) < 90000):
+            and abs(last_finite_eval) < 100000):
             asp_alpha = last_finite_eval - asp_delta
             asp_beta = last_finite_eval + asp_delta
         else:
@@ -123,7 +123,7 @@ def search_position():
                 break
 
         best_eval = alpha
-        if not math.isinf(best_eval) and abs(best_eval) < 90000:
+        if not math.isinf(best_eval) and abs(best_eval) < 100000:
             last_finite_eval = best_eval
 
         # Print per-depth stats
