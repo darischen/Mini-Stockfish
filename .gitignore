@@ -8,6 +8,7 @@ combined_chessData - Copy.csv
 /src/endgame/gaviota/
 /src/nnue/data/
 /src/nnue/data/combined_chessData_halfkp_v6/
+/src/nnue/data.zip
 **/__pycache__/
 *.npz
 *.parquet

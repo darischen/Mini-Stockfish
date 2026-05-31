@@ -15,9 +15,53 @@ cpdef set_use_tt(bint flag):
     USE_TT = flag
 
 import chess
-from libc.math cimport INFINITY
+from libc.math cimport INFINITY, log
 
 cdef int[7] PIECE_VAL = [0, 100, 300, 310, 400, 900, 20000]
+
+# HalfKP encoding constants (from halfkp.py)
+cdef int NUM_NONKING = 10
+cdef int PIECES_PER_KING = 64 * NUM_NONKING  # 640
+
+# Map (color, piece_type) → offset
+cdef dict _piece_to_idx = {
+    (True,  chess.PAWN):   0,
+    (True,  chess.KNIGHT): 1,
+    (True,  chess.BISHOP): 2,
+    (True,  chess.ROOK):   3,
+    (True,  chess.QUEEN):  4,
+    (False, chess.PAWN):   5,
+    (False, chess.KNIGHT): 6,
+    (False, chess.BISHOP): 7,
+    (False, chess.ROOK):   8,
+    (False, chess.QUEEN):  9,
+}
+
+cpdef tuple halfkp_indices_for_board(object board):
+    """Compute HalfKP indices directly from board object (no FEN parsing).
+    Returns (indices_view0, indices_view1) lists."""
+    cdef list idx0 = []
+    cdef list idx1 = []
+    cdef int king_sq
+    cdef int sq
+    cdef object piece
+    cdef int offset
+    cdef int idx
+
+    # View 0: white king perspective, View 1: black king perspective
+    for view in (0, 1):
+        king_sq = board.king(bool(view))
+        for sq in range(64):
+            piece = board.piece_at(sq)
+            if piece and piece.piece_type != chess.KING:
+                offset = _piece_to_idx[(piece.color, piece.piece_type)]
+                idx = king_sq * PIECES_PER_KING + sq * NUM_NONKING + offset
+                if view == 0:
+                    idx0.append(idx)
+                else:
+                    idx1.append(idx)
+
+    return idx0, idx1
 
 cpdef bint verify_hash(uint64_t h_incremental, object board):
     """Debug: verify incremental hash matches full recompute."""
@@ -469,7 +513,7 @@ cpdef double nnue_eval_halfkp_py(object idx0_arr, object idx1_arr):
 
 import cython
 from chess import Board, Move
-from accumulator import Accumulator
+# from accumulator import Accumulator  # Avoid circular import; not used here
 from libc.math cimport INFINITY
 
 cdef double MATE_SCORE = 100000.0
@@ -648,9 +692,19 @@ cdef double quiesce(object board,
     cdef double score
     cdef bint ck, cq, ck2, cq2
     cdef object old_ep
+    # Cache piece array once for SEE pruning (avoids per-call sync + piece_at)
+    cdef unsigned char qpieces[64]
+    _sync_cboard(board)
+    cboard_piece_array(&_cboard, qpieces)
     for mv in order_moves(board):
         if not board.is_capture(mv):
             continue
+
+        # SEE pruning: skip obviously losing captures in quiesce
+        # (these waste time and rarely change the eval since we can just stand pat)
+        if not board.is_en_passant(mv):
+            if see_capture(board, qpieces, mv.from_square, mv.to_square) < 0:
+                continue
 
         # For en passant, the captured pawn is not on to_sq
         if board.is_en_passant(mv):
@@ -694,9 +748,6 @@ cdef bint _has_non_pawn_material(object board, bint side):
             return True
     return False
 
-# Null move pruning depth reduction
-cdef int NMP_REDUCTION = 2
-
 # LMR: how many full-depth moves before reducing
 cdef int LMR_FULL_MOVES = 2
 # LMR: minimum depth to apply reduction
@@ -729,9 +780,10 @@ cpdef double minimax(object board,
     cdef object mv, captured
     cdef uint64_t next_key, null_key
     cdef char hit
-    cdef int moves_searched, reduced_depth, actual_depth
+    cdef int moves_searched, reduced_depth, actual_depth, reduction, nmp_R
     cdef bint is_capture, gives_check, is_promotion
     cdef bint in_check
+    cdef double lmr_r
 
     # Count nodes
     nodes_evaluated += 1
@@ -775,11 +827,12 @@ cpdef double minimax(object board,
     cdef object old_ep, mover
     cdef object best_mv = None
 
-    # ——— Null Move Pruning ———
+    # ——— Null Move Pruning (Ethereal-style dynamic reduction) ———
     # Skip if: in check, depth too shallow, no non-pawn material (zugzwang risk),
     # or beta is infinity (PV node with wide-open window — null move can't prune reliably)
+    nmp_R = 3 + depth // 4  # Dynamic reduction: deeper search → more reduction
     if (not in_check
-        and depth >= NMP_REDUCTION + 1
+        and depth >= nmp_R + 1
         and beta < INFINITY
         and _has_non_pawn_material(board, board.turn)):
         # Save pre-move state
@@ -792,7 +845,7 @@ cpdef double minimax(object board,
         acc.update(null_mv, None, old_ep_square=old_ep)
         null_key = null_move_hash(key, ck, cq, ck2, cq2, old_ep, board)
         null_score = -minimax(board, acc,
-                              depth - 1 - NMP_REDUCTION,
+                              depth - 1 - nmp_R,
                               -beta, -beta + 1,
                               ai_color,
                               null_key,
@@ -835,7 +888,7 @@ cpdef double minimax(object board,
         is_promotion = mv.promotion is not None
         gives_check = board.is_check()
 
-        # ——— Late Move Reduction ———
+        # ——— Late Move Reduction (Ethereal-style log formula) ———
         # After searching the first few moves at full depth, reduce later
         # quiet moves (non-captures, non-checks, non-promotions).
         if (moves_searched >= LMR_FULL_MOVES
@@ -844,12 +897,14 @@ cpdef double minimax(object board,
             and not gives_check
             and not is_promotion
             and not in_check):
-            # Search with reduced depth first
-            reduced_depth = depth - 2  # reduce by 1 extra ply
+            # Ethereal-style: r = 0.78 + ln(depth) * ln(moves_searched) / 2.47
+            lmr_r = 0.78 + log(<double>depth) * log(<double>moves_searched) / 2.47
+            reduction = <int>lmr_r
+            reduced_depth = depth - 1 - reduction
             if reduced_depth < 1:
                 reduced_depth = 1
             child = -minimax(board, acc,
-                             reduced_depth - 1,
+                             reduced_depth,
                              -beta, -alpha,
                              ai_color,
                              next_key,
@@ -935,6 +990,77 @@ PROMO_TO_CHESS[2] = 3  # bishop (CMove=2 → chess.BISHOP=3)
 PROMO_TO_CHESS[3] = 4  # rook   (CMove=3 → chess.ROOK=4)
 PROMO_TO_CHESS[4] = 5  # queen  (CMove=4 → chess.QUEEN=5)
 
+cdef int see_capture(object board, unsigned char *pieces, int from_sq, int to_sq):
+    """
+    Static Exchange Evaluation (SEE) for a capture move.
+    Returns net material balance: positive = winning capture, negative = losing.
+    Uses cached `pieces` array (low 4 bits = piece_type, high bit = color)
+    to avoid expensive board.piece_at() calls.
+
+    Note: doesn't perfectly handle X-rays but catches most cases.
+    """
+    cdef unsigned char attacker_byte = pieces[from_sq]
+    cdef unsigned char victim_byte = pieces[to_sq]
+    cdef int attacker_pt = attacker_byte & 0xF
+    cdef int victim_pt = victim_byte & 0xF
+
+    if attacker_pt == 0 or victim_pt == 0:
+        return 0
+
+    cdef list gain = [PIECE_VAL[victim_pt]]
+    cdef int current_piece_val = PIECE_VAL[attacker_pt]
+    cdef set used = {from_sq}
+    # Encoding: byte = (cpp_color << 4) | piece_type
+    # C++ convention: 0=white, 1=black ; python-chess: True=white, False=black
+    # attacker_color_pychess = not bool((byte >> 4) & 1)
+    # side (opponent in py-chess) = bool((byte >> 4) & 1)
+    cdef bint side = bool((attacker_byte >> 4) & 1)
+
+    cdef set attackers_remaining
+    cdef int sq, cheapest_sq, min_val, sq_val, cheapest_pt
+    cdef unsigned char sq_byte
+
+    while True:
+        # board.attackers() is still needed (python-chess bitboard lookup)
+        attackers_remaining = set(board.attackers(side, to_sq)) - used
+        if not attackers_remaining:
+            break
+
+        # Find cheapest attacker using cached piece array
+        cheapest_sq = -1
+        min_val = 999999
+        for sq in attackers_remaining:
+            sq_byte = pieces[sq]
+            cheapest_pt = sq_byte & 0xF
+            if cheapest_pt == 0:
+                continue
+            sq_val = PIECE_VAL[cheapest_pt]
+            if sq_val < min_val:
+                min_val = sq_val
+                cheapest_sq = sq
+
+        if cheapest_sq == -1:
+            break
+
+        cheapest_pt = pieces[cheapest_sq] & 0xF
+
+        # This side captures the piece on target
+        gain.append(current_piece_val - gain[len(gain) - 1])
+
+        current_piece_val = PIECE_VAL[cheapest_pt]
+        used.add(cheapest_sq)
+        side = not side
+
+    # Minimax in reverse: each side can choose to stop capturing
+    cdef int n
+    while len(gain) > 1:
+        n = len(gain)
+        if -gain[n - 2] < gain[n - 1]:
+            gain[n - 2] = -gain[n - 1]
+        gain.pop()
+
+    return gain[0]
+
 cdef list order_moves(object board, object tt_move = None, int depth = 0, object prev_move = None):
     """
     Generates and scores all legal moves for `board` using C++ movegen.
@@ -942,16 +1068,17 @@ cdef list order_moves(object board, object tt_move = None, int depth = 0, object
 
     Priority tiers:
       1. TT best move              (score += 10_000_000)
-      2. Killer moves              (score += 5_000_000)
-      3. Counter-move              (score += 1_000_000)
-      4. Captures by MVV/LVA       (score = 2000*victim - attacker)
+      2. Good captures (SEE >= 0)  (score = 8_000_000 + MVV/LVA)
+      3. Killer moves              (score += 5_000_000)
+      4. Counter-move              (score += 1_000_000)
       5. Quiet moves by history    (score = history[from][to])
+      6. Losing captures (SEE < 0) (score = SEE value, negative)
     """
     cdef CMove c_moves[256]
     cdef unsigned char pieces[64]
     cdef int n_moves, i
     cdef int from_sq, to_sq, flags, promo
-    cdef int a_pt, v_pt, a_val, v_val, score
+    cdef int a_pt, v_pt, a_val, v_val, score, see_val
     cdef int tt_from = -1, tt_to = -1, tt_promo = 0
     cdef int killer1_from = -1, killer1_to = -1, killer2_from = -1, killer2_to = -1
     cdef int counter_move = -1, prev_from = -1, prev_to = -1
@@ -1004,7 +1131,15 @@ cdef list order_moves(object board, object tt_move = None, int depth = 0, object
                 v_val = PIECE_VAL[v_pt] if v_pt else 0
 
         if v_val > 0:
-            score = 2000 * v_val - a_val
+            # SEE-based capture scoring: split into good/bad captures
+            # Pass cached pieces array to avoid expensive board.piece_at() calls
+            see_val = see_capture(board, pieces, from_sq, to_sq)
+            if see_val >= 0:
+                # Good or equal capture: high priority, use MVV/LVA as tiebreaker
+                score = 8000000 + 2000 * v_val - a_val
+            else:
+                # Losing capture: order BELOW quiet moves (negative score)
+                score = see_val  # negative
         else:
             # Quiet move: start with history heuristic
             score = history[from_sq][to_sq]

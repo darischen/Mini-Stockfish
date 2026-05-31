@@ -4,9 +4,39 @@ import numpy as np
 import os
 import torch
 import chess
-from nnue.halfkp import halfkp_indices_for_fen, piece_to_idx, NUM_NONKING, PIECES_PER_KING
+from numba import jit
+from nnue.halfkp import piece_to_idx, NUM_NONKING, PIECES_PER_KING
+import core_search
 
 PAD_LEN = 30  # match TorchScript tracing pad length
+
+@jit(nopython=True)
+def evaluate_jit(hidden0, hidden1, fc2_w, fc2_b, fc3_w, fc3_b, out_w, out_b):
+	"""JIT-compiled MLP evaluation on cached hidden activations."""
+	h = np.concatenate((np.maximum(hidden0, 0), np.maximum(hidden1, 0)))
+	x = fc2_w @ h + fc2_b
+	x = np.maximum(x, 0)
+	x = fc3_w @ x + fc3_b
+	x = np.maximum(x, 0)
+	out = out_w @ x + out_b
+	return float(out[0])
+
+@jit(nopython=True)
+def update_view_jit(idx_arr, hidden, emb_w, old_cap_idx, old_idx, new_idx):
+	"""Modify hidden and idx_arr in-place for one view. No return — arrays mutated directly."""
+	if old_cap_idx >= 0:
+		hidden -= emb_w[old_cap_idx]
+		hidden += emb_w[0]
+		for i in range(len(idx_arr)):
+			if idx_arr[i] == old_cap_idx:
+				idx_arr[i] = 0
+				break
+	hidden -= emb_w[old_idx]
+	hidden += emb_w[new_idx]
+	for i in range(len(idx_arr)):
+		if idx_arr[i] == old_idx:
+			idx_arr[i] = new_idx
+			break
 
 # --- Module-level weight cache (loaded once) ---
 _weights = None
@@ -65,7 +95,7 @@ class Accumulator:
         """
         self.board = board
         self._stack = []
-        raw0, raw1 = halfkp_indices_for_fen(board.fen())
+        raw0, raw1 = core_search.halfkp_indices_for_board(board)
         self.idx0 = self._pad(raw0)
         self.idx1 = self._pad(raw1)
 
@@ -129,42 +159,30 @@ class Accumulator:
             cap_sq = to_sq
 
         w = _load_weights()
-        emb_weights = [w['emb0'], w['emb1']]
-        hiddens = [self.hidden0, self.hidden1]
+        mover_key = (mover.color, mover.piece_type)
 
         # For each view (view 0 = white king perspective, view 1 = black king perspective):
-        for view_idx, view_arr in enumerate([self.idx0, self.idx1]):
+        for view_idx, view_arr, hidden, emb_w in (
+            (0, self.idx0, self.hidden0, w['emb0']),
+            (1, self.idx1, self.hidden1, w['emb1']),
+        ):
             king_sq = self.board.king(bool(view_idx))
-            emb_w = emb_weights[view_idx]
-            hidden = hiddens[view_idx]
 
-            # 1) Remove captured piece's index (if capture)
+            # Resolve capture index (-1 = no capture)
+            old_cap_idx = -1
             if captured and captured.piece_type != chess.KING:
                 cap_key = (captured.color, captured.piece_type)
                 if cap_key in piece_to_idx:
                     old_cap_idx = king_sq * PIECES_PER_KING + cap_sq * NUM_NONKING + piece_to_idx[cap_key]
-                    # Update hidden: swap from captured embedding to padding embedding (0)
-                    hidden -= emb_w[old_cap_idx]
-                    hidden += emb_w[0]
-                    # Update index array (set to 0 = padding)
-                    mask = (view_arr == old_cap_idx)
-                    positions = np.where(mask)[0]
-                    if len(positions) > 0:
-                        view_arr[positions[0]] = 0
 
-            # 2) Update mover's index: remove old (from_sq), add new (to_sq)
-            mover_key = (mover.color, mover.piece_type)
+            # Resolve mover indices and dispatch to JIT
             if mover_key in piece_to_idx:
                 old_idx = king_sq * PIECES_PER_KING + from_sq * NUM_NONKING + piece_to_idx[mover_key]
                 new_idx = king_sq * PIECES_PER_KING + to_sq * NUM_NONKING + piece_to_idx[mover_key]
-                # Update hidden: subtract old position, add new position
-                hidden -= emb_w[old_idx]
-                hidden += emb_w[new_idx]
-                # Update index array
-                mask = (view_arr == old_idx)
-                positions = np.where(mask)[0]
-                if len(positions) > 0:
-                    view_arr[positions[0]] = new_idx
+                update_view_jit(view_arr, hidden, emb_w, old_cap_idx, old_idx, new_idx)
+            elif old_cap_idx >= 0:
+                # Capture only (mover not in piece_to_idx — shouldn't happen, but be safe)
+                update_view_jit(view_arr, hidden, emb_w, old_cap_idx, 0, 0)
 
         return self.idx0, self.idx1
 
@@ -186,20 +204,14 @@ class Accumulator:
         Computation: ~135k ops vs ~921k for full forward pass.
         """
         w = _load_weights()
-        # Clamp (ReLU on accumulated sums, matching model's forward())
-        h = np.concatenate([np.maximum(self.hidden0, 0),
-                            np.maximum(self.hidden1, 0)])
-        # MLP: fc2 -> relu -> fc3 -> relu -> fc_out
-        x = w['fc2_w'] @ h + w['fc2_b']
-        np.maximum(x, 0, out=x)  # relu in-place
-        x = w['fc3_w'] @ x + w['fc3_b']
-        np.maximum(x, 0, out=x)  # relu in-place
-        out = w['out_w'] @ x + w['out_b']
-        return float(out[0])
+        return evaluate_jit(self.hidden0, self.hidden1,
+                           w['fc2_w'], w['fc2_b'],
+                           w['fc3_w'], w['fc3_b'],
+                           w['out_w'], w['out_b'])
 
     def _recompute(self):
         """Full recompute of indices and hidden activations from current board state."""
-        raw0, raw1 = halfkp_indices_for_fen(self.board.fen())
+        raw0, raw1 = core_search.halfkp_indices_for_board(self.board)
         self.idx0 = self._pad(raw0)
         self.idx1 = self._pad(raw1)
         w = _load_weights()
