@@ -184,7 +184,7 @@ self.ai = ChessAI(depth=10, use_dnn=True)
 ### NNUE Model
 - **File:** `src/nnue/halfkp_int8.pt` (8-bit quantized TorchScript model)
 - **Architecture:** HalfKP input (40,960 features) → hidden layers → single evaluation output
-- **Training Data:** 16 million+ Stockfish-evaluated positions
+- **Training Data:** 316 million Stockfish-evaluated positions
 - **Training Script:** `src/nnue/nnue_train.py`
 
 ### Dataset Processing
